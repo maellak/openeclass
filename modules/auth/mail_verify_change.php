@@ -59,7 +59,8 @@ if (!empty($_POST['submit'])) {
         // user put a new email address update db and session
         if ($email != $_SESSION['email']) {
             $_SESSION['email'] = $email;
-            Database::get()->query("UPDATE user SET email = ?s WHERE id = ?d", $email, $uid);            
+            $qry = "UPDATE `user` set email=" . autoquote($email) . " WHERE id=$uid";
+            db_query($qry);
         }
         //send new code
         $hmac = token_generate($_SESSION['uname'] . $email . $uid);
@@ -100,7 +101,7 @@ if (empty($_POST['email']) or !email_seems_valid($_POST['email'])) {
                 </table>
                 <br />
         </fieldset>
-    </form>";
+</form>";
 }
 
 if (isset($_GET['from_profile'])) {

@@ -64,10 +64,13 @@ if (!class_exists('Question')):
         function read($id) {
             global $TBL_QUESTION, $TBL_EXERCISE_QUESTION, $mysqlMainDb, $course_id;
 
-            $object = Database::get()->querySingle("SELECT question, description, weight, q_position, type
-                        FROM `$TBL_QUESTION` WHERE course_id = ?d AND id = ?d", $course_id, $id);
+            mysql_select_db($mysqlMainDb);
+            $sql = "SELECT question, description, weight, q_position, type
+                        FROM `$TBL_QUESTION` WHERE course_id = $course_id AND id = '$id'";
+            $result = db_query($sql) or die("Error : SELECT in file " . __FILE__ . " at line " . __LINE__);
+
             // if the question has been found
-            if ($object) {
+            if ($object = mysql_fetch_object($result)) {
                 $this->id = $id;
                 $this->question = $object->question;
                 $this->description = $object->description;
@@ -75,10 +78,11 @@ if (!class_exists('Question')):
                 $this->position = $object->q_position;
                 $this->type = $object->type;
 
-                $result = Database::get()->queryArray("SELECT exercise_id FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = ?d", $id);
+                $sql = "SELECT exercise_id FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = '$id'";
+                $result = db_query($sql) or die("Error : SELECT in file " . __FILE__ . " at line " . __LINE__);
                 // fills the array with the exercises which this question is in
-                foreach ($result as $row) {
-                    $this->exerciseList[] = $row->exercise_id;
+                while ($object = mysql_fetch_object($result)) {
+                    $this->exerciseList[] = $object->exercise_id;
                 }
 
                 return true;
@@ -225,7 +229,9 @@ if (!class_exists('Question')):
                 // if we don't change from "unique answer" to "multiple answers" (or conversely)
                 if (!in_array($this->type, array(UNIQUE_ANSWER, MULTIPLE_ANSWER)) || !in_array($type, array(UNIQUE_ANSWER, MULTIPLE_ANSWER))) {
                     // removes old answers
-                    Database::get()->query("DELETE FROM `$TBL_ANSWER` WHERE question_id = ?d", $this->id);
+                    mysql_select_db($mysqlMainDb);
+                    $sql = "DELETE FROM `$TBL_ANSWER` WHERE question_id='" . $this->id . "'";
+                    db_query($sql) or die("Error : DELETE in file " . __FILE__ . " at line " . __LINE__);
                 }
 
                 $this->type = $type;
@@ -327,14 +333,18 @@ if (!class_exists('Question')):
 
             // question already exists
             if ($id) {
-                Database::get()->query("UPDATE `$TBL_QUESTION` SET question = ?s, description = ?s,
-					weight = ?f, q_position = ?d, type = ?d
-					WHERE course_id = $course_id AND id='$id'", $question, $description, $weighting, $position, $type);
+                $sql = "UPDATE `$TBL_QUESTION` SET question = '$question', description = '$description',
+					weight = '$weighting', q_position='$position',
+					type='$type'
+					WHERE course_id = $course_id AND id='$id'";
+                db_query($sql) or die("Error : UPDATE in file " . __FILE__ . " at line " . __LINE__);
             }
             // creates a new question
             else {
-                $this->id = Database::get()->query("INSERT INTO `$TBL_QUESTION` (course_id, question, description, weight, q_position, type)
-				VALUES (?d, ?s, ?s, ?f, ?d, ?d)", $course_id, $question, $description, $weighting, $position, $type)->lastInsertID;
+                $sql = "INSERT INTO `$TBL_QUESTION` (course_id, question, description, weight, q_position, type)
+				VALUES ($course_id, '$question', '$description', '$weighting', '$position', '$type')";
+                db_query($sql) or die("Error : INSERT in file " . __FILE__ . " at line " . __LINE__);
+                $this->id = mysql_insert_id();
             }
 
             // if the question is created in an exercise
@@ -358,7 +368,9 @@ if (!class_exists('Question')):
             // checks if the exercise ID is not in the list
             if (!in_array($exerciseId, $this->exerciseList)) {
                 $this->exerciseList[] = $exerciseId;
-                Database::get()->query("INSERT INTO `$TBL_EXERCISE_QUESTION` (question_id, exercise_id) VALUES (?d, ?d)", $id, $exerciseId);
+                //echo "<br>-".$TBL_EXERCISE_QUESTION."<br>-".$id."<br>-".$exerciseId."<br>";
+                $sql = "INSERT INTO `$TBL_EXERCISE_QUESTION` (question_id, exercise_id) VALUES ('$id', '$exerciseId')";
+                db_query($sql) or die("Error : INSERT in file " . __FILE__ . " at line " . __LINE__);
             }
         }
 
@@ -383,7 +395,9 @@ if (!class_exists('Question')):
             } else {
                 // deletes the position in the array containing the wanted exercise ID
                 unset($this->exerciseList[$pos]);
-                Database::get()->query("DELETE FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = ?d AND exercise_id = ?d", $id, $exerciseId);
+
+                $sql = "DELETE FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = '$id' AND exercise_id = '$exerciseId'";
+                db_query($sql);
                 return true;
             }
         }
@@ -404,9 +418,12 @@ if (!class_exists('Question')):
             // if the question must be removed from all exercises
             //if($deleteFromEx === 0)
             if (!$deleteFromEx) {
-                Database::get()->query("DELETE FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = ?d", $id);
-                Database::get()->query("DELETE FROM `$TBL_QUESTION` WHERE course_id = ?d AND id = ?d", $course_id, $id);
-                Database::get()->query("DELETE FROM `$TBL_ANSWER` WHERE question_id = ?d", $id);
+                $sql = "DELETE FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = '$id'";
+                db_query($sql);
+                $sql = "DELETE FROM `$TBL_QUESTION` WHERE course_id = $course_id AND id = '$id'";
+                db_query($sql);
+                $sql = "DELETE FROM `$TBL_ANSWER` WHERE question_id = '$id'";
+                db_query($sql);
                 $this->removePicture();
                 // resets the object
                 $this->Question();
@@ -456,9 +473,11 @@ if (!class_exists('Question')):
             $position = $this->position;
             $type = $this->type;
 
-            $id = Database::get()->query("INSERT INTO `$TBL_QUESTION` (course_id, question, description, weight, q_position, type)
-						VALUES (?d, ?s, ?s, ?f, ?d, ?d)", $course_id, $question, $description, $weighting, $position, $type)->lastInsertID;
+            $sql = "INSERT INTO `$TBL_QUESTION` (course_id, question, description, weight, q_position, type)
+						VALUES ($course_id, '$question', '$description', '$weighting', '$position', '$type')";
+            db_query($sql);
 
+            $id = mysql_insert_id();
             // duplicates the picture
             $this->exportPicture($id);
 

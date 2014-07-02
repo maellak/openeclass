@@ -23,11 +23,11 @@ require_once 'include/lib/mediaresource.class.php';
 
 class MediaResourceFactory {
 
-    public static function initFromDocument($queryItem) {
+    public static function initFromDocument($queryRow) {
         global $urlServer, $course_code;
         return new MediaResource(
-                $queryItem->id, $queryItem->course_id, empty($queryItem->title) ? $queryItem->filename : $queryItem->title, // Override title member
-                $queryItem->path, null, $urlServer . 'modules/document/mediafile.php?course=' . $course_code . '&amp;id=' . intval($queryItem->id), $urlServer . 'modules/document/play.php?course=' . $course_code . '&amp;id=' . intval($queryItem->id));
+                $queryRow['id'], $queryRow['course_id'], empty($queryRow['title']) ? $queryRow['filename'] : $queryRow['title'], // Override title member
+                $queryRow['path'], null, $urlServer . 'modules/document/mediafile.php?course=' . $course_code . '&amp;id=' . intval($queryRow['id']), $urlServer . 'modules/document/play.php?course=' . $course_code . '&amp;id=' . intval($queryRow['id']));
     }
 
     public static function initFromVideo($queryRow) {

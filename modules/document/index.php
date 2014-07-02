@@ -75,8 +75,8 @@ if (defined('COMMON_DOCUMENTS')) {
     $diskQuotaDocument = $diskUsed + ini_get('upload_max_filesize') * 1024 * 1024;
 } else {
     $type = ($subsystem == GROUP) ? 'group_quota' : 'doc_quota';
-    $d = Database::get()->querySingle("SELECT $type as quotatype FROM course WHERE id = ?d", $course_id);
-    $diskQuotaDocument = $d->quotatype;
+    $d = mysql_fetch_row(db_query("SELECT $type FROM course WHERE id = $course_id"));
+    $diskQuotaDocument = $d[0];
 }
 
 
@@ -112,16 +112,13 @@ if (isset($_GET['download'])) {
         $format = '.dir';
         $real_filename = remove_filename_unsafe_chars($langDoc . ' ' . $public_code);
     } else {
-        $q = Database::get()->querySingle("SELECT filename, format, visible, extra_path FROM document
+        $q = db_query("SELECT filename, format, visible, extra_path FROM document
                         WHERE $group_sql AND
-                        path = ?s", $downloadDir);
-        if (!$q) {
+                        path = " . quote($downloadDir));
+        if (!$q or mysql_num_rows($q) != 1) {
             not_found($downloadDir);
         }
-        $real_filename = $q->filename;
-        $format = $q->format;
-        $visible = $q->visible;
-        $extra_path = $q->extra_path;
+        list($real_filename, $format, $visible, $extra_path) = mysql_fetch_row($q);
         if (!$visible) {
             not_found($downloadDir);
         }
@@ -173,9 +170,9 @@ function make_clickable_path($path) {
             $out = "<a href='{$base_url}openDir=/'>$langRoot</a>";
         } else {
             $cur .= rawurlencode("/$component");
-            $row = Database::get()->querySingle("SELECT filename FROM document
-                                        WHERE path LIKE '%/$component' AND $group_sql");
-            $dirname = $row->filename;
+            $row = mysql_fetch_array(db_query("SELECT filename FROM document
+                                        WHERE path LIKE '%/$component' AND $group_sql"));
+            $dirname = q($row['filename']);
             $out .= " &raquo; <a href='{$base_url}openDir=$cur'>$dirname</a>";
         }
     }
@@ -192,10 +189,10 @@ if ($can_upload) {
     }
     // Check if upload path exists
     if (!empty($uploadPath)) {
-        $result = Database::get()->querySingle("SELECT count(*) as total FROM document
+        $result = mysql_fetch_row(db_query("SELECT count(*) FROM document
                         WHERE $group_sql AND
-                        path = ?s", $uploadPath);
-        if (!$result || !$result->total) {
+                        path = " . autoquote($uploadPath)));
+        if (!$result[0]) {
             $error = $langImpossible;
         }
     }
@@ -240,7 +237,7 @@ if ($can_upload) {
                 $uploaded = true;
             }
         }
-    } elseif (isset($_POST['fileURL']) and ( $fileURL = trim($_POST['fileURL']))) {
+    } elseif (isset($_POST['fileURL']) and ($fileURL = trim($_POST['fileURL']))) {
         $extra_path = canonicalize_url($fileURL);
         if (preg_match('/^javascript/', $extra_path)) {
             $action_message .= "<p class='caution'>$langUnwantedFiletype: " .
@@ -253,18 +250,17 @@ if ($can_upload) {
     }
     if ($uploaded) {
         // Check if file already exists
-        $result = Database::get()->querySingle("SELECT path, visible FROM document WHERE
+        $result = db_query("SELECT path, visible FROM document WHERE
                                            $group_sql AND
                                            path REGEXP " . quote("^$uploadPath/[^/]+$") . " AND
                                            filename = " . quote($fileName) . " LIMIT 1");
-        if ($result) {
+        if (mysql_num_rows($result)) {
             if (isset($_POST['replace'])) {
                 // Delete old file record when replacing file
-                $file_path = $result->path;
-                $vis = $result->visible;
-                Database::get()->query("DELETE FROM document WHERE
+                list($file_path, $vis) = mysql_fetch_row($result);
+                db_query("DELETE FROM document WHERE
                                                  $group_sql AND
-                                                 path = ?s", $file_path);
+                                                 path = " . quote($file_path));
             } else {
                 $error = $langFileExists;
             }
@@ -288,31 +284,28 @@ if ($can_upload) {
         $file_format = get_file_extension($fileName);
         // File date is current date
         $file_date = date("Y\-m\-d G\:i\:s");
-        if ($extra_path or ( isset($userFile) and @ copy($userFile, $basedir . $file_path))) {
-            $id = Database::get()->query("INSERT INTO document SET
-                                        course_id = ?d,
-                                        subsystem = ?d,
-                                        subsystem_id = ?d,
-                                        path = ?s,
-                                        extra_path = ?s,
-                                        filename = ?s,
-                                        visible = ?d,
-                                        comment = ?s,
-                                        category = ?d,
-                                        title = ?s,
-                                        creator = ?s,
-                                        date = ?t,
-                                        date_modified = ?t,
-                                        subject = ?s,
-                                        description = ?s,
-                                        author = ?s,
-                                        format = ?s,
-                                        language = ?s,
-                                        copyrighted = ?d"
-                            , $course_id, $subsystem, $subsystem_id, $file_path, $extra_path, $fileName, $vis
-                            , $_POST['file_comment'], $_POST['file_category'], $_POST['file_title'], $_POST['file_creator']
-                            , $file_date, $file_date, $_POST['file_subject'], $_POST['file_description'], $_POST['file_author']
-                            , $file_format, $_POST['file_language'], $_POST['file_copyrighted'])->lastInsertID;
+        if ($extra_path or (isset($userFile) and @copy($userFile, $basedir . $file_path))) {
+            db_query("INSERT INTO document SET
+                                        course_id = $course_id,
+                                        subsystem = $subsystem,
+                                        subsystem_id = $subsystem_id,
+                                        path = " . quote($file_path) . ",
+                                        extra_path = " . quote($extra_path) . ",
+                                        filename = " . autoquote($fileName) . ",
+                                        visible = $vis,
+                                        comment = " . autoquote($_POST['file_comment']) . ",
+                                        category = " . intval($_POST['file_category']) . ",
+                                        title = " . autoquote($_POST['file_title']) . ",
+                                        creator = " . autoquote($_POST['file_creator']) . ",
+                                        date = '$file_date',
+                                        date_modified = '$file_date',
+                                        subject = " . autoquote($_POST['file_subject']) . ",
+                                        description = " . autoquote($_POST['file_description']) . ",
+                                        author = " . autoquote($_POST['file_author']) . ",
+                                        format = " . autoquote($file_format) . ",
+                                        language = " . autoquote($_POST['file_language']) . ",
+                                        copyrighted = " . intval($_POST['file_copyrighted']));
+            $id = mysql_insert_id();
             $didx->store($id);
             // Logging
             Log::record($course_id, MODULE_ID_DOCS, LOG_INSERT, array('id' => $id,
@@ -339,9 +332,9 @@ if ($can_upload) {
         $sourceXml = $source . '.xml';
         //check if source and destination are the same
         if ($basedir . $source != $basedir . $moveTo or $basedir . $source != $basedir . $moveTo) {
-            $r = Database::get()->querySingle("SELECT filename, extra_path FROM document WHERE $group_sql AND path=?s", $source);
-            $filename = $r->filename;
-            $extra_path = $r->extra_path;
+            $r = mysql_fetch_array(db_query("SELECT filename, extra_path FROM document WHERE $group_sql AND path='$source'"));
+            $filename = $r['filename'];
+            $extra_path = $r['extra_path'];
             if (empty($extra_path)) {
                 if (move($basedir . $source, $basedir . $moveTo)) {
                     if (hasMetaData($source, $basedir, $group_sql)) {
@@ -367,8 +360,10 @@ if ($can_upload) {
     if (isset($_GET['move'])) {
         $move = $_GET['move'];
         // h $move periexei to onoma tou arxeiou. anazhthsh onomatos arxeiou sth vash
-        $moveFileNameAlias = Database::get()->querySingle("SELECT filename FROM document
-                                                WHERE $group_sql AND path=?s", $move)->filename;
+        $result = db_query("SELECT filename FROM document
+                                                WHERE $group_sql AND path=" . autoquote($move));
+        $res = mysql_fetch_array($result);
+        $moveFileNameAlias = $res['filename'];
         $dialogBox .= directory_selection($move, 'moveTo', dirname($move));
     }
 
@@ -378,26 +373,28 @@ if ($can_upload) {
     if (isset($_POST['delete']) or isset($_POST['delete_x'])) {
         $delete = str_replace('..', '', $_POST['filePath']);
         // Check if file actually exists
-        $r = Database::get()->querySingle("SELECT path, extra_path, format, filename FROM document
-                                        WHERE $group_sql AND path=?s", $delete);
+        $result = db_query("SELECT path, extra_path, format, filename FROM document
+                                        WHERE $group_sql AND path=" . autoquote($delete));
+        $r = mysql_fetch_array($result);
+        $filename = $r['filename'];
         $delete_ok = true;
-        if ($r) {
+        if (mysql_num_rows($result) > 0) {
             // remove from index if relevant (except non-main sysbsystems and metadata)
-            Database::get()->queryFunc("SELECT id FROM document WHERE course_id >= 1 AND subsystem = 0 
-                                            AND format <> \".meta\" AND path LIKE " . quote($delete . '%')
-                    , function ($r2) use($didx) {
-                $didx->remove($r2->id);
-            });
+            $res2 = db_query("SELECT id FROM document WHERE course_id >= 1 AND subsystem = 0 
+                                            AND format <> \".meta\" AND path LIKE " . quote($delete . '%'));
+            while ($r2 = mysql_fetch_assoc($res2)) {
+                $didx->remove($r2['id']);
+            }
 
-            if (empty($r->extra_path)) {
+            if (empty($r['extra_path'])) {
                 if ($delete_ok = my_delete($basedir . $delete) && $delete_ok) {
                     if (hasMetaData($delete, $basedir, $group_sql)) {
                         $delete_ok = my_delete($basedir . $delete . ".xml") && $delete_ok;
                     }
-                    update_db_info('document', 'delete', $delete, $r->filename);
+                    update_db_info('document', 'delete', $delete, $filename);
                 }
             } else {
-                update_db_info('document', 'delete', $delete, $r->filename);
+                update_db_info('document', 'delete', $delete, $filename);
             }
             if ($delete_ok) {
                 $action_message = "<p class='success'>$langDocDeleted</p><br />";
@@ -413,21 +410,25 @@ if ($can_upload) {
     // Step 2: Rename file by updating record in database
     if (isset($_POST['renameTo'])) {
 
-        $r = Database::get()->querySingle("SELECT id, filename, format FROM document WHERE $group_sql AND path = ?s", $_POST['sourceFile']);
+        $r = mysql_fetch_array(db_query("SELECT id, filename, format FROM document WHERE $group_sql AND path = " . quote($_POST['sourceFile'])));
 
-        if ($r->format != '.dir')
+        if ($r['format'] != '.dir')
             validateRenamedFile($_POST['renameTo'], $menuTypeID);
 
-        Database::get()->query("UPDATE document SET filename= ?s, date_modified=NOW()
-                          WHERE $group_sql AND path=?s"
-                , $_POST['renameTo'], $_POST['sourceFile']);
-        $didx->store($r->id);
+        db_query("UPDATE document SET filename=" .
+                autoquote($_POST['renameTo']) .
+                ", date_modified=NOW()
+                          WHERE $group_sql AND path=" . autoquote($_POST['sourceFile']));
+        $didx->store($r['id']);
         Log::record($course_id, MODULE_ID_DOCS, LOG_MODIFY, array('path' => $_POST['sourceFile'],
-            'filename' => $r->filename,
+            'filename' => $r['filename'],
             'newfilename' => $_POST['renameTo']));
         if (hasMetaData($_POST['sourceFile'], $basedir, $group_sql)) {
-            if (Database::get()->query("UPDATE document SET filename=?s WHERE $group_sql AND path = ?s"
-                            , ($_POST['renameTo'] . '.xml'), ($_POST['sourceFile'] . '.xml'))->affectedRows > 0) {
+            $q = db_query("UPDATE document SET filename=" .
+                    autoquote($_POST['renameTo'] . '.xml') .
+                    " WHERE $group_sql AND
+                                              path = " . autoquote($_POST['sourceFile'] . '.xml'));
+            if ($q and mysql_affected_rows()) {
                 metaRenameDomDocument($basedir . $_POST['sourceFile'] . '.xml', $_POST['renameTo']);
             }
         }
@@ -436,9 +437,11 @@ if ($can_upload) {
 
     // Step 1: Show rename dialog box
     if (isset($_GET['rename'])) {
-        $fileName = Database::get()->querySingle("SELECT filename FROM document
+        $result = db_query("SELECT * FROM document
                                              WHERE $group_sql AND
-                                                   path = ?s", $_GET['rename'])->filename;
+                                                   path = " . autoquote($_GET['rename']));
+        $res = mysql_fetch_array($result);
+        $fileName = $res['filename'];
         $dialogBox .= "
                 <form method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code'>
                 <fieldset>
@@ -466,8 +469,8 @@ if ($can_upload) {
             if ($path_already_exists) {
                 $action_message = "<p class='caution'>$langFileExists</p>";
             } else {
-                $r = Database::get()->querySingle("SELECT id FROM document WHERE $group_sql AND path = ?s", $newDirPath);
-                $didx->store($r->id);
+                $r = mysql_fetch_assoc(db_query("SELECT id FROM document WHERE $group_sql AND path = " . autoquote($newDirPath)));
+                $didx->store($r['id']);
                 $action_message = "<p class='success'>$langDirCr</p>";
             }
         }
@@ -496,28 +499,27 @@ if ($can_upload) {
     if (isset($_POST['commentPath'])) {
         $commentPath = $_POST['commentPath'];
         // check if file exists
-        $res = Database::get()->querySingle("SELECT * FROM document
+        $result = db_query("SELECT * FROM document
                                              WHERE $group_sql AND
-                                                   path=?s", $commentPath);
-        if ($res) {
+                                                   path=" . autoquote($commentPath));
+        $res = mysql_fetch_array($result);
+        if (!empty($res)) {
             $file_language = validate_language_code($_POST['file_language'], $language);
-            Database::get()->query("UPDATE document SET
-                                                comment = ?s,
-                                                category = ?d,
-                                                title = ?s,
+            db_query("UPDATE document SET
+                                                comment = " . autoquote($_POST['file_comment']) . ",
+                                                category = " . intval($_POST['file_category']) . ",
+                                                title = " . autoquote($_POST['file_title']) . ",
                                                 date_modified = NOW(),
-                                                subject = ?s,
-                                                description = ?s,
-                                                author = ?s,
-                                                language = ?s,
-                                                copyrighted = ?d
+                                                subject = " . autoquote($_POST['file_subject']) . ",
+                                                description = " . autoquote($_POST['file_description']) . ",
+                                                author = " . autoquote($_POST['file_author']) . ",
+                                                language = '$file_language',
+                                                copyrighted = " . intval($_POST['file_copyrighted']) . "
                                         WHERE $group_sql AND
-                                              path = ?s"
-                    , $_POST['file_comment'], $_POST['file_category'], $_POST['file_title'], $_POST['file_subject']
-                    , $_POST['file_description'], $_POST['file_author'], $file_language, $_POST['file_copyrighted'], $commentPath);
-            $didx->store($res->id);
+                                              path = '$commentPath'");
+            $didx->store($res['id']);
             Log::record($course_id, MODULE_ID_DOCS, LOG_MODIFY, array('path' => $commentPath,
-                'filename' => $res->filename,
+                'filename' => $res['filename'],
                 'comment' => $_POST['file_comment'],
                 'title' => $_POST['file_title']));
             $action_message = "<p class='success'>$langComMod</p>";
@@ -536,30 +538,27 @@ if ($can_upload) {
 
         metaCreateDomDocument($xml_filename);
 
-        $result = Database::get()->querySingle("SELECT * FROM document WHERE $group_sql AND path = ?s", $metadataPath);
-        if ($result) {
-            Database::get()->query("UPDATE document SET
-                                creator = ?s,
+        $result = db_query("SELECT * FROM document WHERE $group_sql AND path = " . autoquote($metadataPath));
+        if (mysql_num_rows($result) > 0) {
+            db_query("UPDATE document SET
+                                creator = " . autoquote($_SESSION['givenname'] . " " . $_SESSION['surname']) . ",
                                 date_modified = NOW(),
-                                format = ?s,
-                                language = ?s
-                                WHERE $group_sql AND path = ?s"
-                    , ($_SESSION['givenname'] . " " . $_SESSION['surname']), $file_format, $_POST['meta_language'], $metadataPath);
+                                format = " . autoquote($file_format) . ",
+                                language = " . autoquote($_POST['meta_language']) . "
+                                WHERE $group_sql AND path = " . autoquote($metadataPath));
         } else {
-            Database::get()->query("INSERT INTO document SET
-                                course_id = ?d ,
-                                subsystem = ?d ,
-                                subsystem_id = ?d ,
-                                path = ?s,
-                                filename = ?s ,
+            db_query("INSERT INTO document SET
+                                course_id = $course_id,
+                                subsystem = $subsystem,
+                                subsystem_id = $subsystem_id,
+                                path = " . quote($metadataPath) . ",
+                                filename = " . autoquote($oldFilename) . ",
                                 visible = 0,
-                                creator = ?s,
-                                date = ?t ,
-                                date_modified = ?t ,
-                                format = ?s,
-                                language = ?s"
-                    , $course_id, $subsystem, $subsystem_id, $metadataPath, $oldFilename
-                    , ($_SESSION['givenname'] . " " . $_SESSION['surname']), $xml_date, $xml_date, $file_format, $_POST['meta_language']);
+                                creator = " . autoquote($_SESSION['givenname'] . " " . $_SESSION['surname']) . ",
+                                date = '$xml_date',
+                                date_modified = '$xml_date',
+                                format = " . autoquote($file_format) . ",
+                                language = " . autoquote($_POST['meta_language']));
         }
 
         $action_message = "<p class='success'>$langMetadataMod</p>";
@@ -571,14 +570,12 @@ if ($can_upload) {
         validateUploadedFile($_FILES['newFile']['name'], $menuTypeID);
         $replacePath = $_POST['replacePath'];
         // Check if file actually exists
-        $result = Database::get()->querySingle("SELECT id, path, format FROM document WHERE
+        $result = db_query("SELECT id, path, format FROM document WHERE
                                         $group_sql AND
                                         format <> '.dir' AND
-                                        path=?s", $replacePath);
-        if ($result) {
-            $docId = $result->id;
-            $oldpath = $result->path;
-            $oldformat = $result->format;
+                                        path=" . autoquote($replacePath));
+        if (mysql_num_rows($result) > 0) {
+            list($docId, $oldpath, $oldformat) = mysql_fetch_row($result);
             // check for disk quota
             $diskUsed = dir_total_space($basedir);
             if ($diskUsed - filesize($basedir . $oldpath) + $_FILES['newFile']['size'] > $diskQuotaDocument) {
@@ -591,16 +588,20 @@ if ($can_upload) {
                 $newpath = preg_replace("/\\.$oldformat$/", '', $oldpath) .
                         (empty($newformat) ? '' : '.' . $newformat);
                 my_delete($basedir . $oldpath);
-                $affectedRows = Database::get()->query("UPDATE document SET path = ?s, format = ?s, filename = ?s, date_modified = NOW() 
-                          WHERE $group_sql AND path = ?s"
-                                , $newpath, $newformat, ($_FILES['newFile']['name']), $oldpath)->affectedRows;
-                if (!copy($_FILES['newFile']['tmp_name'], $basedir . $newpath) or $affectedRows == 0) {
+                if (!copy($_FILES['newFile']['tmp_name'], $basedir . $newpath) or
+                        !db_query("UPDATE document SET path = " . quote($newpath) . ",
+                                                                   format = " . quote($newformat) . ",
+                                                                   filename = " . autoquote($_FILES['newFile']['name']) . ",
+                                                                   date_modified = NOW()
+                                                              WHERE $group_sql AND
+                                                               path = " . quote($oldpath))) {
                     $action_message = "<p class='caution'>$langGeneralError</p>";
                 } else {
                     if (hasMetaData($oldpath, $basedir, $group_sql)) {
                         rename($basedir . $oldpath . ".xml", $basedir . $newpath . ".xml");
-                        Database::get()->query("UPDATE document SET path = ?s, filename=?s WHERE $group_sql AND path = ?s"
-                                , ($newpath . ".xml"), ($_FILES['newFile']['name'] . ".xml"), ($oldpath . ".xml"));
+                        db_query("UPDATE document SET path = " . quote($newpath . ".xml") . ",
+                                                      filename=" . autoquote($_FILES['newFile']['name'] . ".xml") .
+                                " WHERE $group_sql AND path =" . quote($oldpath . ".xml"));
                     }
                     $didx->store($docId);
                     Log::record($course_id, MODULE_ID_DOCS, LOG_MODIFY, array('oldpath' => $oldpath,
@@ -617,19 +618,20 @@ if ($can_upload) {
         $comment = $_GET['comment'];
         $oldComment = '';
         /*         * * Retrieve the old comment and metadata ** */
-        $row = Database::get()->querySingle("SELECT * FROM document WHERE $group_sql AND path = ?s", $comment);
-        if ($row) {
-            $oldFilename = q($row->filename);
-            $oldComment = q($row->comment);
-            $oldCategory = $row->category;
-            $oldTitle = q($row->title);
-            $oldCreator = q($row->creator);
-            $oldDate = q($row->date);
-            $oldSubject = q($row->subject);
-            $oldDescription = q($row->description);
-            $oldAuthor = q($row->author);
-            $oldLanguage = q($row->language);
-            $oldCopyrighted = $row->copyrighted;
+        $result = db_query("SELECT * FROM document WHERE $group_sql AND path = " . autoquote($comment));
+        if (mysql_num_rows($result) > 0) {
+            $row = mysql_fetch_array($result);
+            $oldFilename = q($row['filename']);
+            $oldComment = q($row['comment']);
+            $oldCategory = $row['category'];
+            $oldTitle = q($row['title']);
+            $oldCreator = q($row['creator']);
+            $oldDate = q($row['date']);
+            $oldSubject = q($row['subject']);
+            $oldDescription = q($row['description']);
+            $oldAuthor = q($row['author']);
+            $oldLanguage = q($row['language']);
+            $oldCopyrighted = $row['copyrighted'];
 
             // filsystem compability: ean gia to arxeio den yparxoun dedomena sto pedio filename
             // (ara to arxeio den exei safe_filename (=alfarithmitiko onoma)) xrhsimopoihse to
@@ -718,12 +720,13 @@ if ($can_upload) {
 
     // Display form to replace/overwrite an existing file
     if (isset($_GET['replace'])) {
-        $result = Database::get()->querySingle("SELECT filename FROM document
+        $result = db_query("SELECT filename FROM document
                                         WHERE $group_sql AND
                                                 format <> '.dir' AND
-                                                path = ?s", $_GET['replace']);
-        if ($result) {
-            $filename = q($result->filename);
+                                                path = " . autoquote($_GET['replace']));
+        if (mysql_num_rows($result) > 0) {
+            list($filename) = mysql_fetch_row($result);
+            $filename = q($filename);
             $replacemessage = sprintf($langReplaceFile, '<b>' . $filename . '</b>');
             $dialogBox = "
                                 <form method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code' enctype='multipart/form-data'>
@@ -748,19 +751,20 @@ if ($can_upload) {
         $comment = $_GET['comment'];
         $oldComment = '';
         /*         * * Retrieve the old comment and metadata ** */
-        $row = Database::get()->querySingle("SELECT * FROM document WHERE $group_sql AND path = ?s", $comment);
-        if ($row) {
-            $oldFilename = q($row->filename);
-            $oldComment = q($row->comment);
-            $oldCategory = $row->category;
-            $oldTitle = q($row->title);
-            $oldCreator = q($row->creator);
-            $oldDate = q($row->date);
-            $oldSubject = q($row->subject);
-            $oldDescription = q($row->description);
-            $oldAuthor = q($row->author);
-            $oldLanguage = q($row->language);
-            $oldCopyrighted = $row->copyrighted;
+        $result = db_query("SELECT * FROM document WHERE $group_sql AND path = " . autoquote($comment));
+        if (mysql_num_rows($result) > 0) {
+            $row = mysql_fetch_array($result);
+            $oldFilename = q($row['filename']);
+            $oldComment = q($row['comment']);
+            $oldCategory = $row['category'];
+            $oldTitle = q($row['title']);
+            $oldCreator = q($row['creator']);
+            $oldDate = q($row['date']);
+            $oldSubject = q($row['subject']);
+            $oldDescription = q($row['description']);
+            $oldAuthor = q($row['author']);
+            $oldLanguage = q($row['language']);
+            $oldCopyrighted = $row['copyrighted'];
 
             // filsystem compability: ean gia to arxeio den yparxoun dedomena sto pedio filename
             // (ara to arxeio den exei safe_filename (=alfarithmitiko onoma)) xrhsimopoihse to
@@ -851,9 +855,12 @@ if ($can_upload) {
     if (isset($_GET['metadata'])) {
 
         $metadata = $_GET['metadata'];
-        $row = Database::get()->querySingle("SELECT filename FROM document WHERE $group_sql AND path = ?s", $metadata);
-        if ($row) {
-            $oldFilename = q($row->filename);
+        $result = db_query("SELECT * FROM document WHERE $group_sql AND path = " . autoquote($metadata));
+
+        if (mysql_num_rows($result) > 0) {
+
+            $row = mysql_fetch_array($result);
+            $oldFilename = q($row['filename']);
 
             // filesystem compability: ean gia to arxeio den yparxoun dedomena sto pedio filename
             // (ara to arxeio den exei safe_filename (=alfarithmitiko onoma)) xrhsimopoihse to
@@ -878,11 +885,11 @@ if ($can_upload) {
             $newVisibilityStatus = 0;
             $visibilityPath = $_GET['mkInvisibl'];
         }
-        Database::get()->query("UPDATE document SET visible=?d
+        db_query("UPDATE document SET visible='$newVisibilityStatus'
                                           WHERE $group_sql AND
-                                                path = ?s", $newVisibilityStatus, $visibilityPath);
-        $r = Database::get()->querySingle("SELECT id FROM document WHERE $group_sql AND path = ?s", $visibilityPath);
-        $didx->store($r->id);
+                                                path = " . autoquote($visibilityPath));
+        $r = mysql_fetch_assoc(db_query("SELECT id FROM document WHERE $group_sql AND path = " . autoquote($visibilityPath)));
+        $didx->store($r['id']);
         $action_message = "<p class='success'>$langViMod</p>";
     }
 
@@ -890,11 +897,11 @@ if ($can_upload) {
     if (isset($_GET['public']) || isset($_GET['limited'])) {
         $new_public_status = intval(isset($_GET['public']));
         $path = isset($_GET['public']) ? $_GET['public'] : $_GET['limited'];
-        Database::get()->query("UPDATE document SET public = ?d
+        db_query("UPDATE document SET public = $new_public_status
                                           WHERE $group_sql AND
-                                                path = ?s", $new_public_status, $path);
-        $r = Database::get()->querySingle("SELECT id FROM document WHERE $group_sql AND path = ?s", $path);
-        $didx->store($r->id);
+                                                path = " . autoquote($path));
+        $r = mysql_fetch_assoc(db_query("SELECT id FROM document WHERE $group_sql AND path = " . autoquote($path)));
+        $didx->store($r['id']);
         $action_message = "<p class='success'>$langViMod</p>";
     }
 } // teacher only
@@ -948,7 +955,8 @@ if ($parentDir == '\\') {
     $parentDir = '/';
 }
 
-if (strpos($curDirName, '/../') !== false or !is_dir(realpath($basedir . $curDirPath))) {
+if (strpos($curDirName, '/../') !== false or
+        !is_dir(realpath($basedir . $curDirPath))) {
     $tool_content .= $langInvalidDir;
     draw($tool_content, $menuTypeID);
     exit;
@@ -974,38 +982,38 @@ if (isset($_GET['rev'])) {
 list($filter, $compatiblePlugin) = (isset($_REQUEST['docsfilter'])) ? select_proper_filters($_REQUEST['docsfilter']) : array('', true);
 
 /* * * Retrieve file info for current directory from database and disk ** */
-$result = Database::get()->queryArray("SELECT * FROM document
+$result = db_query("SELECT * FROM document
                         WHERE $group_sql AND
                                 path LIKE '$curDirPath/%' AND
                                 path NOT LIKE '$curDirPath/%/%' $filter $order");
 
 $fileinfo = array();
-foreach ($result as $row) {
-    if ($real_path = common_doc_path($row->extra_path, true)) {
+while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
+    if ($real_path = common_doc_path($row['extra_path'], true)) {
         // common docs
         $path = $real_path;
     } else {
-        $path = $basedir . $row->path;
+        $path = $basedir . $row['path'];
     }
-    if (!$real_path and $row->extra_path) {
+    if (!$real_path and $row['extra_path']) {
         // external file
         $size = 0;
     } else {
         $size = filesize($path);
     }
     $fileinfo[] = array(
-        'is_dir' => ($row->format == '.dir'),
+        'is_dir' => ($row['format'] == '.dir'),
         'size' => $size,
-        'title' => $row->title,
-        'filename' => $row->filename,
-        'format' => $row->format,
-        'path' => $row->path,
-        'extra_path' => $row->extra_path,
-        'visible' => ($row->visible == 1),
-        'public' => $row->public,
-        'comment' => $row->comment,
-        'copyrighted' => $row->copyrighted,
-        'date' => $row->date_modified,
+        'title' => $row['title'],
+        'filename' => $row['filename'],
+        'format' => $row['format'],
+        'path' => $row['path'],
+        'extra_path' => $row['extra_path'],
+        'visible' => ($row['visible'] == 1),
+        'public' => $row['public'],
+        'comment' => $row['comment'],
+        'copyrighted' => $row['copyrighted'],
+        'date' => $row['date_modified'],
         'object' => MediaResourceFactory::initFromDocument($row));
 }
 // end of common to teachers and students
@@ -1032,7 +1040,7 @@ if ($can_upload) {
         if (!defined('COMMON_DOCUMENTS') and get_config('enable_common_docs')) {
             $tool_content .= "<li><a href='../units/insert.php?course=$course_code&amp;dir=$curDirPath&amp;type=doc&amp;id=-1'>$langCommonDocs</a>";
         }
-        $tool_content .= "<li><a href='{$base_url}showQuota = true'>$langQuotaBar</a></li>
+        $tool_content .= "<li><a href='{$base_url}showQuota=true'>$langQuotaBar</a></li>
             </ul></div>\n";
     }
 
@@ -1043,8 +1051,8 @@ if ($can_upload) {
 }
 
 // check if there are documents
-$doc_count = Database::get()->querySingle("SELECT COUNT(*) as count FROM document WHERE $group_sql $filter" .
-                ($can_upload ? '' : " AND visible=1"))->count;
+list($doc_count) = mysql_fetch_row(db_query("SELECT COUNT(*) FROM document WHERE $group_sql $filter" .
+                ($can_upload ? '' : " AND visible=1")));
 if ($doc_count == 0) {
     $tool_content .= "<p class='alert1'>$langNoDocuments</p>";
 } else {
@@ -1082,14 +1090,14 @@ if ($doc_count == 0) {
             $this_reverse = $reverse;
             $indicator = '';
         }
-        return '<a href = "' . $base_url . 'openDir=' . $path .
+        return '<a href="' . $base_url . 'openDir=' . $path .
                 '&amp;sort=' . $this_sort . ($this_reverse ? '&amp;rev=1' : '') .
                 '">' . $label . $indicator . '</a>';
     }
 
     /*     * * go to parent directory ** */
     if ($curDirName) { // if the $curDirName is empty, we're in the root point and we can't go to a parent dir
-        $parentlink = $base_url . 'openDir = ' . $cmdParentDir;
+        $parentlink = $base_url . 'openDir=' . $cmdParentDir;
         $tool_content .= "<a href='$parentlink'>$langUp</a> <a href='$parentlink'><img src='$themeimg/folder_up.png' height='16' width='16' alt='$langUp'/></a>";
     }
     $tool_content .= "</div></td>
@@ -1113,18 +1121,19 @@ if ($doc_count == 0) {
     foreach (array(true, false) as $is_dir) {
         foreach ($fileinfo as $entry) {
             $link_title_extra = '';
-            if (($entry['is_dir'] != $is_dir) or (!$can_upload and (!resource_access($entry['visible'], $entry['public'])))) {
+            if (($entry['is_dir'] != $is_dir) or
+                    (!$can_upload and (!resource_access($entry['visible'], $entry['public'])))) {
                 continue;
             }
             $cmdDirName = $entry['path'];
             if ($entry['visible']) {
                 if ($counter % 2 == 0) {
-                    $style = 'class = "even"';
+                    $style = 'class="even"';
                 } else {
-                    $style = 'class = "odd"';
+                    $style = 'class="odd"';
                 }
             } else {
-                $style = ' class = "invisible"';
+                $style = ' class="invisible"';
             }
             if ($is_dir) {
                 $img_href = icon('folder');
@@ -1153,7 +1162,7 @@ if ($doc_count == 0) {
                 if ($copyid = $entry['copyrighted'] and
                         $copyicon = $copyright_icons[$copyid]) {
                     $link_title_extra .= "&nbsp;" .
-                            icon($copyicon, $copyright_titles[$copyid], $copyright_links[$copyid], null, 'png', 'target = "_blank"');
+                            icon($copyicon, $copyright_titles[$copyid], $copyright_links[$copyid], null, 'png', 'target="_blank"');
                 }
                 $dload_msg = $langSave;
 
@@ -1231,8 +1240,7 @@ if ($doc_count == 0) {
                         $tool_content .= icon('invisible', $langVisible, "{$base_url}mkVisibl=$cmdDirName");
                     }
                     $tool_content .= "&nbsp;";
-                    // For common docs, $course_id = -1 - disable public icon there
-                    if ($course_id > 0 and course_status($course_id) == COURSE_OPEN) {
+                    if (course_status($course_id) == COURSE_OPEN) {
                         if ($entry['public']) {
                             $tool_content .= icon('access_public', $langResourceAccess, "{$base_url}limited=$cmdDirName");
                         } else {
@@ -1240,7 +1248,7 @@ if ($doc_count == 0) {
                         }
                         $tool_content .= "&nbsp;";
                     }
-                    if ($subsystem == GROUP and isset($is_member) and ( $is_member)) {
+                    if ($subsystem == GROUP and isset($is_member) and ($is_member)) {
                         $tool_content .= "<a href='{$urlAppend}modules/work/group_work.php?course=$course_code" .
                                 "&amp;group_id=$group_id&amp;submit=$cmdDirName'>" .
                                 "<img src='$themeimg/book.png' " .

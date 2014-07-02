@@ -1,0 +1,17 @@
+syntax: regexp
+
+^\.htaccess$
+
+^courses/
+^video/
+^config/.*\.php
+^html/
+
+^nbproject/private/
+
+^\.buildpath$
+^\.project$
+^\.settings$
+^\.htaccess$
+syntax: glob
+include\main_lib.php.orig

@@ -142,8 +142,7 @@ $paused_exercises = Database::get()->queryArray("SELECT eid, title FROM exercise
 $num_of_ex = $qnum; //Getting number of all active exercises of the course
 $nbrExercises = count($result); //Getting number of limited (offset and limit) exercises of the course (active and inactive)
 if (count($paused_exercises) > 0) {
-    foreach ($paused_exercises as $row) {       
-        $paused_exercises_ids[] = $row->eid;        
+    foreach ($paused_exercises as $row) {
         $tool_content .="<div class='info'>$langTemporarySaveNotice $row->title. <a href='exercise_submit.php?course=$course_code&exerciseId=$row->eid'>($langCont)</a></div>";
     }
 }
@@ -152,8 +151,9 @@ if ($is_editor) {
             . "JOIN exercise b ON a.eid = b.id WHERE a.uid = ?d "
             . "AND a.attempt_status = ?d AND b.course_id = ?d", $uid, ATTEMPT_PENDING, $course_id);
     if (count($pending_exercises) > 0) {
-        foreach ($pending_exercises as $row) {           
-            $tool_content .="<div class='info'>$langPendingExercise $row->title. (<a href='results.php?course=$course_code&exerciseId=$row->eid&status=2'>$langView</a>)</div>";
+        foreach ($pending_exercises as $row) {
+
+            $tool_content .="<div class='info'>Υπάρχουν υποβολές προς βαθμολόγηση στην άσκηση $row->title. (<a href='results.php?course=$course_code&exerciseId=$row->eid&status=2'>Εμφάνιση</a>)</div>";
         }
     }    
     $tool_content .= "<div align='left' id='operations_container'>
@@ -230,7 +230,7 @@ if (!$nbrExercises) {
             }
             $tool_content .= "<td width='16'>
 				<img src='$themeimg/arrow.png' alt='' /></td>
-				<td><a ".(isset($paused_exercises_ids) && in_array($row->id,$paused_exercises_ids)?'class="paused_exercise"':'')." href='exercise_submit.php?course=$course_code&amp;exerciseId={$row->id}'>" . q($row->title) . "</a>$descr</td>";
+				<td><a href='exercise_submit.php?course=$course_code&amp;exerciseId={$row->id}'>" . q($row->title) . "</a>$descr</td>";
             $eid = $row->id;
 			$NumOfResults = Database::get()->querySingle("SELECT COUNT(*) as count FROM exercise_user_record WHERE eid = ?d", $eid)->count;
 
@@ -344,11 +344,4 @@ if (!$nbrExercises) {
     $tool_content .= "</table>";
 }
 add_units_navigation(TRUE);
-$head_content .= "<script type='text/javascript'>
-    $(document).ready(function(){
-        $('.paused_exercise').click(function(){
-            return confirm('$langTemporarySaveNotice2');
-        });
-    });
-</script>";
 draw($tool_content, 2, null, $head_content);
