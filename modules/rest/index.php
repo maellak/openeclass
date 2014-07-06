@@ -13,9 +13,9 @@ error_reporting(E_ALL ^ E_DEPRECATED ^ E_NOTICE ^ E_WARNING);
 require_once (__DIR__.'/auth.php');
 $app->map('/login', RequestAccessToken)->via('POST');
 require_once (__DIR__.'/courses.php');
-$app->map('/courses', CheckAuth, GetCourses)->via('GET');
-$app->map('/courses', CheckAuth, PostCourses)->via('POST');
-$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE');
+$app->map('/courses', GetCourses)->via('GET');
+$app->map('/courses', PostCourses)->via('POST');
+$app->map('/courses', DeleteCourses)->via('DELETE');
 // 404 not found
 $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); });
 
