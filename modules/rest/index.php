@@ -32,8 +32,8 @@ require_once (__DIR__.'/auth.php');
 $app->map('/login', RequestAccessToken)->via('POST', 'OPTIONS');
 require_once (__DIR__.'/courses.php');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
-$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
-$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
+//$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
+//$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
 $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); });
 
