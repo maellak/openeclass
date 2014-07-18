@@ -63,4 +63,8 @@ function RequestAccessToken() {
 
     exit();
 }
+
+function GetCheckNet() {
+	echo '{"code":"1"}';
+}
 ?>
