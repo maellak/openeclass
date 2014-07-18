@@ -56,23 +56,23 @@ function PostEnrollCourse() {
 				if (($course_info->visible == COURSE_REGISTRATION or
 						$course_info->visible == COURSE_OPEN) and !empty($course_info->password) and
 						$course_info->password !== autounquote($_POST['pass' . $cid])) {
-					echo $PASS_PROTECTED;
+					echo '{ "error" : "' . $PASS_PROTECTED . '" }';
 				}
 				if (is_restricted($cid) and !in_array($cid, $selectCourse)) { // do not allow registration to restricted course
-					echo $RESTRICTED;
+					echo '{ "error" : "' . $RESTRICTED . '" }';
 				} else {
 					Database::get()->query("INSERT IGNORE INTO `course_user` (`course_id`, `user_id`, `status`, `reg_date`)
 		                                        VALUES (?d, ?d, ?d, CURDATE())", $cid, intval($uid), USER_STUDENT);
-					echo $SUCCESS;
+					echo '{ "error" : "' . $SUCCESS . '" }';
 				}
 			} else {
-				echo $ALREADY_ENROLLED;
+				echo '{ "error" : "' . $ALREADY_ENROLLED . '" }';
 			}
 		} else {
-			echo $COURSE_NOT_EXISTS;
+			echo '{ "error" : "' . $COURSE_NOT_EXISTS . '" }';
 		}
 	} else {
-		echo $NOT_LOGGED_IN;
+		echo '{ "error" : "' . $NOT_LOGGED_IN . '" }';
 	}
 }
 ?>
