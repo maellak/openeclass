@@ -23,7 +23,7 @@ function CheckAuth() {
 function RequestAccessToken() {
     $require_noerrors = true;
     global $mysqlServer, $mysqlUser, $mysqlPassword, $mysqlMainDb;
-    require_once ('../../include/init.php');
+    require_once (__DIR__.'/../../include/init.php');
     require_once ('modules/auth/auth.inc.php');
     require_once ('include/phpass/PasswordHash.php');
     if(!isset($_POST['uname']) || !isset($_POST['pass'])) {
