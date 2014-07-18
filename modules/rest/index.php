@@ -34,6 +34,7 @@ require_once (__DIR__.'/courses.php');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums', GetForums)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics', GetTopics)->via('GET', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics', PostTopic)->via('POST', 'OPTIONS');
 //$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
 //$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
