@@ -6,5 +6,5 @@
 
 $mysqlServer = 'localhost';
 $mysqlUser = 'root';
-$mysqlPassword = '12345678';
-$mysqlMainDb = 'test_data';
+$mysqlPassword = '';
+$mysqlMainDb = 'openeclass';
