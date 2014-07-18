@@ -30,7 +30,6 @@ require_once (__DIR__.'/../../include/init.php');
 require_once (__DIR__.'/auth.php');
 $app->map('/login', RequestAccessToken)->via('POST', 'OPTIONS');
 require_once (__DIR__.'/courses.php');
-<<<<<<< HEAD
 require_once (__DIR__.'/enrolled_courses.php');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums', GetForums)->via('GET', 'OPTIONS');
