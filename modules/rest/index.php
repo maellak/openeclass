@@ -36,6 +36,7 @@ $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 //$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
 //$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
+$app->map('/enrollCourse', PostEnrollCourse)->via('POST', 'OPTIONS');
 // 404 not found
 $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); });
 
