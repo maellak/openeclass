@@ -42,9 +42,6 @@ function GetAllAnn(){
 	$error = array( 'error'=>0);
 	$database->queryFunc("SELECT id,title,content,date from announcement where course_id IN ( select course_id from course_user where user_id = $uid)", function($row)use (&$u_annou) {$u_annou[] = $row;});
 	$database->queryFunc("SELECT course.title FROM course,announcement WHERE announcement.course_id = course.id",function($row)use (&$courset){ $courset[] = $row; });
-	// put field $u_annou[4]=array('vis'=>1);
-	//$u_annou[1]=(array)$u_annou[1];
-	//echo $u_annou[1]['date'];
 		for($i=0;$i<count($u_annou);$i++)
 		{
 			$temp_vis[$i]=(array)$temp_vis[$i];
