@@ -38,8 +38,8 @@ function RequestAccessToken() {
         unset($_SESSION[$key]);
 
     $sqlLogin = "SELECT *
-                   FROM user
-                  WHERE username ";
+FROM user
+WHERE username ";
     if (get_config('case_insensitive_usernames')) {
         $sqlLogin .= "= " . quote($uname);
     } else {
@@ -55,7 +55,7 @@ function RequestAccessToken() {
 
     if (isset($_SESSION['uid']) && $ok == 1) {
         Database::get()->query("INSERT INTO loginout (loginout.id_user, loginout.ip, loginout.when, loginout.action)
-                                              VALUES (?d, ?s, NOW(), 'LOGIN')", intval($_SESSION['uid']), $_SERVER['REMOTE_ADDR']);
+VALUES (?d, ?s, NOW(), 'LOGIN')", intval($_SESSION['uid']), $_SERVER['REMOTE_ADDR']);
         session_regenerate_id();
         echo json_encode(array('status' => 'OK', 'access_token' => session_id()));
     } else
