@@ -43,7 +43,7 @@ WHERE username ";
     if (get_config('case_insensitive_usernames')) {
         $sqlLogin .= "= " . quote($uname);
     } else {
-        $sqlLogin .= "COLLATE utf8_bin = " . quote($uname);
+        $sqlLogin .=  " = " . quote($uname) . " COLLATE utf8_bin";
     }
     $myrow = Database::get()->querySingle($sqlLogin);
     $myrow = (array) $myrow;
