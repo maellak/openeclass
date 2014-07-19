@@ -2,10 +2,18 @@
 define('RESPONSE_FAILED', json_encode(array('status' => 'FAILED')));
 
 $_POST = json_decode(file_get_contents('php://input'), true);
+
+
+    if (isset($_SERVER['HTTP_ORIGIN'])) {
+        header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+        header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Max-Age: 86400'); // cache for 1 day
+
     if (isset($_SERVER['HTTP_ORIGIN'])) {
         header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
         header('Access-Control-Allow-Credentials: true');
         header('Access-Control-Max-Age: 86400');    // cache for 1 day
+
     }
     // Access-Control headers are received during OPTIONS requests
     if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
@@ -30,6 +38,15 @@ require_once (__DIR__.'/../../include/init.php');
 require_once (__DIR__.'/auth.php');
 $app->map('/login', RequestAccessToken)->via('POST', 'OPTIONS');
 require_once (__DIR__.'/courses.php');
+
+$app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
+require_once (__DIR__.'/ann.php');
+$app->map('/courses/:cid/announcements',CheckAuth,GetAnn)->via('GET', 'OPTIONS');
+require_once(__DIR__.'/ann.php');
+$app->map('/courses/announcements' ,CheckAuth, GetAllAnn)->via('GET', 'OPTIONS');
+//$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
+//$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
+
 require_once (__DIR__.'/enrolled_courses.php');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums', GetForums)->via('GET', 'OPTIONS');
