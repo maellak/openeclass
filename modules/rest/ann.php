@@ -1,6 +1,6 @@
 <?php
 
-function PostReadCourses($aid){
+function PostReadAnnouncements($aid){
     $uname = $_SESSION['uname'];
     $uid = -1;
     $database = Database::get();

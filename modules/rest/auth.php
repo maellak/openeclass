@@ -43,7 +43,7 @@ WHERE username ";
     if (get_config('case_insensitive_usernames')) {
         $sqlLogin .= "= " . quote($uname);
     } else {
-        $sqlLogin .= "COLLATE utf8_bin = " . quote($uname);
+        $sqlLogin .=  " = " . quote($uname) . " COLLATE utf8_bin";
     }
     $myrow = Database::get()->querySingle($sqlLogin);
     $myrow = (array) $myrow;
@@ -62,5 +62,23 @@ VALUES (?d, ?s, NOW(), 'LOGIN')", intval($_SESSION['uid']), $_SERVER['REMOTE_ADD
         echo RESPONSE_FAILED;
 
     exit();
+}
+
+function GetCheckNet() {
+	if(isset($_GET['access_token'])) {
+        session_id($_GET['access_token']);
+        session_start();
+        $_SESSION['mobile'] = true;
+
+        if (!isset($_SESSION['uid'])) {
+            echo json_encode(array('status' => 'FORBIDDEN', 'session_status' => 'EXPIRED'));
+            session_regenerate_id();
+            exit();
+        }
+    } else {
+        echo json_encode(array('status' => 'FORBIDDEN', 'session_status' => 'NOT_LOGGED_IN'));
+        exit();
+    }
+    echo '{"session_status":"true"}';
 }
 ?>
