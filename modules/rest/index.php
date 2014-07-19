@@ -35,7 +35,7 @@ $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 require_once (__DIR__.'/ann.php');
 $app->map('/courses/:cid/announcements',CheckAuth,GetAnn)->via('GET', 'OPTIONS');
 require_once(__DIR__.'/ann.php');
-$app->map('/courses/announcements' , CheckAuth , GetAllAnn)->via('GET', 'OPTIONS');
+$app->map('/courses/announcements' ,CheckAuth, GetAllAnn)->via('GET', 'OPTIONS');
 //$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
 //$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
