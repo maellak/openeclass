@@ -17,7 +17,7 @@ function CheckAuth() {
     }
 
     global $mysqlServer, $mysqlUser, $mysqlPassword, $mysqlMainDb;
-    require_once ('../../include/init.php');
+    require_once (__DIR__ . '/../../include/init.php');
 }
 
 function RequestAccessToken() {
