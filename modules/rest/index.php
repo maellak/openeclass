@@ -30,7 +30,7 @@ require_once (__DIR__.'/../../include/init.php');
 require_once (__DIR__.'/auth.php');
 $app->map('/login', RequestAccessToken)->via('POST', 'OPTIONS');
 require_once (__DIR__.'/courses.php');
-<<<<<<< HEAD
+
 require_once (__DIR__.'/enrolled_courses.php');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums', GetForums)->via('GET', 'OPTIONS');
@@ -41,13 +41,10 @@ $app->map('/courses/:cid/forums/:fid/topics', PostTopic)->via('POST', 'OPTIONS')
 $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/announcements/:aid/read', CheckAuth, function() use($app) {
 	$ann_id = $_POST['aid'];
+	echo $aid;
 	postReadCourses($ann_id);
   })->via('POST', 'OPTIONS');
-$app->map('/courses/:cid', CheckAuth, function() use($app) {
-	//Getting the parameter which is suppossed to be delivered via the Delete/Unenroll button
-	$course_id = $_POST['cid'];
-	DeleteCourses($course_id);
-  })->via('DELETE', 'OPTIONS');
+$app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
 $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); });
 
