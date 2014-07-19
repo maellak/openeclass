@@ -71,4 +71,3 @@ $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); }
 
 $app->run();
 ?>
-
