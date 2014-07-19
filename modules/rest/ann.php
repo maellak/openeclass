@@ -33,7 +33,6 @@ function GetAnn($cid) {
 		if($annou!=null)
 		{ 
 			echo json_encode($annou);
-			echo json_encode($error);
 		}
 		else 
 		{
@@ -76,7 +75,7 @@ function GetAllAnn(){
 	if ($u_annou!=null)
 	{	
 		echo json_encode($u_annou);		
-		echo json_encode($error);
+		
 	}
 	else
 	{
