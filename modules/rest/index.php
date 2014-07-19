@@ -67,6 +67,11 @@ $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
 $app->map('/enrollcourse', CheckAuth, PostEnrollCourse)->via('POST', 'OPTIONS');
 $app->map('/login/status', GetCheckNet)->via('GET', 'OPTIONS');
 $app->map('/courses/announcements/:aid/read', CheckAuth, PostReadAnnouncements)->via('POST', 'OPTIONS');
+
+require_once (__DIR__.'/docu.php');   
+$app->map('/courses/:cid/documents' ,CheckAuth, GetDoc)->via('GET','OPTIONS');
+$app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
+
 // 404 not found
 $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); });
 
