@@ -230,10 +230,10 @@ Database::get()->query("CREATE TABLE user (
 #table `announcement_users`
 #
 
-Database::get()->query("CREATE TABLE IF NOT EXISTS `announcement_users` (
-  `user_id` int(11) NOT NULL,
-  `ann_id` int(11) NOT NULL,
-  `time_stamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+Database::get()->query("CREATE TABLE announcement_users(
+  user_id int(11) NOT NULL,
+  ann_id int(11) NOT NULL,
+  time_stamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) $charset_spec");
 
 
