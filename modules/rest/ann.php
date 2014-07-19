@@ -1,4 +1,22 @@
 <?php
+
+function PostReadAnnouncements($aid){
+    $uname = $_SESSION['uname'];
+    $uid = -1;
+    $database = Database::get();
+    $database -> queryFunc("SELECT id FROM user WHERE username='$uname'", function($row) use(&$uid) { $uid = $row->id;});
+    $here = false;
+    $database -> queryFunc("SELECT user_id, ann_id FROM announcement_users", function($row)
+				{
+				   if($row->user_id == $uid && $row->ann_id == $aid)
+					$here = true;
+				});
+    if(!$here){
+        $query = "INSERT INTO announcement_users (user_id, ann_id) VALUES ($uid, $aid)";
+        $database -> querySingle($query);
+    }
+}
+
 function GetAnn($cid) {
 	$uid = 
 	$flag = 0;	

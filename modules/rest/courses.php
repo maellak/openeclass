@@ -89,5 +89,21 @@ function PostPosts($cid, $fid, $tid) {
 	
 }
 
+function DeleteCourses($cid) {
+	$uname = $_SESSION['uname'];
+	$uid = -1;
+	$database = Database::get();
+	$database -> queryFunc("SELECT id FROM user WHERE username='$uname'", function($row) use(&$uid) {$uid = $row->id;});
+	$here = false;
+	$database -> queryFunc("SELECT course_id, user_id FROM course_user", function($row)
+				{
+				   if($row->user_id == $uid && $row->course_id == $cid)
+					$here = true;
+				});
+	if($here){	
+		$query = "DELETE FROM course_user WHERE course_id=$cid AND user_id=$uid";
+		$database -> querySingle($query);
+	}
+}
 
 ?>
