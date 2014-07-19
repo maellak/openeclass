@@ -63,7 +63,7 @@ $app->map('/courses/:cid/forums', CheckAuth, GetForums)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics', CheckAuth, GetTopics)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics', CheckAuth, PostTopic)->via('POST', 'OPTIONS');
 $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
-$app->map('/enrollCourse', PostEnrollCourse)->via('POST', 'OPTIONS');
+$app->map('/enrollcourse', CheckAuth, PostEnrollCourse)->via('POST', 'OPTIONS');
 $app->map('/login/status', GetCheckNet)->via('GET', 'OPTIONS');
 $app->map('/courses/announcements/:aid/read', CheckAuth, function() use($app) {
   $ann_id = $_POST['aid'];
