@@ -37,11 +37,7 @@ function PostTopic($cid, $fid) {
 	
 	// Αποθήκευση του topic
 	if(!empty($topic)) {
-		Database::get()->query("INSERT INTO forum_topic (forum_topic.title, 
-														forum_topic.poster_id,
-														forum_topic.topic_time, 
-														forum_topic.forum_id)
-	                                              VALUES (?s, ?d, NOW(), ?d)", $topic, intval($poster_id), intval($fid));
+		Database::get()->query("INSERT INTO forum_topic (forum_topic.title, forum_topic.poster_id, forum_topic.topic_time, forum_topic.forum_id) VALUES (?s, ?d, NOW(), ?d)", $topic, intval($poster_id), intval($fid));
 		
 		// Ανακτούμε τον αριθμό των topics που περιέχει το συγκεκριμένο forum για να τον ενημερώσουμε
 		$sqlNumTopics = 'SELECT num_topics FROM forum WHERE forum.id = '.$fid;
@@ -80,15 +76,7 @@ function PostPosts($cid, $fid, $tid) {
 		
 	// Αποθήκευση του post
 	if(!empty($post_text)) {
-		$post = Database::get()->query("INSERT INTO forum_post (forum_post.topic_id, 
-														forum_post.post_text,
-														forum_post.poster_id,
-														forum_post.post_time,
-														forum_post.poster_ip,
-														forum_post.parent_post_id)
-								VALUES (?d, ?s, ?d, NOW(), ?s, ?d)", 
-	                            	intval($tid), $post_text, intval($poster_id), $_SERVER['REMOTE_ADDR'], intval($parent_post_id));
-	
+		$post = Database::get()->query("INSERT INTO forum_post (forum_post.topic_id, forum_post.post_text, forum_post.poster_id, forum_post.post_time, forum_post.poster_ip, forum_post.parent_post_id) VALUES (?d, ?s, ?d, NOW(), ?s, ?d)", intval($tid), $post_text, intval($poster_id), $_SERVER['REMOTE_ADDR'], intval($parent_post_id));
 		// Ενημέρωση του last_post_id στον πίνακα forum_topic
 		$last_post_id = $post->lastInsertID;
 		Database::get()->query("UPDATE forum_topic SET last_post_id = $last_post_id WHERE forum_topic.id = $tid");
