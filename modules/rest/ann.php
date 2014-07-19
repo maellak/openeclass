@@ -38,7 +38,7 @@ function GetAllAnn(){
 	$u_annou=array();
 	$temp_vis=array();
 	$courset=array();
-       	$database->queryFunc("SELECT IF(announcement.id IN (SELECT ann_id from announcement_users ),'1','0')as visible from announcement LEFT JOIN announcement_users ON id=ann_id",function($row)use (&$temp_vis){ $temp_vis[] = $row; });
+       	$database->queryFunc("SELECT IF(user_id=$uid AND announcement.id IN (SELECT ann_id from announcement_users ),'1','0')as visible from announcement LEFT JOIN announcement_users ON id=ann_id",function($row)use (&$temp_vis){ $temp_vis[] = $row; });
 	$error = array( 'error'=>0);
 	$database->queryFunc("SELECT id,title,content,date from announcement where course_id IN ( select course_id from course_user where user_id = $uid)", function($row)use (&$u_annou) {$u_annou[] = $row;});
 	$database->queryFunc("SELECT course.title FROM course,announcement WHERE announcement.course_id = course.id",function($row)use (&$courset){ $courset[] = $row; });
