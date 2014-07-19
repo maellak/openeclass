@@ -32,11 +32,11 @@ require_once (__DIR__.'/auth.php');
 $app->map('/login', RequestAccessToken)->via('POST', 'OPTIONS');
 require_once (__DIR__.'/courses.php');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
-$app->map('/courses/:cid/forums', GetForums)->via('GET', 'OPTIONS');
-$app->map('/courses/:cid/forums/:fid/topics', GetTopics)->via('GET', 'OPTIONS');
-$app->map('/courses/:cid/forums/:fid/topics', PostTopic)->via('POST', 'OPTIONS');
-$app->map('/courses/:cid/forums/:fid/topics/:tid/posts', GetPosts)->via('GET', 'OPTIONS');
-$app->map('/courses/:cid/forums/:fid/topics/:tid/posts', PostPosts)->via('POST', 'OPTIONS');
+$app->map('/courses/:cid/forums', CheckAuth, GetForums)->via('GET', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics', CheckAuth, GetTopics)->via('GET', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics', CheckAuth, PostTopic)->via('POST', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics/:tid/posts', CheckAuth, GetPosts)->via('GET', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics/:tid/posts', CheckAuth, PostPosts)->via('POST', 'OPTIONS');
 //$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
 //$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
