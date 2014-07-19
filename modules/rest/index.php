@@ -67,7 +67,7 @@ $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
 
 $app->map('/enrollcourse', CheckAuth, PostEnrollCourse)->via('POST', 'OPTIONS');
 $app->map('/login/status', GetCheckNet)->via('GET', 'OPTIONS');
-app->map('/courses/announcements/:aid/read', CheckAuth, PostReadAnnouncements)->via('POST', 'OPTIONS');
+$app->map('/courses/announcements/:aid/read', CheckAuth, PostReadAnnouncements)->via('POST', 'OPTIONS');
 
 $app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
