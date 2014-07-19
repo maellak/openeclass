@@ -18,7 +18,6 @@ function PostReadAnnouncements($aid){
 }
 
 function GetAnn($cid) {
-	$uid = 
 	$flag = 0;	
 	$i = 0;	
 	$error=array( 'error'=>0);
