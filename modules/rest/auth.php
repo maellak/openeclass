@@ -65,6 +65,20 @@ function RequestAccessToken() {
 }
 
 function GetCheckNet() {
-	echo '{"code":"1"}';
+	if(isset($_GET['access_token'])) {
+        session_id($_GET['access_token']);
+        session_start();
+        $_SESSION['mobile'] = true;
+
+        if (!isset($_SESSION['uid'])) {
+            echo json_encode(array('session_status' => 'EXPIRED'));
+            session_regenerate_id();
+            exit();
+        }
+    } else {
+        echo json_encode(array('session_status' => 'NOT_LOGGED_IN'));
+        exit();
+    }
+    echo '{"session_status":"true"}';
 }
 ?>
