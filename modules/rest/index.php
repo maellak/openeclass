@@ -60,11 +60,7 @@ $app->map('/courses/:cid/forums/:fid/topics/:tid/posts', PostPosts)->via('POST',
 //$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
 //$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
-$app->map('/courses/announcements/:aid/read', CheckAuth, function() use($app) {
-	$ann_id = $_POST['aid'];
-	echo $aid;
-	postReadCourses($ann_id);
-  })->via('POST', 'OPTIONS');
+$app->map('/courses/announcements/:aid/read', CheckAuth, PostReadCourses)->via('POST', 'OPTIONS');
 $app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
 $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); });
