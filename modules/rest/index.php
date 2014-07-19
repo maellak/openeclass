@@ -55,15 +55,20 @@ $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums', GetForums)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics', GetTopics)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics', PostTopic)->via('POST', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics/:tid/posts', CheckAuth, GetPosts)->via('GET', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics/:tid/posts', CheckAuth, PostPosts)->via('POST', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics/:tid/posts', GetPosts)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics/:tid/posts', PostPosts)->via('POST', 'OPTIONS');
-//$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
-//$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
+$app->map('/courses/:cid/forums', CheckAuth, GetForums)->via('GET', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics', CheckAuth, GetTopics)->via('GET', 'OPTIONS');
+$app->map('/courses/:cid/forums/:fid/topics', CheckAuth, PostTopic)->via('POST', 'OPTIONS');
 $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
+$app->map('/enrollCourse', PostEnrollCourse)->via('POST', 'OPTIONS');
+$app->map('/login/status', GetCheckNet)->via('GET', 'OPTIONS');
 $app->map('/courses/announcements/:aid/read', CheckAuth, function() use($app) {
-	$ann_id = $_POST['aid'];
-	echo $aid;
-	postReadCourses($ann_id);
+  $ann_id = $_POST['aid'];
+  echo $aid;
+  postReadCourses($ann_id);
   })->via('POST', 'OPTIONS');
 $app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
