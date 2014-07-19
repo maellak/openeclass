@@ -37,8 +37,6 @@ $app->map('/courses/:cid/forums/:fid/topics', CheckAuth, GetTopics)->via('GET', 
 $app->map('/courses/:cid/forums/:fid/topics', CheckAuth, PostTopic)->via('POST', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics/:tid/posts', CheckAuth, GetPosts)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics/:tid/posts', CheckAuth, PostPosts)->via('POST', 'OPTIONS');
-//$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
-//$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
 $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); });
 

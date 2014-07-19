@@ -62,7 +62,6 @@ function GetPosts($cid, $fid, $tid) {
 	$sql = 'SELECT * FROM forum_post WHERE topic_id = '.$tid;
 	$database->queryFunc($sql, function($row)use (&$posts) {$posts[] = $row;});
 	echo json_encode($posts);
-	
 }
 
 function PostPosts($cid, $fid, $tid) {
