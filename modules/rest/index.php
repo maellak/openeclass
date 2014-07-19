@@ -1,4 +1,9 @@
 <?php
+ini_set("session.use_cookies",0);
+ini_set("session.use_only_cookies",0);
+ini_set("session.use_trans_sid",1); # Forgot this one!
+ini_set("session.name",'access_token');
+
 define('RESPONSE_FAILED', json_encode(array('status' => 'FAILED')));
 
 $_POST = json_decode(file_get_contents('php://input'), true);
