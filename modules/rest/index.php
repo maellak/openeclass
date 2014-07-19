@@ -52,16 +52,16 @@ $app->map('/courses/announcements' ,CheckAuth, GetAllAnn)->via('GET', 'OPTIONS')
 
 require_once (__DIR__.'/enrolled_courses.php');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
+$app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
+$app->map('/courses/:cid/forums', CheckAuth, GetForums)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics/:tid/posts', CheckAuth, GetPosts)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics/:tid/posts', CheckAuth, PostPosts)->via('POST', 'OPTIONS');
-$app->map('/courses/:cid/forums', CheckAuth, GetForums)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics', CheckAuth, GetTopics)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/forums/:fid/topics', CheckAuth, PostTopic)->via('POST', 'OPTIONS');
 $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
 $app->map('/enrollcourse', CheckAuth, PostEnrollCourse)->via('POST', 'OPTIONS');
 $app->map('/login/status', GetCheckNet)->via('GET', 'OPTIONS');
 $app->map('/courses/announcements/:aid/read', CheckAuth, PostReadAnnouncements)->via('POST', 'OPTIONS');
-$app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 // 404 not found
 $app->notFound(function () { echo json_encode(array('status' => 'NOT_FOUND')); });
 
