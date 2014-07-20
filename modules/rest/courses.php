@@ -89,7 +89,7 @@ function DeleteCourses($cid) {
 	$database = Database::get();
 	$database -> queryFunc("SELECT id FROM user WHERE username='$uname'", function($row) use(&$uid) {$uid = $row->id;});
 	$here = false;
-	$database -> queryFunc("SELECT course_id, user_id FROM course_user", function($row)
+	$database -> queryFunc("SELECT course_id, user_id FROM course_user", function($row) use($uid, $cid)
 				{
 				   if($row->user_id == $uid && $row->course_id == $cid)
 					$here = true;
