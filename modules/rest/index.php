@@ -33,6 +33,13 @@ $_POST = json_decode(file_get_contents('php://input'), true);
     }
 
 require __DIR__ . '/../../include/Slim/Slim.php';
+require_once (__DIR__.'/../../include/init.php');
+require_once (__DIR__.'/auth.php');
+require_once (__DIR__.'/courses.php');
+require_once (__DIR__.'/ann.php');
+//require_once(__DIR__.'/ann.php');
+require_once (__DIR__.'/enrolled_courses.php');
+require_once (__DIR__.'/docu.php'); 
 \Slim\Slim::registerAutoloader();
 
 $app = new \Slim\Slim();
@@ -40,22 +47,15 @@ $app->config('debug', true);
 error_reporting(E_ALL ^ E_DEPRECATED ^ E_NOTICE ^ E_WARNING);
 
 // Setup the REST routes
-require_once (__DIR__.'/../../include/init.php');
-require_once (__DIR__.'/auth.php');
+
 $app->map('/login', RequestAccessToken)->via('POST', 'OPTIONS');
-require_once (__DIR__.'/courses.php');
-
-
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
-require_once (__DIR__.'/ann.php');
 $app->map('/courses/:cid/announcements',CheckAuth,GetAnn)->via('GET', 'OPTIONS');
-require_once(__DIR__.'/ann.php');
 $app->map('/courses/announcements' ,CheckAuth, GetAllAnn)->via('GET', 'OPTIONS');
+
 //$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
 //$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 
-
-require_once (__DIR__.'/enrolled_courses.php');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 $app->map('/courses/:cid/forums', CheckAuth, GetForums)->via('GET', 'OPTIONS');
@@ -66,9 +66,7 @@ $app->map('/courses/:cid/forums/:fid/topics', CheckAuth, PostTopic)->via('POST',
 $app->map('/enrolledcourses', GetEnrolledCourses)->via('GET', 'OPTIONS');
 $app->map('/enrollcourse', CheckAuth, PostEnrollCourse)->via('POST', 'OPTIONS');
 $app->map('/login/status', GetCheckNet)->via('GET', 'OPTIONS');
-$app->map('/courses/announcements/:aid/read', CheckAuth, PostReadAnnouncements)->via('POST', 'OPTIONS');
-
-require_once (__DIR__.'/docu.php');   
+$app->map('/courses/announcements/:aid/read', CheckAuth, PostReadAnnouncements)->via('POST', 'OPTIONS');  
 $app->map('/courses/:cid/documents' ,CheckAuth, GetDoc)->via('GET','OPTIONS');
 $app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 
