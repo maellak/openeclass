@@ -233,8 +233,8 @@ Database::get()->query("CREATE TABLE user (
 Database::get()->query("CREATE TABLE announcement_users(
   user_id int(11) NOT NULL,
   ann_id int(11) NOT NULL,
-  time_stamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) $charset_spec");
+  time_stamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY_KEY(user_id,ann_id)) $charset_spec");
 
 
 Database::get()->query("CREATE TABLE admin (
