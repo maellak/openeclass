@@ -20,7 +20,6 @@ function PostReadAnnouncements($aid){
 }
 
 function GetAnn($cid) {
-	$uid = 
 	$flag = 0;	
 	$i = 0;	
 	$error=array( 'error'=>0);
@@ -35,7 +34,6 @@ function GetAnn($cid) {
 		if($annou!=null)
 		{ 
 			echo json_encode($annou);
-			echo json_encode($error);
 		}
 		else 
 		{
@@ -78,7 +76,7 @@ function GetAllAnn(){
 	if ($u_annou!=null)
 	{	
 		echo json_encode($u_annou);		
-		echo json_encode($error);
+		
 	}
 	else
 	{

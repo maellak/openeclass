@@ -42,6 +42,7 @@ Database::core()->query("CREATE DATABASE `$mysqlMainDb` CHARACTER SET utf8");
 Database::get()->query("DROP TABLE IF EXISTS admin");
 Database::get()->query("DROP TABLE IF EXISTS admin_announcements");
 Database::get()->query("DROP TABLE IF EXISTS agenda");
+Database::get()->query("DROP TABLE IF EXISTS announcement_users");
 Database::get()->query("DROP TABLE IF EXISTS announcements");
 Database::get()->query("DROP TABLE IF EXISTS auth");
 Database::get()->query("DROP TABLE IF EXISTS course");
@@ -97,6 +98,7 @@ Database::get()->query("CREATE TABLE IF NOT EXISTS `log_archive` (
   `ts` datetime NOT NULL,
   `ip` varchar(45) NOT NULL default 0,
   PRIMARY KEY  (`id`)) $charset_spec");
+
 
 #
 # table `announcement`
@@ -222,6 +224,18 @@ Database::get()->query("CREATE TABLE user (
       am_public TINYINT(1) NOT NULL DEFAULT 0,
       whitelist TEXT NOT NULL,
       last_passreminder DATETIME DEFAULT NULL) $charset_spec");
+
+
+#
+#table `announcement_users`
+#
+
+Database::get()->query("CREATE TABLE announcement_users(
+  user_id int(11) NOT NULL,
+  ann_id int(11) NOT NULL,
+  time_stamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) $charset_spec");
+
 
 Database::get()->query("CREATE TABLE admin (
       user_id INT(11) NOT NULL PRIMARY KEY,
