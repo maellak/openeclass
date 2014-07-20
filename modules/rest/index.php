@@ -37,7 +37,6 @@ require_once (__DIR__.'/../../include/init.php');
 require_once (__DIR__.'/auth.php');
 require_once (__DIR__.'/courses.php');
 require_once (__DIR__.'/ann.php');
-//require_once(__DIR__.'/ann.php');
 require_once (__DIR__.'/enrolled_courses.php');
 require_once (__DIR__.'/docu.php'); 
 \Slim\Slim::registerAutoloader();
@@ -47,15 +46,10 @@ $app->config('debug', true);
 error_reporting(E_ALL ^ E_DEPRECATED ^ E_NOTICE ^ E_WARNING);
 
 // Setup the REST routes
-
 $app->map('/login', RequestAccessToken)->via('POST', 'OPTIONS');
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid/announcements',CheckAuth,GetAnn)->via('GET', 'OPTIONS');
 $app->map('/courses/announcements' ,CheckAuth, GetAllAnn)->via('GET', 'OPTIONS');
-
-//$app->map('/courses', CheckAuth, PostCourses)->via('POST', 'OPTIONS');
-//$app->map('/courses', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
-
 $app->map('/courses', GetCourses)->via('GET', 'OPTIONS');
 $app->map('/courses/:cid', CheckAuth, DeleteCourses)->via('DELETE', 'OPTIONS');
 $app->map('/courses/:cid/forums', CheckAuth, GetForums)->via('GET', 'OPTIONS');

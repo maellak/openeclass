@@ -6,7 +6,7 @@ function PostReadAnnouncements($aid){
     $database = Database::get();
     $database -> queryFunc("SELECT id FROM user WHERE username='$uname'", function($row) use(&$uid) { $uid = $row->id;});
     $here = false;
-    $database -> queryFunc("SELECT user_id, ann_id FROM announcement_users", function($row)
+    $database -> queryFunc("SELECT user_id, ann_id FROM announcement_users", function($row) use(&$here)
 				{
 				   if($row->user_id == $uid && $row->ann_id == $aid)
 					$here = true;
@@ -15,6 +15,8 @@ function PostReadAnnouncements($aid){
         $query = "INSERT INTO announcement_users (user_id, ann_id) VALUES ($uid, $aid)";
         $database -> querySingle($query);
     }
+    else
+	echo json_encode(array("error" => "ALREADY_READ"));
 }
 
 function GetAnn($cid) {
