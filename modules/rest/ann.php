@@ -6,7 +6,7 @@ function PostReadAnnouncements($aid){
     $database = Database::get();
     $database -> queryFunc("SELECT id FROM user WHERE username='$uname'", function($row) use(&$uid) { $uid = $row->id;});
     $here = false;
-    $database -> queryFunc("SELECT user_id, ann_id FROM announcement_users", function($row) use(&$here)
+    $database -> queryFunc("SELECT user_id, ann_id FROM announcement_users", function($row) use(&$here, $uid, $aid)
 				{
 				   if($row->user_id == $uid && $row->ann_id == $aid)
 					$here = true;
