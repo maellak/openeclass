@@ -26,7 +26,8 @@ function GetDoc($cid) {
 			$tit=$document[$i]['title'];
 			$tcreator=$document[$i]['creator'];
 			$tformat=$document[$i]['format'];
-			$tcom=$document[$i]['comment'];	
+			$tcom=$document[$i]['comment'];
+                        if($tit == '') { continue; }
 			$document[$i]=array('id'=>$tid,'title'=>$tit,'date'=>$tdate,'filename'=>$tfilename,'path'=>'courses/'.$temp_code.'/'.'document'.$tpath,'creator'=>$tcreator,'format'=>$tformat,'comment'=>$tcom);
 			}
 		}
