@@ -22,10 +22,6 @@
  * @file index.php
  * @brief main exercise module script
  */
- $TBL_EXERCISE_QUESTION = 'exercise_with_questions';
- $TBL_EXERCISE = 'exercise';
- $TBL_QUESTION = 'exercise_question';
- $TBL_RECORDS = 'exercise_user_record';
 
 require_once 'exercise.class.php';
 require_once 'question.class.php';
@@ -98,11 +94,11 @@ if ($is_editor) {
                 case 'delete': // deletes an exercise
                     $objExerciseTmp->delete();
                     $eidx->remove($exerciseId);
-                    Session::set_flashdata($langPurgeExerciseSuccess, 'alert1');
+                    Session::Messages($langPurgeExerciseSuccess, 'success');
                     redirect_to_home_page('modules/exercise/index.php?course='.$course_code);
                 case 'purge': // purge exercise results
                     $objExerciseTmp->purge();
-                    Session::set_flashdata($langPurgeExerciseResultsSuccess, 'alert1');
+                    Session::Messages($langPurgeExerciseResultsSuccess);
                     redirect_to_home_page('modules/exercise/index.php?course='.$course_code);
                 case 'enable':  // enables an exercise
                     $objExerciseTmp->enable();
@@ -137,23 +133,22 @@ if ($is_editor) {
 	$qnum = Database::get()->querySingle("SELECT COUNT(*) as count FROM exercise WHERE course_id = ?d AND active = 1", $course_id)->count;
 }
 $paused_exercises = Database::get()->queryArray("SELECT eid, title FROM exercise_user_record a "
-        . "JOIN exercise b ON a.eid = b.id WHERE a.uid = ?d "
-        . "AND a.attempt_status = ?d AND b.course_id = ?d", $uid, ATTEMPT_PAUSED, $course_id);
+        . "JOIN exercise b ON a.eid = b.id WHERE b.course_id = ?d AND a.uid = ?d "
+        . "AND a.attempt_status = ?d", $course_id, $uid, ATTEMPT_PAUSED);
 $num_of_ex = $qnum; //Getting number of all active exercises of the course
 $nbrExercises = count($result); //Getting number of limited (offset and limit) exercises of the course (active and inactive)
 if (count($paused_exercises) > 0) {
-    foreach ($paused_exercises as $row) {
-        $tool_content .="<div class='info'>$langTemporarySaveNotice $row->title. <a href='exercise_submit.php?course=$course_code&exerciseId=$row->eid'>($langCont)</a></div>";
+    foreach ($paused_exercises as $row) {       
+        $paused_exercises_ids[] = $row->eid;        
+        $tool_content .="<div class='info'>$langTemporarySaveNotice " . q($row->title) . ". <a href='exercise_submit.php?course=$course_code&exerciseId=$row->eid'>($langCont)</a></div>";
     }
 }
 if ($is_editor) {
     $pending_exercises = Database::get()->queryArray("SELECT eid, title FROM exercise_user_record a "
-            . "JOIN exercise b ON a.eid = b.id WHERE a.uid = ?d "
-            . "AND a.attempt_status = ?d AND b.course_id = ?d", $uid, ATTEMPT_PENDING, $course_id);
+            . "JOIN exercise b ON a.eid = b.id WHERE a.attempt_status = ?d AND b.course_id = ?d", ATTEMPT_PENDING, $course_id);
     if (count($pending_exercises) > 0) {
-        foreach ($pending_exercises as $row) {
-
-            $tool_content .="<div class='info'>Υπάρχουν υποβολές προς βαθμολόγηση στην άσκηση $row->title. (<a href='results.php?course=$course_code&exerciseId=$row->eid&status=2'>Εμφάνιση</a>)</div>";
+        foreach ($pending_exercises as $row) {           
+            $tool_content .="<div class='info'>$langPendingExercise " . q($row->title) . ". (<a href='results.php?course=$course_code&exerciseId=$row->eid&status=2'>$langView</a>)</div>";
         }
     }    
     $tool_content .= "<div align='left' id='operations_container'>
@@ -230,7 +225,7 @@ if (!$nbrExercises) {
             }
             $tool_content .= "<td width='16'>
 				<img src='$themeimg/arrow.png' alt='' /></td>
-				<td><a href='exercise_submit.php?course=$course_code&amp;exerciseId={$row->id}'>" . q($row->title) . "</a>$descr</td>";
+				<td><a ".(isset($paused_exercises_ids) && in_array($row->id,$paused_exercises_ids)?'class="paused_exercise"':'')." href='exercise_submit.php?course=$course_code&amp;exerciseId={$row->id}'>" . q($row->title) . "</a>$descr</td>";
             $eid = $row->id;
 			$NumOfResults = Database::get()->querySingle("SELECT COUNT(*) as count FROM exercise_user_record WHERE eid = ?d", $eid)->count;
 
@@ -305,7 +300,7 @@ if (!$nbrExercises) {
                                  <img src='$themeimg/arrow.png' alt='' />
                                  </td><td>" . q($row->title) . "&nbsp;&nbsp;(<font color='red'>$m[expired]</font>)";
             }
-            $tool_content .= "<br />$row->description</td><td class='smaller' align='center'>
+            $tool_content .= "<br />" . $row->description . "</td><td class='smaller' align='center'>
                                 " . nice_format(date("Y-m-d H:i", strtotime($row->start_date)), true) . " /
                                 " . nice_format(date("Y-m-d H:i", strtotime($row->end_date)), true) . "</td>";          														  
             if ($row->time_constraint > 0) {
@@ -344,4 +339,11 @@ if (!$nbrExercises) {
     $tool_content .= "</table>";
 }
 add_units_navigation(TRUE);
+$head_content .= "<script type='text/javascript'>
+    $(document).ready(function(){
+        $('.paused_exercise').click(function(){
+            return confirm('$langTemporarySaveNotice2');
+        });
+    });
+</script>";
 draw($tool_content, 2, null, $head_content);

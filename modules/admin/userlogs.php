@@ -26,7 +26,6 @@
  */
 $require_usermanage_user = true;
 require_once '../../include/baseTheme.php';
-require_once 'modules/admin/admin.inc.php';
 require_once 'include/log.php';
 require_once 'include/lib/hierarchy.class.php';
 require_once 'include/lib/user.class.php';
@@ -42,7 +41,36 @@ $navigation[] = array('url' => 'listusers.php', 'name' => $langListUsers);
 load_js('jquery');
 load_js('jquery-ui');
 load_js('tools.js');
+load_js('datatables');
+load_js('datatables_filtering_delay');
 load_js('jquery-ui-timepicker-addon.min.js');
+
+$head_content .= "<script type='text/javascript'>
+        $(document).ready(function() {
+            $('#log_results_table').DataTable ({                                
+                'sPaginationType': 'full_numbers',
+                'bAutoWidth': true,                
+                'oLanguage': {
+                   'sLengthMenu':   '$langDisplay _MENU_ $langResults2',
+                   'sZeroRecords':  '".$langNoResult."',
+                   'sInfo':         '$langDisplayed _START_ $langTill _END_ $langFrom2 _TOTAL_ $langTotalResults',
+                   'sInfoEmpty':    '$langDisplayed 0 $langTill 0 $langFrom2 0 $langResults2',
+                   'sInfoFiltered': '',
+                   'sInfoPostFix':  '',
+                   'sSearch':       '".$langSearch."',
+                   'sUrl':          '',
+                   'oPaginate': {
+                       'sFirst':    '&laquo;',
+                       'sPrevious': '&lsaquo;',
+                       'sNext':     '&rsaquo;',
+                       'sLast':     '&raquo;'
+                   }
+               }
+            }).fnSetFilteringDelay(1000);
+            $('.dataTables_filter input').attr('placeholder', '$langDetail');
+        });
+        </script>";
+
 
 $head_content .= '<script type="text/javascript">
         var platform_actions = ["-2", "' . LOG_PROFILE . '", "' . LOG_CREATE_COURSE . '", "' . LOG_DELETE_COURSE . '" , "' . LOG_MODIFY_COURSE . '"];
@@ -72,20 +100,18 @@ $u_date_end = isset($_GET['u_date_end']) ? $_GET['u_date_end'] : strftime('%Y-%m
 $logtype = isset($_GET['logtype']) ? intval($_GET['logtype']) : '0';
 $u_course_id = isset($_GET['u_course_id']) ? intval($_GET['u_course_id']) : '-1';
 $u_module_id = isset($_GET['u_module_id']) ? intval($_GET['u_module_id']) : '-1';
-$limit = isset($_GET['limit']) ? $_GET['limit'] : 0;
 
-if (isDepartmentAdmin())
+if (isDepartmentAdmin()) {
     validateUserNodes(intval($u), true);
+}
 
 // display logs
 if (isset($_GET['submit'])) {
     $log = new Log();
-    if ($logtype == -2) { // display system logging
-        $page_link = "&amp;logtype=$logtype&amp;u_date_start=$u_date_start&amp;u_date_end=$u_date_end&amp;u_module_id=$u_module_id&amp;u=$u&amp;submit=1";
-        $log->display(0, $u, 0, $logtype, $u_date_start, $u_date_end, $_SERVER['SCRIPT_NAME'], $limit, $page_link);
-    } else { // display course modules logging
-        $page_link = "&amp;logtype=$logtype&amp;u_date_start=$u_date_start&amp;u_date_end=$u_date_end&amp;u_module_id=$u_module_id&amp;u=$u&amp;submit=1";
-        $log->display($u_course_id, $u, $u_module_id, $logtype, $u_date_start, $u_date_end, $_SERVER['SCRIPT_NAME'], $limit, $page_link);
+    if ($logtype == -2) { // display system logging 
+        $log->display(0, $u, 0, $logtype, $u_date_start, $u_date_end, $_SERVER['SCRIPT_NAME']);
+    } else { // display course modules logging        
+        $log->display($u_course_id, $u, $u_module_id, $logtype, $u_date_start, $u_date_end, $_SERVER['SCRIPT_NAME']);
     }
 }
 
@@ -97,10 +123,12 @@ Database::get()->queryFunc("SELECT LEFT(title, 1) AS first_letter FROM course
     $letterlinks .= "<a href='$_SERVER[SCRIPT_NAME]?first=" . urlencode($first_letter) . "'>" . q($first_letter) . '</a> ';
 });
 
+$terms = array();
 if (isset($_GET['first'])) {
     $firstletter = $_GET['first'];
     $qry = "SELECT id, title FROM course
-                WHERE LEFT(title,1) = " . quote($firstletter);
+                WHERE LEFT(title,1) = ?s";
+    $terms = $firstletter;
 } else {
     $qry = "SELECT id, title FROM course";
 }
@@ -109,7 +137,7 @@ $cours_opts[-1] = $langAllCourses;
 Database::get()->queryFunc($qry
         , function ($row) use(&$cours_opts) {
     $cours_opts[$row->id] = $row->title;
-});
+}, $terms);
 
 // --------------------------------------
 // display form
@@ -135,9 +163,9 @@ $tool_content .= "<form method='get' action='$_SERVER[SCRIPT_NAME]'>
       <legend>$langUserLog</legend>
       <table class='tbl'>
         <tr><th width='220' class='left'>$langStartDate</th>
-            <td><input type='text' name = 'u_date_start' value = '$u_date_start'></td></tr>
+            <td><input type='text' name = 'u_date_start' value = '" . q($u_date_start) . "'></td></tr>
         <tr><th class='left'>$langEndDate</th>
-            <td><input type='text' name = 'u_date_end' value = '$u_date_end'></td></tr>
+            <td><input type='text' name = 'u_date_end' value = '" . q($u_date_end) . "'></td></tr>
         <tr><th class='left'>$langLogTypes :</th>
             <td>" . selection($log_types, 'logtype', $logtype) . "</td></tr>
         <tr class='course'><th class='left'>$langFirstLetterCourse</th>

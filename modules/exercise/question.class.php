@@ -62,15 +62,12 @@ if (!class_exists('Question')):
          * @return - boolean - true if question exists, otherwise false
          */
         function read($id) {
-            global $TBL_QUESTION, $TBL_EXERCISE_QUESTION, $mysqlMainDb, $course_id;
+            global $course_id;
 
-            mysql_select_db($mysqlMainDb);
-            $sql = "SELECT question, description, weight, q_position, type
-                        FROM `$TBL_QUESTION` WHERE course_id = $course_id AND id = '$id'";
-            $result = db_query($sql) or die("Error : SELECT in file " . __FILE__ . " at line " . __LINE__);
-
+            $object = Database::get()->querySingle("SELECT question, description, weight, q_position, type
+                        FROM `exercise_question` WHERE course_id = ?d AND id = ?d", $course_id, $id);
             // if the question has been found
-            if ($object = mysql_fetch_object($result)) {
+            if ($object) {
                 $this->id = $id;
                 $this->question = $object->question;
                 $this->description = $object->description;
@@ -78,11 +75,10 @@ if (!class_exists('Question')):
                 $this->position = $object->q_position;
                 $this->type = $object->type;
 
-                $sql = "SELECT exercise_id FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = '$id'";
-                $result = db_query($sql) or die("Error : SELECT in file " . __FILE__ . " at line " . __LINE__);
+                $result = Database::get()->queryArray("SELECT exercise_id FROM `exercise_with_questions` WHERE question_id = ?d", $id);
                 // fills the array with the exercises which this question is in
-                while ($object = mysql_fetch_object($result)) {
-                    $this->exerciseList[] = $object->exercise_id;
+                foreach ($result as $row) {
+                    $this->exerciseList[] = $row->exercise_id;
                 }
 
                 return true;
@@ -151,7 +147,27 @@ if (!class_exists('Question')):
         function selectType() {
             return $this->type;
         }
-
+        /**
+         * returns the relative verbal answer type
+         */
+        function selectTypeWord($answerTypeId) {
+            global $langUniqueSelect, $langMultipleSelect, $langFillBlanks, 
+                   $langMatching, $langTrueFalse, $langFreeText;
+            switch ($answerTypeId) {
+                case UNIQUE_ANSWER:
+                    return $langUniqueSelect;
+                case MULTIPLE_ANSWER:
+                    return $langMultipleSelect;
+                case FILL_IN_BLANKS:
+                    return $langFillBlanks;
+                case MATCHING:
+                    return $langMatching;
+                case TRUE_FALSE:    
+                    return $langTrueFalse;
+                case FREE_TEXT:    
+                    return $langFreeText;
+            }            
+        }
         /**
          * returns the array with the exercise ID list
          *
@@ -222,16 +238,12 @@ if (!class_exists('Question')):
          * @param - integer $type - answer type
          */
         function updateType($type) {
-            global $TBL_ANSWER, $mysqlMainDb;
-
             // if we really change the type
             if ($type != $this->type) {
                 // if we don't change from "unique answer" to "multiple answers" (or conversely)
                 if (!in_array($this->type, array(UNIQUE_ANSWER, MULTIPLE_ANSWER)) || !in_array($type, array(UNIQUE_ANSWER, MULTIPLE_ANSWER))) {
                     // removes old answers
-                    mysql_select_db($mysqlMainDb);
-                    $sql = "DELETE FROM `$TBL_ANSWER` WHERE question_id='" . $this->id . "'";
-                    db_query($sql) or die("Error : DELETE in file " . __FILE__ . " at line " . __LINE__);
+                    Database::get()->query("DELETE FROM `exercise_answer` WHERE question_id = ?d", $this->id);
                 }
 
                 $this->type = $type;
@@ -320,31 +332,25 @@ if (!class_exists('Question')):
          * @param - integer $exerciseId - exercise ID if saving in an exercise
          */
         function save($exerciseId = 0) {
-            global $TBL_QUESTION, $mysqlMainDb, $course_id;
-
-            mysql_select_db($mysqlMainDb);
+            global $course_id;
 
             $id = $this->id;
-            $question = addslashes($this->question);
-            $description = addslashes($this->description);
+            $question = $this->question;
+            $description = $this->description;
             $weighting = $this->weighting;
             $position = $this->position;
             $type = $this->type;
 
             // question already exists
             if ($id) {
-                $sql = "UPDATE `$TBL_QUESTION` SET question = '$question', description = '$description',
-					weight = '$weighting', q_position='$position',
-					type='$type'
-					WHERE course_id = $course_id AND id='$id'";
-                db_query($sql) or die("Error : UPDATE in file " . __FILE__ . " at line " . __LINE__);
+                Database::get()->query("UPDATE `exercise_question` SET question = ?s, description = ?s,
+					weight = ?f, q_position = ?d, type = ?d
+					WHERE course_id = $course_id AND id='$id'", $question, $description, $weighting, $position, $type);
             }
             // creates a new question
             else {
-                $sql = "INSERT INTO `$TBL_QUESTION` (course_id, question, description, weight, q_position, type)
-				VALUES ($course_id, '$question', '$description', '$weighting', '$position', '$type')";
-                db_query($sql) or die("Error : INSERT in file " . __FILE__ . " at line " . __LINE__);
-                $this->id = mysql_insert_id();
+                $this->id = Database::get()->query("INSERT INTO `exercise_question` (course_id, question, description, weight, q_position, type)
+				VALUES (?d, ?s, ?s, ?f, ?d, ?d)", $course_id, $question, $description, $weighting, $position, $type)->lastInsertID;
             }
 
             // if the question is created in an exercise
@@ -361,16 +367,12 @@ if (!class_exists('Question')):
          * @param - integer $exerciseId - exercise ID
          */
         function addToList($exerciseId) {
-            global $TBL_EXERCISE_QUESTION;
-
             $id = $this->id;
 
             // checks if the exercise ID is not in the list
             if (!in_array($exerciseId, $this->exerciseList)) {
                 $this->exerciseList[] = $exerciseId;
-                //echo "<br>-".$TBL_EXERCISE_QUESTION."<br>-".$id."<br>-".$exerciseId."<br>";
-                $sql = "INSERT INTO `$TBL_EXERCISE_QUESTION` (question_id, exercise_id) VALUES ('$id', '$exerciseId')";
-                db_query($sql) or die("Error : INSERT in file " . __FILE__ . " at line " . __LINE__);
+                Database::get()->query("INSERT INTO `exercise_with_questions` (question_id, exercise_id) VALUES (?d, ?d)", $id, $exerciseId);
             }
         }
 
@@ -382,8 +384,6 @@ if (!class_exists('Question')):
          * @return - boolean - true if removed, otherwise false
          */
         function removeFromList($exerciseId) {
-            global $TBL_EXERCISE_QUESTION;
-
             $id = $this->id;
 
             // searches the position of the exercise ID in the list
@@ -395,9 +395,7 @@ if (!class_exists('Question')):
             } else {
                 // deletes the position in the array containing the wanted exercise ID
                 unset($this->exerciseList[$pos]);
-
-                $sql = "DELETE FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = '$id' AND exercise_id = '$exerciseId'";
-                db_query($sql);
+                Database::get()->query("DELETE FROM `exercise_with_questions` WHERE question_id = ?d AND exercise_id = ?d", $id, $exerciseId);
                 return true;
             }
         }
@@ -411,19 +409,16 @@ if (!class_exists('Question')):
          * @param - integer $deleteFromEx - exercise ID if the question is only removed from one exercise
          */
         function delete($deleteFromEx = 0) {
-            global $TBL_EXERCISE_QUESTION, $TBL_QUESTION, $TBL_ANSWER, $course_id;
+            global $course_id;
 
             $id = $this->id;
 
             // if the question must be removed from all exercises
             //if($deleteFromEx === 0)
             if (!$deleteFromEx) {
-                $sql = "DELETE FROM `$TBL_EXERCISE_QUESTION` WHERE question_id = '$id'";
-                db_query($sql);
-                $sql = "DELETE FROM `$TBL_QUESTION` WHERE course_id = $course_id AND id = '$id'";
-                db_query($sql);
-                $sql = "DELETE FROM `$TBL_ANSWER` WHERE question_id = '$id'";
-                db_query($sql);
+                Database::get()->query("DELETE FROM `exercise_with_questions` WHERE question_id = ?d", $id);
+                Database::get()->query("DELETE FROM `exercise_question` WHERE course_id = ?d AND id = ?d", $course_id, $id);
+                Database::get()->query("DELETE FROM `exercise_answer` WHERE question_id = ?d", $id);
                 $this->removePicture();
                 // resets the object
                 $this->Question();
@@ -465,19 +460,17 @@ if (!class_exists('Question')):
          * @return - integer - ID of the new question
          */
         function duplicate() {
-            global $TBL_QUESTION, $picturePath, $course_id;
+            global $course_id;
 
-            $question = addslashes($this->question);
-            $description = addslashes($this->description);
+            $question = $this->question;
+            $description = $this->description;
             $weighting = $this->weighting;
             $position = $this->position;
             $type = $this->type;
 
-            $sql = "INSERT INTO `$TBL_QUESTION` (course_id, question, description, weight, q_position, type)
-						VALUES ($course_id, '$question', '$description', '$weighting', '$position', '$type')";
-            db_query($sql);
+            $id = Database::get()->query("INSERT INTO `exercise_question` (course_id, question, description, weight, q_position, type)
+						VALUES (?d, ?s, ?s, ?f, ?d, ?d)", $course_id, $question, $description, $weighting, $position, $type)->lastInsertID;
 
-            $id = mysql_insert_id();
             // duplicates the picture
             $this->exportPicture($id);
 

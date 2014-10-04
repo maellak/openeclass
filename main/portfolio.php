@@ -38,10 +38,30 @@ require_once 'include/lib/fileUploadLib.inc.php';
 $nameTools = $langWelcomeToPortfolio;
 
 ModalBoxHelper::loadModalBox();
-
+load_js('datatables');
 // jquery is already loaded via index.php and modal box
 $head_content .= "<script type='text/javascript'>
 jQuery(document).ready(function() {
+  jQuery('#portfolio_lessons').dataTable({
+    'bLengthChange': false,
+    'bSort' : false,
+    'oLanguage': {
+           'sLengthMenu':   '$langDisplay _MENU_ $langResults2',
+           'sZeroRecords':  '".$langNoResult."',
+           'sInfo':         '$langDisplayed _START_ $langTill _END_ $langFrom2 _TOTAL_ $langTotalResults',
+           'sInfoEmpty':    '$langDisplayed 0 $langTill 0 $langFrom2 0 $langResults2',
+           'sInfoFiltered': '',
+           'sInfoPostFix':  '',
+           'sSearch':       '".$langSearch."',
+           'sUrl':          '',
+           'oPaginate': {
+               'sFirst':    '&laquo;',
+               'sPrevious': '&lsaquo;',
+               'sNext':     '&rsaquo;',
+               'sLast':     '&raquo;'
+           }
+       }    
+  });
   jQuery('.panel_content').hide();
    jQuery('.panel_content_open').show();
   jQuery('.panel_title').click(function()
@@ -55,15 +75,22 @@ jQuery(document).ready(function() {
     }
   });
 });
-</script>";
+".
+'function show_month(day,month,year){
+    $.get("calendar_data.php",{caltype:"small", day:day, month: month, year: year}, function(data){$("#smallcal").html(data);});    
+}
+</script>';
 
 require_once 'perso.php';
 
 $tool_content = "
 <div class='panel_left'>
 <p class='panel_title'>{%LANG_MY_PERSO_LESSONS%}</p>
-<div class='panel_content_open'>{%LESSON_CONTENT%}</div>
-</div>
+<div class='panel_content_open'>{%LESSON_CONTENT%}</div>";
+
+//<p class='panel_title'>{%LANG_MY_PERSONAL_CALENDAR%}</p>
+//<div id='smallcal' class='panel_content_open'>{%PERSONAL_CALENDAR_CONTENT%}</div>
+$tool_content .= "</div>
 
 <div class='panel_right'>
 <p class='panel_title'>{%LANG_MY_PERSO_ANNOUNCEMENTS%}</p>
@@ -80,6 +107,7 @@ $tool_content = "
 
 <p class='panel_title'>{%LANG_PERSO_FORUM%}</p>
 <div class='panel_content'>{%FORUM_CONTENT%}</div>
+
 
 </div>";
 

@@ -21,7 +21,7 @@
  * Standard header included by all eClass files
  * Defines standard functions and validates variables
  */
-define('ECLASS_VERSION', '2.99');
+define('ECLASS_VERSION', '3.0');
 
 // better performance while downloading very large files
 define('PCLZIP_TEMPORARY_FILE_RATIO', 0.2);
@@ -83,9 +83,18 @@ define('MODULE_ID_CONTACT', 29);
 define('MODULE_ID_GRADEBOOK', 32);
 define('MODULE_ID_GRADEBOOKTOTAL', 33);
 define('MODULE_ID_ATTENDANCE', 30);
-define('MODULE_ID_SETTINGS', 31);
+define('MODULE_ID_BLOG', 37);
+define('MODULE_ID_COMMENTS', 38);
+define('MODULE_ID_RATING', 39);
 define('MODULE_ID_BBB', 34);
+define('MODULE_ID_WEEKS', 41);
+define('MODULE_ID_SHARING', 40);
 
+// user modules
+define('MODULE_ID_SETTINGS', 31);
+define('MODULE_ID_NOTES', 35);
+define('MODULE_ID_PERSONALCALENDAR',36);
+define('MODULE_ID_ADMINCALENDAR',37);
 
 // exercise answer types
 define('UNIQUE_ANSWER', 1);
@@ -115,141 +124,14 @@ define('MAX_IDLE_TIME', 10);
 
 require_once 'lib/session.class.php';
 
-/*
-  Debug MySQL queries
-  -------------------------------------------------------------------------
-  it is better to use the function below instead of the usual mysql_query()
-  first argument: the query
-  second argument (optional) : the name of the data base
-  If error happens just display the error and the code
-  -----------------------------------------------------------------------
- */
-
-function db_query($sql, $db_name = null) {
-    global $mysqlServer, $mysqlUser, $mysqlPassword;
-
-    if (!isset($db_name)) {
-        $db_name = $GLOBALS['mysqlMainDb'];
-    }
-    @mysql_connect($GLOBALS['mysqlServer'], $GLOBALS['mysqlUser'], $GLOBALS['mysqlPassword']);
-    mysql_select_db($db_name);
-    mysql_query("SET NAMES utf8");
-
-    if (defined('DEBUG_MYSQL') and DEBUG_MYSQL === 'FULL') {
-        $f_sql = q(str_replace("\t", '        ', $sql));
-        $start_time = microtime(true);
-    }
-    $r = mysql_query($sql);
-    $printed_sql = false;
-    if (defined('DEBUG_MYSQL') and DEBUG_MYSQL === 'FULL') {
-        echo '<hr /><pre>', q($f_sql), '</pre><i>runtime: ',
-        sprintf('%0.3f', 1000 * (microtime(true) - $start_time)),
-        'ms</i><hr />';
-        $printed_sql = true;
-    }
-    if (mysql_errno()) {
-        if ((isset($GLOBALS['is_admin']) and $GLOBALS['is_admin']) or
-                (defined('DEBUG_MYSQL') and DEBUG_MYSQL)) {
-            echo '<hr />' . mysql_errno() . ': ' . q(mysql_error());
-            if (!$printed_sql) {
-                echo '<br /><pre>', q($sql), '</pre><hr />';
-            }
-        } else {
-            echo '<hr />Database error<hr />';
-        }
-    }
-    return $r;
-}
-
 // Check if a string looks like a valid email address
 function email_seems_valid($email) {
     return (preg_match('#^[0-9a-z_\.\+-]+@([0-9a-z][0-9a-z-]*[0-9a-z]\.)+[a-z]{2,}$#i', $email) and !preg_match('#@.*--#', $email));
 }
 
-// Eclass SQL query wrapper returning only a single result value.
-// Useful in some cases because, it avoid nested arrays of results.
-function db_query_get_single_value($sqlQuery, $db = false) {
-    $result = db_query($sqlQuery, $db);
-
-    if ($result) {
-        list($value) = mysql_fetch_row($result);
-        mysql_free_result($result);
-        return $value;
-    } else {
-        return false;
-    }
-}
-
-// Claroline SQL query wrapper returning only the first row of the result
-// Useful in some cases because, it avoid nested arrays of results.
-function db_query_get_single_row($sqlQuery, $db = false) {
-    $result = db_query($sqlQuery, $db);
-
-    if ($result) {
-        $row = mysql_fetch_array($result, MYSQL_ASSOC);
-        mysql_free_result($result);
-        return $row;
-    } else {
-        return false;
-    }
-}
-
-// Eclass SQL fetch array returning all the result rows
-// in an associative array. Compared to the PHP mysql_fetch_array(),
-// it proceeds in a single pass.
-function db_fetch_all($sqlResultHandler, $resultType = MYSQL_ASSOC) {
-    $rowList = array();
-
-    while ($row = mysql_fetch_array($sqlResultHandler, $resultType)) {
-        $rowList [] = $row;
-    }
-
-    mysql_free_result($sqlResultHandler);
-
-    return $rowList;
-}
-
-// Eclass SQL query and fetch array wrapper. It returns all the result rows
-// in an associative array.
-function db_query_fetch_all($sqlQuery, $db = false) {
-    $result = db_query($sqlQuery, $db);
-
-    if ($result)
-        return db_fetch_all($result);
-    else
-        return false;
-}
-
 // ----------------------------------------------------------------------
 // for safety reasons use the functions below
 // ---------------------------------------------------------------------
-
-/*
- * Quote string for SQL query
- */
-function quote($s) {
-    return "'" . mysql_real_escape_string(canonicalize_whitespace($s)) . "'";
-}
-
-// Quote string for SQL query if needed (if magic quotes are off)
-function autoquote($s) {
-    $s = canonicalize_whitespace($s);
-    if (phpversion() < '5.4' and get_magic_quotes_gpc()) {
-        return "'$s'";
-    } else {
-        return "'" . addslashes($s) . "'";
-    }
-}
-
-// Unquote string if needed (if magic quotes are on)
-function autounquote($s) {
-    $s = canonicalize_whitespace($s);
-    if (phpversion() < '5.4' and get_magic_quotes_gpc()) {
-        return stripslashes($s);
-    } else {
-        return $s;
-    }
-}
 
 // Shortcut for htmlspecialchars()
 function q($s) {
@@ -283,10 +165,11 @@ function load_js($file, $init = '') {
     if ($file == 'jquery') {
         $file = 'jquery-1.10.2.min.js';
     } elseif ($file == 'jquery-ui') {
-        if ($theme == 'modern' || $theme == 'ocean')
+        if ($theme == 'modern' || $theme == 'ocean') {
             $uiTheme = 'redmond';
-        else
+        } else {
             $uiTheme = 'smoothness';
+        }
         $head_content .= "<link rel='stylesheet' type='text/css' href='{$urlAppend}js/jquery-ui-css/{$uiTheme}/jquery-ui-1.9.2.custom.min.css'>\n";
         $file = 'jquery-ui-1.9.2.custom.min.js';
     } elseif ($file == 'jquery-multiselect') {
@@ -310,44 +193,55 @@ function load_js($file, $init = '') {
         $head_content .= "<script type='text/javascript' src='{$urlAppend}js/jquery-migrate-1.2.1.min.js'></script>\n";
         $head_content .= "<script type='text/javascript' src='{$urlAppend}js/flot/jquery.flot.min.js'></script>\n";
         $file = 'flot/jquery.flot.categories.min.js';
+    } elseif ($file == 'slick') {
+            $head_content .= "<link rel='stylesheet' type='text/css' href='{$urlAppend}js/slick-master/slick/slick.css'>";
+            $file = 'slick-master/slick/slick.min.js';
     } elseif ($file == 'datatables') {
         $head_content .= "<link rel='stylesheet' type='text/css' href='{$urlAppend}js/datatables/media/css/jquery.dataTables.css' />";            
         $file = 'datatables/media/js/jquery.dataTables.min.js';                
     } elseif ($file == 'datatables_filtering_delay') {
             $file = 'datatables/media/js/jquery.dataTables_delay.js';
+    } elseif ($file == 'tagsinput') {
+        $file = 'taginput/jquery.tagsinput.min.js';
+    } elseif ($file == 'RateIt') {
+        $file = 'jquery.rateit.min.js';
     }
     $head_content .= "<script type='text/javascript' src='{$urlAppend}js/$file'></script>\n";
-    if ($file == 'jquery-1.10.2.min.js')
+    if ($file == 'jquery-1.10.2.min.js') {
         $head_content .= "<script type='text/javascript' src='{$urlAppend}js/jquery-migrate-1.2.1.min.js'></script>\n";
+    }
 
-    if (strlen($init) > 0)
+    if (strlen($init) > 0) {
         $head_content .= $init;
+    }
 }
 
 // Return HTML for a user - first parameter is either a user id (so that the
 // user's info is fetched from the DB) or a hash with user_id, surname, givenname,
 // email, or an array of user ids or user info arrays
-function display_user($user, $print_email = false, $icon = true) {
+function display_user($user, $print_email = false, $icon = true, $class = "") {
     global $langAnonymous, $urlAppend;
 
     if (count($user) == 0) {
-        return '-';
-    } elseif (is_array($user) and !isset($user['id'])) {
+        return '-';    
+    } elseif (is_array($user)) {
         $begin = true;
         $html = '';
-        foreach ($user as $user_data) {
-            if ($begin) {
-                $begin = false;
-            } else {
-                $html .= '<br>';
+        foreach ($user as $user_data) {            
+            if (!isset($user->user_id)) {
+                if ($begin) {
+                    $begin = false;
+                } else {
+                    $html .= '<br>';
+                }
+                $html .= display_user($user_data->user_id, $print_email);
             }
-            $html .= display_user($user_data, $print_email);
         }
         return $html;
-    } elseif (!is_array($user)) {
-        $r = db_query("SELECT id, surname, givenname, email, has_icon FROM user WHERE id = $user");
-        if ($r and mysql_num_rows($r) > 0) {
-            $user = mysql_fetch_array($r);
+    } elseif (!is_array($user)) {        
+        $r = Database::get()->querySingle("SELECT id, surname, givenname, email, has_icon FROM user WHERE id = ?d", $user);
+        if ($r) {
+            $user = $r;
         } else {
             if ($icon) {
                 return profile_image(0, IMAGESIZE_SMALL, true) . '&nbsp;' . $langAnonymous;
@@ -358,21 +252,27 @@ function display_user($user, $print_email = false, $icon = true) {
     }
 
     if ($print_email) {
-        $email = trim($user['email']);
+        $email = trim($user->email);
         $print_email = $print_email && !empty($email);
     }
     if ($icon) {
-        if ($user['has_icon']) {
-            $icon = profile_image($user['id'], IMAGESIZE_SMALL) . '&nbsp;';
+        if ($user->has_icon) {
+            $icon = profile_image($user->id, IMAGESIZE_SMALL) . '&nbsp;';
         } else {
-            $icon = profile_image($user['id'], IMAGESIZE_SMALL, true) . '&nbsp;';
+            $icon = profile_image($user->id, IMAGESIZE_SMALL, true) . '&nbsp;';
         }
     }
-
-    $token = token_generate($user['id'], true);
-    return "$icon<a href='{$urlAppend}main/profile/display_profile.php?id=$user[id]&amp;token=$token'>" .
-            q($user['givenname']) . " " .  q($user['surname']) . "</a>" .
-            ($print_email ? (' (' . mailto(trim($user['email']), 'e-mail address hidden') . ')') : '');
+    
+    if (!empty($class)) {
+        $class_str = "class='$class'";
+    } else {
+        $class_str = "";
+    }
+    
+    $token = token_generate($user->id, true);
+    return "$icon<a $class_str href='{$urlAppend}main/profile/display_profile.php?id=$user->id&amp;token=$token'>" .
+            q($user->givenname) . " " .  q($user->surname) . "</a>" .
+            ($print_email ? (' (' . mailto(trim($user->email), 'e-mail address hidden') . ')') : '');
 }
 
 // Translate uid to givenname , surname, fullname or nickname
@@ -422,57 +322,24 @@ function uid_to_am($uid) {
     }
 }
 
-/* * ***********************************************************
-  Show a selection box with departments.
-
-  The function returns a value( a formatted select box with departments)
-  and their values as keys in the array/select box
-
-  $department_value: the predefined/selected department value
-  return $departments_select : string (a formatted select box)
- * ************************************************************** */
-
-function list_departments($department_value) {
-    $qry = "SELECT id, name FROM hierarchy WHERE allow_course = true ORDER BY name";
-    $dep = db_query($qry);
-    if ($dep) {
-        $departments_select = "";
-        $departments = array();
-        while ($row = mysql_fetch_array($dep)) {
-            $id = $row['id'];
-            $name = $row['name'];
-            $departments[$id] = $name;
-        }
-        $departments_select = selection($departments, "department", $department_value);
-        return $departments_select;
-    } else {
-        return 0;
-    }
-}
-
-/* * ******************************************
-  // only for http://eclass.uoa.gr
-  /*************************************************************
-  /*************************************************************
+/**
+ * @brief only for http://eclass.uoa.gr  
+ * do we need this ???
   Show a selection box with division of departments.
-
   The function returns a value( a formatted select box with division of departments)
   and their values as keys in the array/select box
-
-  $division_value: the predefined/selected department value
-  return $divisions_select : string (a formatted select box)
- * ************************************************************** */
-
+ * @param type $department_value the predefined/selected department value
+ * @return int string (a formatted select box)
+ */
 function list_divisions($department_value) {
-
-    $qry = "SELECT id, name FROM division WHERE faculte_id = $department_value ORDER BY name";
-    $div = db_query($qry);
+     
+    $div = Database::get()->queryArray("SELECT id, name FROM division WHERE faculte_id = ?d ORDER BY name", $department_value);
     if ($div) {
         $divisions_select = "";
         $divisions = array();
-        while ($row = mysql_fetch_array($div)) {
-            $id = $row['id'];
-            $name = $row['name'];
+        foreach ($div as $row) {
+            $id = $row->id;
+            $name = $row->name;
             $divisions[$id] = $name;
         }
         $divisions_select = selection($divisions, "division");
@@ -482,37 +349,45 @@ function list_divisions($department_value) {
     }
 }
 
-// Display links to the groups a user is member of
+
+/**
+ * @brief Display links to the groups a user is member of
+ * @global type $urlAppend
+ * @param type $course_id
+ * @param type $user_id
+ * @param type $format
+ * @return string
+ */
 function user_groups($course_id, $user_id, $format = 'html') {
     global $urlAppend;
 
     $groups = '';
-    $q = db_query("SELECT `group`.id, `group`.name FROM `group`, group_members
-                       WHERE `group`.course_id = $course_id AND
+    $q = Database::get()->queryArray("SELECT `group`.id, `group`.name FROM `group`, group_members
+                       WHERE `group`.course_id = ?d AND
                              `group`.id = group_members.group_id AND
-                             `group_members`.user_id = $user_id
-                       ORDER BY `group`.name");
-    $count = mysql_num_rows($q);
-    if (!$count) {
+                             `group_members`.user_id = ?d
+                       ORDER BY `group`.name", $course_id, $user_id);
+    
+    if (!$q) {
         if ($format == 'html') {
             return "<div style='padding-left: 15px'>-</div>";
         } else {
             return '-';
         }
     }
-    while ($r = mysql_fetch_array($q)) {
+    foreach ($q as $r) {
         if ($format == 'html') {
-            $groups .= (($count > 1) ? '<li>' : '') .
-                    "<a href='{$urlAppend}modules/group/group_space.php?group_id=$r[id]' title='" .
-                    q($r['name']) . "'>" .
-                    q(ellipsize($r['name'], 20)) . "</a>" .
-                    (($count > 1) ? '</li>' : '');
+            $groups .= ((count($q) > 1) ? '<li>' : '') .
+                    "<a href='{$urlAppend}modules/group/group_space.php?group_id=$r->id' title='" .
+                    q($r->name) . "'>" .
+                    q(ellipsize($r->name, 20)) . "</a>" .
+                    ((count($q) > 1) ? '</li>' : '');
         } else {
-            $groups .= (empty($groups) ? '' : ', ') . $r['name'];
+            $groups .= (empty($groups) ? '' : ', ') . $r->name;
         }
     }
     if ($format == 'html') {
-        if ($count > 1) {
+        if (count($q) > 1) {
             return "<ol>$groups</ol>";
         } else {
             return "<div style='padding-left: 15px'>$groups</div>";
@@ -616,15 +491,20 @@ function selection3($entries, $name, $default = '') {
  * @global type $uid
  * @return boolean
  */
-function check_guest() {
-    global $uid;
+function check_guest($id = FALSE) {
+    //global $uid;
 
+    if ($id) {
+        $uid = $id;
+    } else {
+        $uid = $GLOBALS['uid'];
+    }
     if (isset($uid) and $uid) {
-        $status = Database::get()->querySingle("SELECT status FROM user WHERE id = ?d", $uid)->status;        
-        if ($status == USER_GUEST) {
-            return TRUE;
-        } else {
-            return false;
+        if (DBHelper::fieldExists("user", "status")) {
+            $status = Database::get()->querySingle("SELECT status FROM user WHERE id = ?d", $uid);
+            if ($status && $status->status == USER_GUEST) {
+                return TRUE;
+            }
         }
     }
     return false;
@@ -662,17 +542,19 @@ function check_opencourses_reviewer() {
     if (isset($uid) and $uid) {
         if ($is_power_user) {
             return TRUE;
-        }        
+        }
         $r = Database::get()->querySingle("SELECT reviewer FROM course_user
                                     WHERE user_id = ?d
-                                    AND course_id = ?d", $uid, $course_id)->reviewer;                        
-        if ($r == 1) {
-            return TRUE;
+                                    AND course_id = ?d", $uid, $course_id);
+        if ($r) {
+            if ($r->reviewer == 1) {
+                return TRUE;
+            } else {
+                return FALSE;
+            }
         } else {
             return FALSE;
         }
-    } else {
-        return FALSE;
     }
 }
 
@@ -698,38 +580,53 @@ function check_uid() {
     }
 }
 
-// -------------------------------------------------------
-// Check if a user with username $login already exists
-// ------------------------------------------------------
+
+/**
+ * @brief Check if a user with username $login already exists
+ * @param type $login
+ * @return boolean
+ */
 function user_exists($login) {
-    $qry = "SELECT id FROM user WHERE username";
+       
     if (get_config('case_insensitive_usernames')) {
-        $qry .= " COLLATE utf8_general_ci = " . quote($login);
+        $qry = "COLLATE utf8_general_ci = ?s";
     } else {
-        $qry .= " = " . quote($login);
+        $qry = "= ?s";
     }
-    $username_check = db_query($qry);
-
-    return ($username_check and mysql_num_rows($username_check) > 0);
+    $username_check = Database::get()->querySingle("SELECT id FROM user WHERE username $qry", $login);
+    if ($username_check) {
+        return true;
+    } else {
+        return false;
+    }    
 }
 
-// ----------------------------------------------------------------
-// Check if a user with username $login already applied for account
-// ----------------------------------------------------------------
+
+/**
+ * @brief Check if a user with username $login already applied for account
+ * @param type $login
+ * @return boolean
+ */
 function user_app_exists($login) {
-    $qry = "SELECT id FROM user_request WHERE state = 1 AND username";
+    
     if (get_config('case_insensitive_usernames')) {
-        $qry .= " COLLATE utf8_general_ci = = " . quote($login);
+        $qry = "COLLATE utf8_general_ci = ?s";
     } else {
-        $qry .= " = " . quote($login);
+        $qry = "= ?s";
     }
-    $username_check = db_query($qry);
-
-    return ($username_check && mysql_num_rows($username_check) > 0);
+    $username_check = Database::get()->querySingle("SELECT id FROM user_request WHERE state = 1 AND username $qry", $login);
+    if ($username_check) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
-// Convert HTML to plain text
-
+/**
+ * @brief Convert HTML to plain text
+ * @param type $string
+ * @return type
+ */
 function html2text($string) {
     $trans_tbl = get_html_translation_table(HTML_ENTITIES);
     $trans_tbl = array_flip($trans_tbl);
@@ -1005,7 +902,7 @@ function mkpath($path) {
             if (!is_dir($path)) {
                 return false;
             }
-        } elseif (!mkdir($path, 0775)) {
+        } elseif (!mkdir($path, 0755)) {
             return false;
         }
     }
@@ -1016,7 +913,7 @@ function mkpath($path) {
 function display_activation_link($module_id) {
     global $modules;
 
-    if (!defined('STATIC_MODULE') and array_key_exists($module_id, $modules)) {
+    if (!defined('STATIC_MODULE') and $module_id && array_key_exists($module_id, $modules)) {
         return true;
     } else {
         return false;
@@ -1113,14 +1010,14 @@ function cp737_to_utf8($s) {
                                "\xcc" => '╠', "\xcd" => '═', "\xce" => '╬', "\xcf" => '╧',
                                "\xd0" => '╨', "\xd1" => '╤', "\xd2" => '╥', "\xd3" => '╙',
                                "\xd4" => '╘', "\xd5" => '╒', "\xd6" => '╓', "\xd7" => '╫',
-                               "\xd8" => '╪', "\xd9" => '┘', "\xda" => '┌', "\xdb" => '█',
+                               "\xd8" => '�', "\xd9" => '┘', "\xda" => '┌', "\xdb" => '█',
                                "\xdc" => '▄', "\xdd" => '▌', "\xde" => '▐', "\xdf" => '▀',
                                "\xe0" => 'ω', "\xe1" => 'ά', "\xe2" => 'έ', "\xe3" => 'ή',
                                "\xe4" => 'ϊ', "\xe5" => 'ί', "\xe6" => 'ό', "\xe7" => 'ύ',
                                "\xe8" => 'ϋ', "\xe9" => 'ώ', "\xea" => 'Ά', "\xeb" => 'Έ',
                                "\xec" => 'Ή', "\xed" => 'Ί', "\xee" => 'Ό', "\xef" => 'Ύ',
                                "\xf0" => 'Ώ', "\xf1" => '±', "\xf2" => '≥', "\xf3" => '≤',
-                               "\xf4" => 'Ϊ', "\xf5" => 'Ϋ', "\xf6" => '÷', "\xf7" => '≈',
+                               "\xf4" => '�', "\xf5" => 'Ϋ', "\xf6" => '÷', "\xf7" => '≈',
                                "\xf8" => '°', "\xf9" => '∙', "\xfa" => '·', "\xfb" => '√',
                                "\xfc" => 'ⁿ', "\xfd" => '²', "\xfe" => '■', "\xff" => ' '));
     }
@@ -1149,11 +1046,6 @@ function get_file_extension($filename) {
     } else {
         return '';
     }
-}
-
-// Wrap each $item with single quote
-function wrap_each(&$item) {
-    $item = "'$item'";
 }
 
 // Remove whitespace from start and end of string, convert
@@ -1209,7 +1101,7 @@ $native_language_names_init = array(
     'de' => 'Deutsch',
     'is' => 'Íslenska',
     'it' => 'Italiano',
-    'jp' => '日本語',
+    'jp' => '日本�',
     'pl' => 'Polski',
     'ru' => 'Русский',
     'tr' => 'Türkçe',
@@ -1314,21 +1206,22 @@ function move_order($table, $id_field, $id, $order_field, $direction, $condition
         $desc = 'DESC';
     }
     
-    $sql = db_query("SELECT `$order_field` FROM `$table`
-                         WHERE `$id_field` = '$id'");
-    if (!$sql or mysql_num_rows($sql) == 0) {
+    $sql = Database::get()->querySingle("SELECT `$order_field` FROM `$table`
+                         WHERE `$id_field` = ?d", $id);
+    if (!$sql) {
         return false;
     }
-    list($current) = mysql_fetch_row($sql);
-    $sql = db_query("SELECT `$id_field`, `$order_field` FROM `$table`
-                        WHERE `order` $op '$current' $condition
+    $current = $sql->$order_field;
+    $sql = Database::get()->querySingle("SELECT `$id_field`, `$order_field` FROM `$table`
+                        WHERE `$order_field` $op '$current' $condition
                         ORDER BY `$order_field` $desc LIMIT 1");
-    if ($sql and mysql_num_rows($sql) > 0) {
-        list($next_id, $next) = mysql_fetch_row($sql);
-        db_query("UPDATE `$table` SET `$order_field` = $next
-                          WHERE `$id_field` = $id");
-        db_query("UPDATE `$table` SET `$order_field` = $current
-                          WHERE `$id_field` = $next_id");
+    if ($sql) {
+        $next_id = $sql->$id_field;
+        $next = $sql->$order_field;        
+        Database::get()->query("UPDATE `$table` SET `$order_field` = $next
+                          WHERE `$id_field` = $id");        
+        Database::get()->query("UPDATE `$table` SET `$order_field` = $current
+                          WHERE `$id_field` = $next_id");        
         return true;
     }
     return false;
@@ -1480,6 +1373,14 @@ function delete_course($cid) {
                          (SELECT id FROM ebook WHERE course_id = ?d)", $cid);
     Database::get()->query("DELETE FROM ebook WHERE course_id = ?d", $cid);
     Database::get()->query("DELETE FROM forum_notify WHERE course_id = ?d", $cid);
+	Database::get()->query("DELETE forum_post FROM forum_post INNER JOIN forum_topic ON forum_post.topic_id = forum_topic.id
+                            INNER JOIN forum ON forum_topic.forum_id = forum.id
+                            WHERE forum.course_id = ?d", $cid);
+    Database::get()->query("DELETE forum_topic FROM forum_topic INNER JOIN forum ON forum_topic.forum_id = forum.id
+                            WHERE forum.course_id = ?d", $cid);    
+    Database::get()->query("DELETE FROM forum_category WHERE course_id = ?d", $cid);
+    Database::get()->query("DELETE FROM forum WHERE course_id = ?d", $cid);
+    Database::get()->query("DELETE FROM forum_user_stats WHERE course_id = ?d", $cid);
     Database::get()->query("DELETE FROM glossary WHERE course_id = ?d", $cid);
     Database::get()->query("DELETE FROM group_members WHERE group_id IN
                          (SELECT id FROM `group` WHERE course_id = ?d)", $cid);
@@ -1492,6 +1393,15 @@ function delete_course($cid) {
     Database::get()->query("DELETE FROM unit_resources WHERE unit_id IN
                          (SELECT id FROM course_units WHERE course_id = ?d)", $cid);
     Database::get()->query("DELETE FROM course_units WHERE course_id = ?d", $cid);
+    Database::get()->query("DELETE `comments` FROM `comments` INNER JOIN `blog_post` ON `comments`.`rid` = `blog_post`.`id` 
+                            WHERE `comments`.`rtype` = ?s AND `blog_post`.`course_id` = ?d", 'blogpost', $cid);
+    Database::get()->query("DELETE `rating` FROM `rating` INNER JOIN `blog_post` ON `rating`.`rid` = `blog_post`.`id`
+                            WHERE `rating`.`rtype` = ?s AND `blog_post`.`course_id` = ?d", 'blogpost', $cid);
+    Database::get()->query("DELETE `rating_cache` FROM `rating_cache` INNER JOIN `blog_post` ON `rating_cache`.`rid` = `blog_post`.`id`
+                            WHERE `rating_cache`.`rtype` = ?s AND `blog_post`.`course_id` = ?d", 'blogpost', $cid);
+    Database::get()->query("DELETE FROM `rating` WHERE `rtype` = ?s AND `rid` = ?d", 'course', $cid);
+    Database::get()->query("DELETE FROM `rating_cache` WHERE `rtype` = ?s AND `rid` = ?d", 'course', $cid);
+    Database::get()->query("DELETE FROM `blog_post` WHERE `course_id` = ?d", $cid);
     // check if we have guest account. If yes delete him.
     $guest_user = Database::get()->querySingle("SELECT user_id FROM course_user WHERE course_id = ?d AND status = ?d", $cid, USER_GUEST);
     if ($guest_user) {
@@ -1527,6 +1437,7 @@ function delete_course($cid) {
     Database::get()->query("DELETE FROM exercise_user_record WHERE eid IN (SELECT id FROM exercise WHERE course_id = ?d)", $cid);
     Database::get()->query("DELETE FROM exercise WHERE course_id = ?d", $cid);
     Database::get()->query("DELETE FROM course_module WHERE course_id = ?d", $cid);
+    Database::get()->query("DELETE FROM course_settings WHERE course_id = ?d", $cid);
 
     $garbage = "$webDir/courses/garbage";
     if (!is_dir($garbage)) {
@@ -1570,6 +1481,7 @@ function deleteUser($id, $log) {
             Database::get()->query("DELETE FROM forum_notify WHERE user_id = ?d", $u);
             Database::get()->query("DELETE FROM forum_post WHERE poster_id = ?d", $u);
             Database::get()->query("DELETE FROM forum_topic WHERE poster_id = ?d", $u);
+            Database::get()->query("DELETE FROM forum_user_stats WHERE user_id = ?d", $u);
             Database::get()->query("DELETE FROM group_members WHERE user_id = ?d", $u);
             if ($log) {
                 Database::get()->query("DELETE FROM log WHERE user_id = ?d", $u);
@@ -1582,7 +1494,12 @@ function deleteUser($id, $log) {
             Database::get()->query("DELETE FROM user_department WHERE user = ?d", $u);
             Database::get()->query("DELETE FROM wiki_pages WHERE owner_id = ?d", $u);
             Database::get()->query("DELETE FROM wiki_pages_content WHERE editor_id = ?d", $u);
+            Database::get()->query("DELETE FROM comments WHERE user_id = ?d", $u);
+            Database::get()->query("DELETE FROM blog_post WHERE user_id = ?d", $u);
             Database::get()->query("DELETE FROM user WHERE id = ?d", $u);
+            Database::get()->query("DELETE FROM note WHERE user_id = ?d" , $u);
+            Database::get()->query("DELETE FROM personal_calendar WHERE user_id = ?d" , $u);
+            Database::get()->query("DELETE FROM personal_calendar_settings WHERE user_id = ?d" , $u);
             return true;
         } else {
             return false;
@@ -1695,23 +1612,25 @@ function register_posted_variables($var_array, $what = 'all', $callback = null) 
  * @param type $extra
  * @return type
  */
-function rich_text_editor($name, $rows, $cols, $text, $extra = '') {
-    global $head_content, $language, $purifier, $urlAppend, $course_code, $langPopUp, $langPopUpFrame, $is_editor, $is_admin;
-
-    $filebrowser = $url = '';
-    $activemodule = 'document/index.php';
-    if (isset($course_code) && !empty($course_code)) {
-        $filebrowser = "file_browser_callback : 'openDocsPicker',";
-        if (!$is_editor) {
-            $cid = course_code_to_id($course_code);
-            $module = Database::get()->querySingle("SELECT * FROM course_module
+function rich_text_editor($name, $rows, $cols, $text, $extra = '', $onFocus = false) {
+    global $head_content, $language, $urlAppend, $course_code, $langPopUp, $langPopUpFrame, $is_editor, $is_admin;
+    static $init_done = false;
+    if (!$init_done) {
+        $init_done = true;
+        $filebrowser = $url = '';
+        $activemodule = 'document/index.php';
+        if (isset($course_code) && !empty($course_code)) {
+            $filebrowser = "file_browser_callback : openDocsPicker,";
+            if (!$is_editor) {
+                $cid = course_code_to_id($course_code);
+                $module = Database::get()->querySingle("SELECT * FROM course_module
                             WHERE course_id = ?d
                               AND (module_id =" . MODULE_ID_DOCS . " OR module_id =" . MODULE_ID_VIDEO . " OR module_id =" . MODULE_ID_LINKS . ")
                               AND VISIBLE = 1 ORDER BY module_id", $cid);
-            if ($module === false) {
-                $filebrowser = '';
-            } else {
-                switch ($module->module_id) {
+                if ($module === false) {
+                    $filebrowser = '';
+                } else {
+                    switch ($module->module_id) {
                     case MODULE_ID_LINKS:
                         $activemodule = 'link/index.php';
                         break;
@@ -1724,66 +1643,38 @@ function rich_text_editor($name, $rows, $cols, $text, $extra = '') {
                     default:
                         $filebrowser = '';
                         break;
+                    }
                 }
             }
+            $url = $urlAppend . "modules/$activemodule?course=$course_code&embedtype=tinymce&docsfilter=";
+        } elseif ($is_admin) { /* special case for admin announcements */
+            $filebrowser = "file_browser_callback : openDocsPicker,";
+            $url = $urlAppend . "modules/admin/commondocs.php?embedtype=tinymce&docsfilter=";
         }
-        $url = $urlAppend . "modules/$activemodule?course=$course_code&embedtype=tinymce&docsfilter=";
-    } elseif ($is_admin) { /* special case for admin announcements */
-        $filebrowser = "file_browser_callback : 'openDocsPicker',";
-        $url = $urlAppend . "modules/admin/commondocs.php?embedtype=tinymce&docsfilter=";
-    }
-    load_js('tinymce/jscripts/tiny_mce/tiny_mce_gzip.js');
-    $head_content .= "
+        if ($onFocus) {
+            $focus_init = ",
+                menubar: false,
+                statusbar: false,   
+                setup: function (theEditor) {
+                    theEditor.on('focus', function () {
+                        $(this.contentAreaContainer.parentElement).find('div.mce-toolbar-grp').show();
+                    });
+                    theEditor.on('blur', function () {
+                        $(this.contentAreaContainer.parentElement).find('div.mce-toolbar-grp').hide();
+                    });
+                    theEditor.on('init', function() {
+                        $(this.contentAreaContainer.parentElement).find('div.mce-toolbar-grp').hide();
+                    });
+                }";
+        } else {
+            $focus_init ='';
+        }
+        load_js('tinymce/tinymce.gzip.js');
+        $head_content .= "
 <script type='text/javascript'>
-tinyMCE_GZ.init({
-        plugins : 'pagebreak,style,save,advimage,advlink,inlinepopups,media,eclmedia,print,contextmenu,paste,noneditable,visualchars,nonbreaking,xhtmlxtras,template,wordcount,advlist,emotions,preview,searchreplace,table,insertdatetime',
-        themes : 'advanced',
-        languages : '$language',
-        disk_cache : true,
-        debug : false
-});
-
-tinyMCE.init({
-        // General options
-                language : '$language',
-                mode : 'specific_textareas',
-                editor_deselector : 'mceNoEditor',
-                theme : 'advanced',
-                plugins : 'pagebreak,style,save,advimage,advlink,inlinepopups,media,eclmedia,print,contextmenu,paste,noneditable,visualchars,nonbreaking,xhtmlxtras,template,wordcount,advlist,emotions,preview,searchreplace,table,insertdatetime',
-                entity_encoding : 'raw',
-                relative_urls : false,
-                advlink_styles : '$langPopUp=colorbox;$langPopUpFrame=colorboxframe',
-                $filebrowser
-
-                // Theme options
-                theme_advanced_buttons1 : 'bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,styleselect,formatselect,fontselect,fontsizeselect,|,forecolor,backcolor',
-                theme_advanced_buttons2 : 'cut,copy,paste,pastetext,pasteword,|,search,replace,|,bullist,numlist,|,outdent,indent,blockquote,|,undo,redo,|,link,unlink,image,eclmedia,media,emotions,charmap,|,insertdate,inserttime',
-                theme_advanced_buttons3 : 'tablecontrols,|,hr,removeformat,visualaid,|,sub,sup,|,preview,cleanup,code,|,print',
-                theme_advanced_toolbar_location : 'top',
-                theme_advanced_toolbar_align : 'left',
-                theme_advanced_statusbar_location : 'bottom',
-                theme_advanced_resizing : true,
-
-                // Style formats
-                style_formats : [
-                        {title : 'Bold text', inline : 'b'},
-                        {title : 'Red text', inline : 'span', styles : {color : '#ff0000'}},
-                        {title : 'Red header', block : 'h1', styles : {color : '#ff0000'}},
-                        {title : 'Example 1', inline : 'span', classes : 'example1'},
-                        {title : 'Example 2', inline : 'span', classes : 'example2'},
-                        {title : 'Table styles'},
-                        {title : 'Table row 1', selector : 'tr', classes : 'tablerow1'}
-                ],
-
-                // Replace values for the template plugin
-                template_replace_values : {
-                        username : 'Open eClass',
-                        staffid : '991234'
-                }
-});
 
 function openDocsPicker(field_name, url, type, win) {
-    tinyMCE.activeEditor.windowManager.open({
+    tinymce.activeEditor.windowManager.open({
         file: '$url' + type,
         title: 'Resources Browser',
         width: 800,
@@ -1798,7 +1689,33 @@ function openDocsPicker(field_name, url, type, win) {
     });
     return false;
 }
+
+tinymce.init({
+    // General options
+    selector: 'textarea:not(.mceNoEditor)',
+    language: '$language',
+    theme: 'modern',
+    plugins: 'pagebreak,save,image,link,media,eclmedia,print,contextmenu,paste,noneditable,visualchars,nonbreaking,template,wordcount,advlist,emoticons,preview,searchreplace,table,insertdatetime,code',
+    entity_encoding: 'raw',
+    relative_urls: false,
+    link_class_list: [
+        {title: 'None', value: ''},
+        {title: '$langPopUp', value: 'colorbox'},
+        {title: '$langPopUpFrame', value: 'colorboxframe'}
+    ],
+    $filebrowser
+
+    // Toolbar options
+    toolbar: 'undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image eclmedia code',
+    // Replace values for the template plugin
+    template_replace_values: {
+            username : 'Open eClass',
+            staffid : '991234'
+    }
+    $focus_init
+});
 </script>";
+    }
 
     /* $text = str_replace(array('<m>', '</m>', '<M>', '</M>'),
       array('[m]', '[/m]', '[m]', '[/m]'),
@@ -2071,28 +1988,27 @@ function glossary_expand_callback($matches) {
 }
 
 function get_glossary_terms($course_id) {
-    
-    
+        
     $expand = Database::get()->querySingle("SELECT glossary_expand FROM course
                                                          WHERE id = ?d", $course_id)->glossary_expand;    
     if (!$expand) {
         return false;
     }
 
-    $q = db_query("SELECT term, definition, url FROM glossary
+    $q = Database::get()->queryArray("SELECT term, definition, url FROM glossary
                               WHERE course_id = $course_id GROUP BY term");
-
-    if (mysql_num_rows($q) > intval(get_config('max_glossary_terms'))) {
+    
+    if (count($q) > intval(get_config('max_glossary_terms'))) {
         return false;
     }
 
     $_SESSION['glossary'] = array();
     $_SESSION['glossary_url'] = array();
-    while ($row = mysql_fetch_array($q)) {
-        $term = mb_strtolower($row['term'], 'UTF-8');
-        $_SESSION['glossary'][$term] = $row['definition'];
-        if (!empty($row['url'])) {
-            $_SESSION['glossary_url'][$term] = $row['url'];
+    foreach ($q as $row) {
+        $term = mb_strtolower($row->term, 'UTF-8');
+        $_SESSION['glossary'][$term] = $row->definition;
+        if (!empty($row->url)) {
+            $_SESSION['glossary_url'][$term] = $row->url;
         }
     }
     $_SESSION['glossary_course_id'] = $course_id;
@@ -2136,7 +2052,7 @@ function invalidate_glossary_cache() {
 
 function redirect_to_home_page($path = '') {
     global $urlServer;
-
+    
     $path = preg_replace('+^/+', '', $path);
     header("Location: $urlServer$path");
     exit;
@@ -2264,6 +2180,15 @@ function canonicalize_url($url) {
         return 'http://' . $url;
     } else {
         return $url;
+    }
+}
+
+function is_url_accepted($url,$protocols=""){
+    if ($url === 'http://' || empty($url) || !filter_var($url, FILTER_VALIDATE_URL) || preg_match('/^javascript/i', preg_replace('/\s+/', '', $url)) || ($protocols!=="" && !preg_match('/^'.$protocols.'/i', preg_replace('/\s+/', '', $url)))) {
+        return 0;
+    }
+    else{
+        return 1;
     }
 }
 
@@ -2415,16 +2340,13 @@ function get_user_email_notification($user_id, $course_id = null) {
  * @param type $user_id
  * @return boolean
  */
-function get_user_email_notification_from_courses($user_id) {
-        
-    $result = Database::get()->querySingle("SELECT receive_mail FROM user WHERE id = ?d", $user_id)->receive_mail;
-    
-    if ($result == 1) {
+function get_user_email_notification_from_courses($user_id) {    
+    $result = Database::get()->querySingle("SELECT receive_mail FROM user WHERE id = ?d", $user_id);
+    if ($result && $result->receive_mail)
         return true;
-    } else {
-        return false;
-    }
+    return false;
 }
+
 
 // Return a list of all subdirectories of $base which contain a file named $filename
 function active_subdirs($base, $filename) {

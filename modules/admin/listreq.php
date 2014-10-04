@@ -20,20 +20,49 @@
  * ======================================================================== */
 
 $require_usermanage_user = TRUE;
+
 require_once '../../include/baseTheme.php';
 require_once 'include/sendMail.inc.php';
 require_once 'modules/auth/auth.inc.php';
-require_once 'admin.inc.php';
 require_once 'include/lib/hierarchy.class.php';
 require_once 'include/lib/user.class.php';
 require_once 'hierarchy_validations.php';
 
-define('REQUESTS_PER_PAGE', 15);
-
 $tree = new Hierarchy();
 $user = new User();
 
-$head_content = '
+load_js('jquery');
+load_js('jquery-ui');
+load_js('datatables');
+load_js('datatables_filtering_delay');
+
+$head_content .= "<script type='text/javascript'>
+        $(document).ready(function() {
+            $('#requests_table').DataTable ({                                
+                'sPaginationType': 'full_numbers',
+                'bAutoWidth': true,                
+                'oLanguage': {
+                   'sLengthMenu':   '$langDisplay _MENU_ $langResults2',
+                   'sZeroRecords':  '".$langNoResult."',
+                   'sInfo':         '$langDisplayed _START_ $langTill _END_ $langFrom2 _TOTAL_ $langTotalResults',
+                   'sInfoEmpty':    '$langDisplayed 0 $langTill 0 $langFrom2 0 $langResults2',
+                   'sInfoFiltered': '',
+                   'sInfoPostFix':  '',
+                   'sSearch':       '".$langSearch."',
+                   'sUrl':          '',
+                   'oPaginate': {
+                       'sFirst':    '&laquo;',
+                       'sPrevious': '&lsaquo;',
+                       'sNext':     '&rsaquo;',
+                       'sLast':     '&raquo;'
+                   }
+               }
+            }).fnSetFilteringDelay(1000);
+            $('.dataTables_filter input').attr('placeholder', '$langName, $langSurname, $langUsername');
+        });
+        </script>";
+
+$head_content .= '
 <script type="text/javascript">
 function confirmation() {
    if (confirm("' . $langCloseConf . '")) {
@@ -63,9 +92,8 @@ $navigation[] = array('url' => 'index.php', 'name' => $langAdmin);
 
 // Main body
 $close = isset($_GET['close']) ? $_GET['close'] : (isset($_POST['close']) ? $_POST['close'] : '');
-$id = isset($_GET['id']) ? $_GET['id'] : (isset($_POST['id']) ? $_POST['id'] : '');
+$id = isset($_GET['id']) ? intval($_GET['id']) : (isset($_POST['id']) ? intval($_POST['id']) : '');
 $show = isset($_GET['show']) ? $_GET['show'] : (isset($_POST['show']) ? $_POST['show'] : '');
-$limit = isset($_GET['limit']) ? $_GET['limit'] : 0;
 
 // id validation
 if (intval($id) > 0) {
@@ -121,14 +149,11 @@ if (!empty($show) and $show == 'closed') {
                              phone, am, date_open, date_closed, comment
                           FROM user_request
                           WHERE (state = 2 AND status = $list_status)";
-
-        if ($count_req > REQUESTS_PER_PAGE) { // display navigation links if needed
-            $tool_content .= show_paging($limit, REQUESTS_PER_PAGE, $count_req, $_SERVER['SCRIPT_NAME'], $pagination_link);
-        }
-        $q .= "ORDER BY date_open DESC LIMIT $limit, " . REQUESTS_PER_PAGE . "";
+        
+        $q .= "ORDER BY date_open DESC";
 
         $sql = Database::get()->queryArray($q);
-        $tool_content .= "<table class='tbl_alt' width='100%'>";
+        $tool_content .= "<table id = 'requests_table' class='tbl_alt' width='100%'>";
         $tool_content .= table_header(1, $langDateClosed_small);
         $k = 0;
         foreach ($sql as $req) {
@@ -137,17 +162,16 @@ if (!empty($show) and $show == 'closed') {
             } else {
                 $tool_content .= "<tr class='odd'>";
             }
-            $tool_content .= "<td width='1'>
-			<img style='border:0px;' src='$themeimg/arrow.png' title='bullet'></td>";
+            $tool_content .= "<td width='1'><img style='border:0px;' src='$themeimg/arrow.png' title='bullet'></td>";
             $tool_content .= '<td>' . q($req->givenname) . "&nbsp;" . q($req->surname) . "";
             $tool_content .= '<td>' . q($req->username) . '</td>';
-            $tool_content .= '<td>' . q(find_faculty_by_id($req->faculty_id)) . '</td>';
+            $tool_content .= '<td>' . hierarchy::unserializeLangField(find_faculty_by_id($req->faculty_id)) . '</td>';
             $tool_content .= "<td align='center'>
 				<small>" . nice_format(date('Y-m-d', strtotime($req->date_open))) . "</small></td>";
             $tool_content .= "<td align='center'>
 				<small>" . nice_format(date('Y-m-d', strtotime($req->date_closed))) . "</small></td>";
             $tool_content .= "<td align='center'>
-			<a href='$_SERVER[SCRIPT_NAME]?id=$req[id]&amp;show=closed$reqtype'>$langRestore</a></td>\n  </tr>";
+			<a href='$_SERVER[SCRIPT_NAME]?id=$req->id&amp;show=closed$reqtype'>$langRestore</a></td>\n  </tr>";
             $k++;
         }
     }
@@ -161,36 +185,37 @@ if (!empty($show) and $show == 'closed') {
         // restore request
         Database::get()->query("UPDATE user_request set state = 1, date_closed = NULL WHERE id = ?d", $id);
         $tool_content = "
-		<p class=\"success\">$langReintroductionApplication</p>";
+		<p class='success'>$langReintroductionApplication</p>";
     } else {
-        $tool_content .= "<table class'tbl_al' width='100%' align='left'>";
+        $tool_content .= "<table id = 'requests_table' class='tbl_al' width='100%' align='left'>";
         $tool_content .= table_header(1, $langDateReject_small);
         $sql = Database::get()->queryArray("SELECT id, givenname, surname, username, email,
                                         faculty_id, phone, am, date_open, date_closed, comment
                                         FROM user_request
                                         WHERE (state = 3 AND status = $list_status $depqryadd) ORDER BY date_open DESC");
         $k = 0;
+        $tool_content .= "<tbody>";
         foreach ($sql as $req) {
             if ($k % 2 == 0) {
                 $tool_content .= "<tr class='even'>";
             } else {
                 $tool_content .= "<tr class='odd'>";
             }
-            $tool_content .= "<td width='1'>
-			<img src='$themeimg/arrow.png' title='bullet'></td>";
+            $tool_content .= "<td width='1'><img src='$themeimg/arrow.png' title='bullet'></td>";
             $tool_content .= "<td>" . q($req->givenname) . "&nbsp;" . q($req->surname) . "</td>";
             $tool_content .= "<td>" . q($req->username) . "&nbsp;</td>";
-            $tool_content .= "<td>" . q(find_faculty_by_id($req->faculty_id)) . "</td>";
+            $tool_content .= "<td>" . hierarchy::unserializeLangField(find_faculty_by_id($req->faculty_id)) . "</td>";
             $tool_content .= "<td align='center'>
 				<small>" . nice_format(date('Y-m-d', strtotime($req->date_open))) . "</small></td>";
             $tool_content .= "<td align='center'>
 				<small>" . nice_format(date('Y-m-d', strtotime($req->date_closed))) . "</small></td>";
             $tool_content .= "<td align=center>
-			<a href='$_SERVER[SCRIPT_NAME]?id=$req[id]&amp;show=closed$reqtype'>$langRestore</a>
+			<a href='$_SERVER[SCRIPT_NAME]?id=$req->id&amp;show=closed$reqtype'>$langRestore</a>
 			</td></tr>";
             $k++;
         }
     }
+    $tool_content .= "</tbody>";
     $tool_content .= "</table>";
 
 // ------------------------------
@@ -199,7 +224,10 @@ if (!empty($show) and $show == 'closed') {
 } elseif (!empty($close)) {
     switch ($close) {
         case '1':
-            Database::get()->query("UPDATE user_request SET state = 2, date_closed = NOW() WHERE id = ?d", $id);
+            Database::get()->query("UPDATE user_request
+                                       SET state = 2,
+                                           date_closed = " . DBHelper::timeAfter() . "
+                                       WHERE id = ?d", $id);
             if ($list_status == 1) {
                 $tool_content .= "<div class='info'>$langProfessorRequestClosed</div>";
             } else {
@@ -212,17 +240,20 @@ if (!empty($show) and $show == 'closed') {
                 // post the comment and do the delete action
                 if (!empty($_POST['comment'])) {
                     $sql = "UPDATE user_request
-                               SET state = 3, date_closed = NOW(),
-                                   comment = " . autoquote($_POST['comment']) . "
-                               WHERE id = $id";
-                    if (Database::get()->query($sql)->affectedRows > 0) {
+                               SET state = 3,
+                                   date_closed = " . DBHelper::timeAfter() . ",
+                                   comment = ?s
+                               WHERE id = ?d";
+                    if (Database::get()->query($sql, $_POST['comment'], $id)->affectedRows > 0) {
                         if (isset($_POST['sendmail']) and ( $_POST['sendmail'] == 1)) {
                             $telephone = get_config('phone');
+                            $administratorName = get_config('admin_name');
+                            $emailhelpdesk = get_config('email_helpdesk');
                             $emailsubject = $langemailsubjectBlocked;
                             $emailbody = "$langemailbodyBlocked
 $langComments:> $_POST[comment]
 $langManager $siteName
-$administratorName $administratorSurname
+$administratorName
 $langPhone: $telephone
 $langEmail: $emailhelpdesk";
                             send_mail('', '', "$_POST[prof_givenname] $_POST[prof_surname]", $_POST['prof_email'], $emailsubject, $emailbody, $charset);
@@ -240,7 +271,7 @@ $langEmail: $emailhelpdesk";
 			<div class='alert1'>$warning</div>
 			<table width='100%' class='tbl_border'>
 			<tr><th class='left'>$langName</th>
-			<td>" . q($d->name) . "</td></tr>
+			<td>" . q($d->givenname) . "</td></tr>
 			<tr><th class='left'>$langSurname</th>
 			<td>" . q($d->surname) . "</td></tr>
 			<tr><th class='left'>$langEmail</th>
@@ -276,9 +307,10 @@ else {
     $sql = Database::get()->queryArray("SELECT id, givenname, surname, username, faculty_id, date_open, comment, password FROM user_request
                                 WHERE (state = 1 AND status = $list_status $depqryadd)");
     if (count($sql) > 0) {
-        $tool_content .= "<table class='tbl_alt' width='100%'>";
+        $tool_content .= "<table id='requests_table' class='tbl_alt' width='100%'>";
         $tool_content .= table_header();
         $k = 0;
+        $tool_content .= "<tbody>";
         foreach ($sql as $req) {
             if ($k % 2 == 0) {
                 $tool_content .= "<tr class='even'>";
@@ -288,8 +320,8 @@ else {
             $tool_content .= "<td align='right' width='1'>
                         <img src='$themeimg/arrow.png' title='bullet'></td>";
             $tool_content .= "<td>" . q($req->givenname) . "&nbsp;" . q($req->surname) . "</td>";
-            $tool_content .= "<td>" . q($req->username) . "</td>";
-            $tool_content .= "<td>" . q(find_faculty_by_id($req->faculty_id)) . "</td>";
+            $tool_content .= "<td>" . q($req->username) . "</td>";            
+            $tool_content .= "<td>" . hierarchy::unserializeLangField(find_faculty_by_id($req->faculty_id)) . "</td>";
             $tool_content .= "<td align='center'>
                                 <small>" . nice_format(date('Y-m-d', strtotime($req->date_open))) . "</small></td>";
             $tool_content .= "<td align='center' class='smaller'>";
@@ -323,9 +355,10 @@ else {
                                                    $langElaboration</a>";
                     break;
             }
-            $tool_content .= "</td></tr>\n";
+            $tool_content .= "</td></tr>";
             $k++;
         }
+        $tool_content .= "</tbody>";
         $tool_content .= "</table>";
     } else {
         $tool_content .= "<p class='alert1'>$langUserNoRequests</p>";
@@ -335,21 +368,32 @@ else {
 // If show is set then we return to listreq, else return to admin index.php
 //if (isset($close) or isset($closed)) {
 if (!empty($show) or ! empty($close)) {
-    $tool_content .= "<p align='right'><a href='$_SERVER[SCRIPT_NAME]$linkget'>$langBackRequests</a></p><br>";
+    $tool_content .= "<div style='margin-top:60px;'><p align='right'><a href='$_SERVER[SCRIPT_NAME]$linkget'>$langBackRequests</a></p></div>";
 }
-$tool_content .= "<p align='right'><a href='index.php'>$langBack</a></p>";
+$tool_content .= "<div style='margin-top:10px;'><p align='right'><a href='index.php'>$langBack</a></p></div>";
 
 draw($tool_content, 3, null, $head_content);
 
-// --------------------------------------
-// function to display table header
-// --------------------------------------
+
+/**
+ * @brief function to display table header
+ * @global type $langName
+ * @global type $langSurname
+ * @global type $langFaculty
+ * @global type $langDate
+ * @global type $langActions
+ * @global type $langUsername
+ * @global type $langDateRequest_small
+ * @param type $addon
+ * @param type $message
+ * @return string
+ */
 function table_header($addon = FALSE, $message = FALSE) {
 
-    global $langName, $langSurname, $langFaculty, $langDate, $langActions, $langComments, $langUsername;
-    global $langDateRequest_small, $list_status;
+    global $langName, $langSurname, $langFaculty, $langDate, $langActions, $langUsername;
+    global $langDateRequest_small;
 
-    $string = '';
+    $string = '<thead>';    
     if ($addon) {
         $rowspan = 2;
         $datestring = "<th colspan='2'>$langDate</th>
@@ -368,7 +412,7 @@ function table_header($addon = FALSE, $message = FALSE) {
 	<th scope='col' rowspan='$rowspan'><div align='left'>$langUsername</div></th>
 	<th scope='col' rowspan='$rowspan'><div align='center'>$langFaculty</div></th>";
     $string .= $datestring;
-    $string .= "</tr>";
+    $string .= "</tr></thead>";
 
     return $string;
 }

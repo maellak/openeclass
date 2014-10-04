@@ -96,8 +96,9 @@ if ($isInOpenCoursesMode) {
     $commaIds = "";
     $i = 0;
     foreach ($opencourses as $courseId => $courseCode) {
-        if ($i != 0)
+        if ($i != 0) {
             $commaIds .= ",";
+        }
         $commaIds .= $courseId;
         $i++;
     }
@@ -138,39 +139,38 @@ if (count($courses) > 0) {
     $tool_content .= "
         <table width='100%' class='tbl_border'>
         <tr>
-            <th class='left' colspan='2'>" . $m['lessoncode'] . "</th>";
+            <th class='left' colspan='2'>" . q($m['lessoncode']) . "</th>";
 
     if ($isInOpenCoursesMode) {
         $tool_content .= "
-                <th class='left' width='220'>" . $m['professor'] . "</th>
+                <th class='left' width='220'>" . q($m['professor']) . "</th>
                 <th width='30'>$langOpenCoursesLevel</th>";
     } else {
         $tool_content .= "
-                <th class='left' width='200'>" . $m['professor'] . "</th>
+                <th class='left' width='200'>" . q($m['professor']) . "</th>
                 <th width='30'>$langType</th>";
     }
 
     $tool_content .= "</tr>";
 
-    $k = 0;
-    //while ($mycours = mysql_fetch_array($result)) {
+    $k = 0;    
     foreach ($courses as $mycours) {
         if ($mycours->visible == 2) {
-            $codelink = "<a href='../../courses/" . $mycours->k . "/'>" . q($mycours->i) . "</a>&nbsp;<small>(" . $mycours->c . ")</small>";
+            $codelink = "<a href='../../courses/" . urlencode($mycours->k) . "/'>" . q($mycours->i) . "</a>&nbsp;<small>(" . q($mycours->c) . ")</small>";
         } else {
-            $codelink = $mycours->i . "&nbsp;<small>(" . $mycours->c . ")</small>";
+            $codelink = q($mycours->i) . "&nbsp;<small>(" . q($mycours->c) . ")</small>";
         }
 
         if ($k % 2 == 0) {
-            $tool_content .= "\n<tr class='even'>";
+            $tool_content .= "<tr class='even'>";
         } else {
-            $tool_content .= "\n<tr class='odd'>";
+            $tool_content .= "<tr class='odd'>";
         }
 
-        $tool_content .= "\n<td width='16'><img src='$themeimg/arrow.png' title='bullet'></td>";
-        $tool_content .= "\n<td>" . $codelink . "</td>";
-        $tool_content .= "\n<td>" . $mycours->t . "</td>";
-        $tool_content .= "\n<td align='center'>";
+        $tool_content .= "<td width='16'><img src='$themeimg/arrow.png' title='bullet'></td>";
+        $tool_content .= "<td>" . $codelink . "</td>";
+        $tool_content .= "<td>" . q($mycours->t) . "</td>";
+        $tool_content .= "<td align='center'>";
 
         if ($isInOpenCoursesMode) {
             // metadata are displayed in click-to-open modal dialogs
@@ -188,12 +188,10 @@ if (count($courses) > 0) {
                 }
             }
         }
-
-        $tool_content .= "</td>\n";
+        $tool_content .= "</td>";
         $tool_content .= "</tr>";
         $k++;
     }
-
     $tool_content .= "</table>";
 } else {
     $subTrees = $tree->buildSubtrees(array($fc));
@@ -201,8 +199,6 @@ if (count($courses) > 0) {
         $tool_content .= "<p class='alert1'>" . $m['nolessons'] . "</p>";
     }
 }
-
-$head_content = '';
 
 if ($isInOpenCoursesMode) {
     load_js('jquery');

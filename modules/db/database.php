@@ -57,8 +57,9 @@ final class Database {
      */
     public static function get($dbase = null) {
         global $mysqlServer, $mysqlUser, $mysqlPassword, $mysqlMainDb;
-        if (is_null($dbase))
+        if (is_null($dbase)) {
             $dbase = $mysqlMainDb;
+        }
         if (array_key_exists($dbase, self::$dbs)) {
             $db = self::$dbs[$dbase];
         } else {
@@ -66,6 +67,19 @@ final class Database {
             self::$dbs[$dbase] = $db;
         }
         return $db;
+    }
+
+    /**
+     * Remove a database from the cache. Since for every database, a new database connection is
+     * established (and this conenction is cached), with this option it is possible to remove
+     * from cache a connection that is known that it is no longer needed.
+     *
+     * In case the database is needed again, a new conenction will be created, thus it is safe to
+     * use this function.
+     * @param Database $dbase The name of the database
+     */
+    public static function forget($dbase) {
+        unset(self::$dbs[$dbase]);
     }
 
     /**
@@ -340,7 +354,7 @@ final class Database {
         /* Bind values - with type safety and '?' notation  */
         for ($i = 0; $i < $variable_size; $i++) {
             if (!$stm->bindValue($i + 1, $variables[$i], $variable_types[$i]))
-                $this->errorFound($callback_error, $isTransactional, "Unable to bind boolean parameter '$variables[$i]' with type $variable_types[$i] at location #$i", $stm->errorInfo(), $statement, $init_time, $backtrace_info, false);
+                $this->errorFound($callback_error, $isTransactional, "Unable to bind boolean parameter'$variables[$i]' with type $variable_types[$i] at location #$i", $stm->errorInfo(), $statement, $init_time, $backtrace_info, false);
         }
 
         /* Execute statement */
@@ -376,6 +390,15 @@ final class Database {
         return $result;
     }
 
+    /**
+     * Safely start a transaction and clean up if an error was produced. If this 
+     * method is called when we are already in a transaction, no new transaction
+     * will be started.
+     * @param callable $function The code inside this function will be called
+     *  when the database is in transactional state
+     * @throws Exception if an error occured while running; the transaction will
+     *  be rolled back if required
+     */
     public function transaction($function) {
         if (is_callable($function)) {
             $needsTransaction = !$this->dbh->inTransaction();
@@ -414,10 +437,10 @@ final class Database {
         if ($close_transaction && $isTransactional && $this->dbh->inTransaction())
             $this->dbh->rollBack();
         if ($pdo_error)
-            $pdo_error_text = " with error: \"" . $pdo_error[2] . "\" (SQLSTATE=" . $pdo_error[1] . " ERROR=" . $pdo_error[0] . ")";
+            $pdo_error_text = ":\"" . $pdo_error[2] . "\", sqlstate:\"" . $pdo_error[1] . "\", errornum:\"" . $pdo_error[0] . "\"";
         else
             $pdo_error_text = "";
-        Database::dbg("Error: " . $error_msg . $pdo_error_text, $statement, $init_time, $backtrace_info);
+        Database::dbg($error_msg . $pdo_error_text, $statement, $init_time, $backtrace_info);
         return null;
     }
 
@@ -425,7 +448,8 @@ final class Database {
      * Private function to call master Debug object
      */
     private static function dbg($message, $statement, $init_time, $backtrace_info, $level = Debug::ERROR) {
-        Debug::message($message . " [Statement='$statement' Elapsed=" . (microtime() - $init_time) . "]", $level, $backtrace_info['file'], $backtrace_info['line']);
+        $statement_pure = str_replace(array("\n", "\r", "\t"), array("", "", ""), $statement);
+        Debug::message($message . ", \tstatement:\"$statement_pure\", \telapsed:" . (microtime() - $init_time), $level, $backtrace_info['file'], $backtrace_info['line']);
     }
 
 }

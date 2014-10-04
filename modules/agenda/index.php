@@ -56,9 +56,15 @@ load_js('jquery-ui-timepicker-addon.min.js');
 $head_content .= "<link rel='stylesheet' type='text/css' href='{$urlAppend}js/jquery-ui-timepicker-addon.min.css'>
 <script type='text/javascript'>
 $(function() {
-$('input[name=date]').datetimepicker({
+    $('input[name=date]').datetimepicker({
     dateFormat: 'yy-mm-dd', 
     timeFormat: 'hh:mm'
+    });
+    $('input[name=enddate]').datepicker({
+    dateFormat: 'yy-mm-dd'
+    });
+    $('input[name=duration]').timepicker({ 
+    timeFormat: 'H:mm'
     });
 });
 </script>";
@@ -111,17 +117,70 @@ if ($is_editor) {
                         WHERE course_id = ?d AND id = ?d", $event_title, $content, $date, $duration, $course_id, $id);
             $log_type = LOG_MODIFY;
         } else {
-            $id = Database::get()->query("INSERT INTO agenda SET course_id = ?d, title = ?s, content = ?s , start = ?t, duration = ?s,
-                     visible = 1", $course_id, $event_title, $content, $date, $duration)->lastInsertID;
+            $period = "";
+            $enddate = "0000-00-00";
+            if(isset($_POST['frequencyperiod']) && isset($_POST['frequencynumber']) && isset($_POST['enddate'])) {
+                if (empty($_POST['enddate'])) {
+                    $enddate = "0000-00-00";
+                } else {
+                    $enddate = $_POST['enddate'];
+                }
+                $period = "P".$_POST['frequencynumber'].$_POST['frequencyperiod'];                
+            }            
+                $id = Database::get()->query("INSERT INTO agenda "
+                        ."SET course_id = ?d, "
+                        ."title = ?s, "
+                        ."content = ?s, " 
+                        ."start = ?t, "                                             
+                        ."duration = ?t, "
+                        ."recursion_period = ?t, "
+                        ."recursion_end = ?t, " 
+                        ."visible = 1", $course_id, $event_title, $content, $date, $duration, $period, $enddate)->lastInsertID;
+            
+            if(isset($id) && !is_null($id)){
+                $log_type = LOG_INSERT;
+                $agdx->store($id);
+                $txt_content = ellipsize(canonicalize_whitespace(strip_tags($content)), 50, '+');
+                Log::record($course_id, MODULE_ID_AGENDA, $log_type, array('id' => $id,
+                                                            'date' => $date,
+                                                            'duration' => $duration,
+                                                            'title' => $event_title,
+                                                            'content' => $txt_content));
+                Database::get()->query("UPDATE agenda SET source_event_id = id WHERE id = ?d",$id);
+                if(!empty($period) && !empty($enddate)){
+                    $sourceevent = $id;
+                    $interval = new DateInterval($period);
+                    $startdatetime = new DateTime($date);
+                    $enddatetime = new DateTime($enddate." 23:59:59");
+                    $newdate = date_add($startdatetime, $interval);
+                    while($newdate <= $enddatetime)
+                    {
+                        $neweventid = Database::get()->query("INSERT INTO agenda "
+                                . "SET course_id = ?d, content = ?s, title = ?s, start = ?t, duration = ?t, visible = 1,"
+                                . "recursion_period = ?s, recursion_end = ?t, "
+                                . "source_event_id = ?d", 
+                        $course_id, purify($content), $event_title, $newdate->format('Y-m-d H:i'), $duration, $period, $enddate, $sourceevent)->lastInsertID;
+                        $agdx->store($id);
+                        $txt_content = ellipsize(canonicalize_whitespace(strip_tags($content)), 50, '+');
+                        Log::record($course_id, MODULE_ID_AGENDA, $log_type, array('id' => $neweventid,
+                                                            'date' => $newdate->format('Y-m-d H:i'),
+                                                            'duration' => $duration,
+                                                            'title' => $event_title,
+                                                            'content' => $txt_content));
+                        
+                        $newdate = date_add($startdatetime, $interval);
+                    }
+                }
+            }
             $log_type = LOG_INSERT;
         }
         $agdx->store($id);
         $txt_content = ellipsize(canonicalize_whitespace(strip_tags($content)), 50, '+');
         Log::record($course_id, MODULE_ID_AGENDA, $log_type, array('id' => $id,
-            'date' => $date,
-            'duration' => $duration,
-            'title' => $event_title,
-            'content' => $txt_content));
+                                                                   'date' => $date,
+                                                                   'duration' => $duration,
+                                                                   'title' => $event_title,
+                                                                   'content' => $txt_content));
         unset($id);
         unset($content);
         unset($event_title);
@@ -143,18 +202,20 @@ if ($is_editor) {
     }
 
     $tool_content .= "<div id='operations_container'><ul id='opslist'>";
-    if ((!isset($addEvent) && @$addEvent != 1) || isset($_POST['submit'])) {
-        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addEvent=1'>" . $langAddEvent . "</a></li>";
-    }
-    $sens = " ASC";
-    $result = Database::get()->queryArray("SELECT id FROM agenda WHERE course_id = ?d", $course_id);
-    if (count($result) > 1) {
-        if (isset($_GET["sens"]) && $_GET["sens"] == "d") {
-            $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;sens=' >$langOldToNew</a></li>";
-            $sens = " DESC ";
-        } else {
-            $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;sens=d' >$langOldToNew</a></li>";
-        }
+    if (isset($_GET['addEvent']) or isset($_GET['edit'])) {
+        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>" . $langBack . "</a></li>";    
+    } else {
+        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addEvent=1'>" . $langAddEvent . "</a></li>";    
+        $sens = " ASC";
+        $result = Database::get()->queryArray("SELECT id FROM agenda WHERE course_id = ?d", $course_id);
+        if (count($result) > 1) {
+            if (isset($_GET["sens"]) && $_GET["sens"] == "d") {
+                $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;sens=' >$langOldToNew</a></li>";
+                $sens = " DESC ";
+            } else {
+                $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;sens=d' >$langOldToNew</a></li>";
+            }
+        } 
     }
     $tool_content .= "</ul></div>";
     if (isset($id) && $id) {
@@ -196,6 +257,27 @@ if ($is_editor) {
               <th>$langDuration <small> $langInHour</small>:</th>
               <td><input type='text' name='duration' value='" . $myrow->duration . "' size='2' maxlength='3'></td>
             </tr>";
+        if(!isset($_GET['edit'])){
+            $tool_content .= "
+            <tr><th>$langRepeat:</th>
+                <td> $langEvery: "
+                    . "<select name='frequencynumber'>"
+                    . "<option value='0'>$langSelectFromMenu</option>";
+            for($i = 1;$i<10;$i++)
+            {
+                $tool_content .= "<option value=\"$i\">$i</option>";
+            }
+            $tool_content .= "</select>"
+                    . "<select name='frequencyperiod'> "
+                    . "<option value=\"D\">$langSelectFromMenu...</option>"
+                    . "<option value=\"D\">$langDays</option>"
+                    . "<option value=\"W\">$langWeeks</option>"
+                    . "<option value=\"M\">$langMonthsAbstract</option>"
+                    . "</select>"
+                    . " $langUntil: <input type='text' name='enddate' value=''></td>
+            </tr>";
+        }
+        
         if (!isset($content)) {
             $content = '';
         }
@@ -218,9 +300,9 @@ if ($is_editor) {
 /* ---------------------------------------------
  *  End  of  prof only
  * ------------------------------------------- */
-if (!isset($sens))
+if (!isset($sens)) {
     $sens = " ASC";
-
+}
 if ($is_editor) {
     $result = Database::get()->queryArray("SELECT id, title, content, start, duration, visible FROM agenda WHERE course_id = ?d
 		ORDER BY start " . $sens, $course_id);

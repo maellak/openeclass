@@ -35,11 +35,13 @@ if (isset($_POST['token'])) {
                                                   VALUES (?d, ?s, NOW(), 'LOGOUT')", intval($_SESSION['uid']), $_SERVER['REMOTE_ADDR']);
         }
 
-        if (isset($_SESSION['cas_uname'])) // if we are CAS user
+        if (isset($_SESSION['cas_uname'])) { // if we are CAS user
             define('CAS', true);
+        }
 
-        foreach (array_keys($_SESSION) as $key)
+        foreach (array_keys($_SESSION) as $key) {
             unset($_SESSION[$key]);
+        }
 
         session_destroy();
 
@@ -72,23 +74,17 @@ if (isset($_POST['uname']) && isset($_POST['pass'])) {
     require_once ('modules/auth/auth.inc.php');
     require_once ('include/phpass/PasswordHash.php');
 
-    $uname = autounquote(canonicalize_whitespace($_POST['uname']));
-    $pass = autounquote($_POST['pass']);
+    $uname = canonicalize_whitespace($_POST['uname']);
+    $pass = $_POST['pass'];
 
-    foreach (array_keys($_SESSION) as $key)
+    foreach (array_keys($_SESSION) as $key) {
         unset($_SESSION[$key]);
-
-    $sqlLogin = "SELECT *
-                   FROM user
-                  WHERE username ";
-    if (get_config('case_insensitive_usernames')) {
-        $sqlLogin .= "= " . quote($uname);
-    } else {
-        $sqlLogin .= "COLLATE utf8_bin = " . quote($uname);
     }
-    $myrow = Database::get()->querySingle($sqlLogin);
-    $myrow = (array) $myrow;
-    if (in_array($myrow['password'], $auth_ids)) {
+
+    $sqlLogin = (get_config('case_insensitive_usernames')) ? "= ?s" : "COLLATE utf8_bin = ?s";
+    $myrow = Database::get()->querySingle("SELECT * FROM user WHERE username $sqlLogin", $uname);
+    
+    if (in_array($myrow->password, $auth_ids)) {
         $ok = alt_login($myrow, $uname, $pass);
     } else {
         $ok = login($myrow, $uname, $pass);
@@ -100,8 +96,9 @@ if (isset($_POST['uname']) && isset($_POST['pass'])) {
         session_regenerate_id();
         set_session_mvars();
         echo session_id();
-    } else
+    } else {
         echo RESPONSE_FAILED;
+    }
 
     exit();
 }

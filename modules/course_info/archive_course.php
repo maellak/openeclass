@@ -20,12 +20,12 @@
  * ======================================================================== */
 
 $require_current_course = true;
-$require_course_admin = true;
+$require_departmentmanage_user = true;
 require_once '../../include/baseTheme.php';
 require_once 'include/lib/fileManageLib.inc.php';
 
 $nameTools = $langArchiveCourse;
-$navigation[] = array('url' => "index.php?course=$course_code", 'name' => $langModifInfo);
+$navigation[] = array('url' => "index.php?course=$course_code", 'name' => $langCourseInfo);
 
 if (extension_loaded('zlib')) {
     include 'include/pclzip/pclzip.lib.php';
@@ -44,7 +44,7 @@ $archivedir = $basedir . '/' . $backup_date;
 mkpath($archivedir);
 
 $zipfile = $basedir . "/$course_code-$backup_date_short.zip";
-$tool_content .= "<table class='tbl' align='center'><tbody><tr><th align='left'><ol>\n";
+$tool_content .= "<table class='tbl' align='center'><tbody><tr><th align='left'><ol>";
 
 // backup subsystems from main db
 $sql_course = "course_id = $course_id";
@@ -53,6 +53,7 @@ $archive_conditions = array(
     'user' => "id IN (SELECT user_id FROM course_user
                                       WHERE course_id = $course_id)",
     'course_user' => "course_id = $course_id",
+    'course_settings' => "course_id = $course_id",
     'course_department' => "course = $course_id",
     'course_module' => $sql_course,
     'hierarchy' => "id IN (SELECT department FROM course_department
@@ -84,6 +85,8 @@ $archive_conditions = array(
                                              WHERE forum.id = forum_id AND
                                                    course_id = $course_id)",
     'forum_notify' => $sql_course,
+    'forum_user_stats' => $sql_course,
+    'course_description' => $sql_course,
     'glossary' => $sql_course,
     'glossary_category' => $sql_course,
     'video' => $sql_course,
@@ -111,19 +114,16 @@ $archive_conditions = array(
     'assignment' => $sql_course,
     'assignment_submit' => "assignment_id IN (SELECT id FROM assignment
                                                          WHERE course_id = $course_id)",
-    
     'gradebook' => $sql_course,
     'gradebook_activities' => "gradebook_id IN (SELECT id FROM gradebook
                                                          WHERE course_id = $course_id)",
     'gradebook_book' => "gradebook_activity_id IN (SELECT gradebook_activities.id FROM gradebook_activities, gradebook
                                                          WHERE gradebook.course_id = $course_id AND gradebook_activities.gradebook_id = gradebook.id)",
-    
     'attendance' => $sql_course,
     'attendance_activities' => "attendance_id IN (SELECT id FROM attendance
                                                          WHERE course_id = $course_id)",
     'attendance_book' => "attendance_activity_id IN (SELECT attendance_activities.id FROM attendance_activities, attendance
                                                          WHERE attendance.course_id = $course_id AND attendance_activities.attendance_id = attendance.id)",
-    
     'agenda' => $sql_course,
     'exercise' => $sql_course,
     'exercise_question' => $sql_course,
@@ -134,8 +134,11 @@ $archive_conditions = array(
                                                              WHERE course_id = $course_id) OR
                                       exercise_id IN (SELECT id FROM exercise
                                                              WHERE course_id = $course_id)",
-    'bbb_session' => "course_id IN (SELECT id FROM bbb_session WHERE course_id = $course_id)"
-    );
+    'bbb_session' => "course_id IN (SELECT id FROM bbb_session WHERE course_id = $course_id)",
+    'blog_post' => "id IN (SELECT id FROM blog_post WHERE course_id = $course_id)",
+    'comments' => "(rtype = 'blogpost' AND rid IN (SELECT id FROM blog_post WHERE course_id = $course_id)) OR (rtype = 'course' AND rid = $course_id)",
+    'rating' => "(rtype = 'blogpost' AND rid IN (SELECT id FROM blog_post WHERE course_id = $course_id)) OR (rtype = 'course' AND rid = $course_id)",
+    'rating_cache' => "(rtype = 'blogpost' AND rid IN (SELECT id FROM blog_post WHERE course_id = $course_id)) OR (rtype = 'course' AND rid = $course_id)");
 
 foreach ($archive_conditions as $table => $condition) {
     backup_table($archivedir, $table, $condition);
@@ -171,20 +174,19 @@ $tool_content .= "<p align='right'>
 
 draw($tool_content, 2);
 
+/**
+ * @brief back up a table
+ * @param type $basedir
+ * @param type $table
+ * @param type $condition
+ */
 function backup_table($basedir, $table, $condition) {
-    $q = db_query("SELECT * FROM `$table` WHERE $condition");
-    $backup = array();
-    $num_fields = mysql_num_fields($q);
-    while ($data = mysql_fetch_assoc($q)) {
-        for ($i = 0; $i < $num_fields; $i++) {
-            $type = mysql_field_type($q, $i);
-            if ($type == 'int') {
-                $name = mysql_field_name($q, $i);
-                $data[$name] = intval($data[$name]);
-            }
-        }
-        $backup[] = $data;
-    }
+    
+    $q = Database::get()->queryArray("SELECT * FROM `$table` WHERE $condition");
+    $backup = array();    
+    foreach ($q as $data) {
+        $backup[] = (array) $data;
+    }    
     file_put_contents("$basedir/$table", serialize($backup));
 }
 
@@ -193,8 +195,7 @@ function cleanup($basedir, $age) {
     if ($handle = opendir($basedir)) {
         while (($file = readdir($handle)) !== false) {
             $entry = "$basedir/$file";
-            if ($file != '.' and $file != '..' and
-                    (time() - filemtime($entry) > $age)) {
+            if ($file != '.' and $file != '..' and ( time() - filemtime($entry) > $age)) {
                 if (is_dir($entry)) {
                     removeDir($entry);
                 } else {

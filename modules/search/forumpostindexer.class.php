@@ -4,7 +4,7 @@
  * Open eClass 3.0
  * E-learning and Course Management System
  * ========================================================================
- * Copyright 2003-2012  Greek Universities Network - GUnet
+ * Copyright 2003-2014  Greek Universities Network - GUnet
  * A full copyright notice can be read in "/info/copyright.txt".
  * For a full list of contributors, see "credits.txt".
  *
@@ -20,51 +20,35 @@
  * ======================================================================== */
 
 require_once 'indexer.class.php';
+require_once 'abstractindexer.class.php';
 require_once 'resourceindexer.interface.php';
 require_once 'Zend/Search/Lucene/Document.php';
 require_once 'Zend/Search/Lucene/Field.php';
 require_once 'Zend/Search/Lucene/Index/Term.php';
 
-class ForumPostIndexer implements ResourceIndexerInterface {
-
-    private $__indexer = null;
-    private $__index = null;
-
-    /**
-     * Constructor. You can optionally use an already instantiated Indexer object if there is one.
-     * 
-     * @param Indexer $idxer - optional indexer object
-     */
-    public function __construct($idxer = null) {
-        if ($idxer == null)
-            $this->__indexer = new Indexer();
-        else
-            $this->__indexer = $idxer;
-
-        $this->__index = $this->__indexer->getIndex();
-    }
+class ForumPostIndexer extends AbstractIndexer implements ResourceIndexerInterface {
 
     /**
      * Construct a Zend_Search_Lucene_Document object out of a forum post row.
      * 
      * @global string $urlServer
-     * @param  array  $fpost
+     * @param  object  $fpost
      * @return Zend_Search_Lucene_Document
      */
-    private static function makeDoc($fpost) {
+    protected function makeDoc($fpost) {
         global $urlServer;
         $encoding = 'utf-8';
 
         $doc = new Zend_Search_Lucene_Document();
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('pk', 'fpost_' . $fpost['id'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('pkid', $fpost['id'], $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('pk', 'fpost_' . $fpost->id, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('pkid', $fpost->id, $encoding));
         $doc->addField(Zend_Search_Lucene_Field::Keyword('doctype', 'fpost', $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('courseid', $fpost['course_id'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('topicid', $fpost['topic_id'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Text('content', Indexer::phonetics(strip_tags($fpost['post_text'])), $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::UnIndexed('url', $urlServer . 'modules/forum/viewtopic.php?course=' . course_id_to_code($fpost['course_id'])
-                        . '&amp;topic=' . intval($fpost['topic_id'])
-                        . '&amp;forum=' . intval($fpost['forum_id']), $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('courseid', $fpost->course_id, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('topicid', $fpost->topic_id, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Text('content', Indexer::phonetics(strip_tags($fpost->post_text)), $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::UnIndexed('url', $urlServer . 'modules/forum/viewtopic.php?course=' . course_id_to_code($fpost->course_id)
+                        . '&amp;topic=' . intval($fpost->topic_id)
+                        . '&amp;forum=' . intval($fpost->forum_id), $encoding));
 
         return $doc;
     }
@@ -72,110 +56,76 @@ class ForumPostIndexer implements ResourceIndexerInterface {
     /**
      * Fetch a Forum Post from DB.
      * 
-     * @param  int $fpostId
-     * @return array - the mysql fetched row
+     * @param  int    $fpostId - the forum post id
+     * @return object          - the DB fetched anonymous object
      */
-    private function fetch($fpostId) {
-        $res = db_query("SELECT fp.*, f.course_id, ft.forum_id FROM forum_post fp 
-            JOIN forum_topic ft ON fp.topic_id = ft.id 
-            JOIN forum f ON ft.forum_id = f.id 
-            JOIN forum_category fc ON fc.id = f.cat_id 
-            WHERE fc.cat_order >= 0 AND fp.id = " . intval($fpostId));
-        $fpost = mysql_fetch_assoc($res);
-        if (!$fpost)
+    protected function fetch($fpostId) {
+        $fpost = Database::get()->querySingle("SELECT fp.*, f.course_id, ft.forum_id FROM forum_post fp 
+                            JOIN forum_topic ft ON fp.topic_id = ft.id 
+                            JOIN forum f ON ft.forum_id = f.id 
+                            JOIN forum_category fc ON fc.id = f.cat_id 
+                        WHERE fc.cat_order >= 0 AND fp.id = ?d", $fpostId);
+        if (!$fpost) {
             return null;
+        }
 
         return $fpost;
     }
-
+    
     /**
-     * Store a Forum Post in the Index.
+     * Get Term object for locating a unique single forum post.
      * 
-     * @param  int     $fpostId
-     * @param  boolean $optimize
+     * @param  int $fpostId - the forum post id
+     * @return Zend_Search_Lucene_Index_Term
      */
-    public function store($fpostId, $optimize = false) {
-        $fpost = $this->fetch($fpostId);
-        if (!$fpost)
-            return;
-
-        // delete existing forum post from index
-        $this->remove($fpostId, false, false);
-
-        // add the forum post back to the index
-        $this->__index->addDocument(self::makeDoc($fpost));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getTermForSingleResource($fpostId) {
+        return new Zend_Search_Lucene_Index_Term('fpost_' . $fpostId, 'pk');
     }
-
+    
     /**
-     * Remove a Forum Post from the Index.
+     * Get Term object for locating all possible forum posts.
      * 
-     * @param int     $fpostId
-     * @param boolean $existCheck
-     * @param boolean $optimize
+     * @return Zend_Search_Lucene_Index_Term
      */
-    public function remove($fpostId, $existCheck = false, $optimize = false) {
-        if ($existCheck) {
-            $fpost = $this->fetch($fpostId);
-            if (!$fpost)
-                return;
-        }
-
-        $term = new Zend_Search_Lucene_Index_Term('fpost_' . $fpostId, 'pk');
-        $docIds = $this->__index->termDocs($term);
-        foreach ($docIds as $id)
-            $this->__index->delete($id);
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getTermForAllResources() {
+        return new Zend_Search_Lucene_Index_Term('fpost', 'doctype');
     }
-
+    
     /**
-     * Store all Forum Posts belonging to a Course.
+     * Get all possible forum posts from DB.
      * 
-     * @param int     $courseId
-     * @param boolean $optimize
+     * @return array - array of DB fetched anonymous objects with property names that correspond to the column names
      */
-    public function storeByCourse($courseId, $optimize = false) {
-        // delete existing forum posts from index
-        $this->removeByCourse($courseId);
-
-        // add the forum posts back to the index
-        $res = db_query("SELECT fp.*, f.course_id, ft.forum_id FROM forum_post fp 
-            JOIN forum_topic ft ON fp.topic_id = ft.id 
-            JOIN forum f ON ft.forum_id = f.id 
-            JOIN forum_category fc ON fc.id = f.cat_id 
-            WHERE fc.cat_order >= 0 AND f.course_id = " . intval($courseId));
-        while ($row = mysql_fetch_assoc($res))
-            $this->__index->addDocument(self::makeDoc($row));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getAllResourcesFromDB() {
+        return Database::get()->queryArray("SELECT fp.*, f.course_id, ft.forum_id FROM forum_post fp 
+                                            JOIN forum_topic ft ON fp.topic_id = ft.id 
+                                            JOIN forum f ON ft.forum_id = f.id 
+                                            JOIN forum_category fc ON fc.id = f.cat_id 
+                                        WHERE fc.cat_order >= 0");
     }
-
+    
     /**
-     * Remove all Forum Posts belonging to a Course.
+     * Get Lucene query input string for locating all forum posts belonging to a given course.
      * 
-     * @param int     $courseId
-     * @param boolean $optimize
+     * @param  int $courseId - the given course id
+     * @return string        - the string that can be used as Lucene query input
      */
-    public function removeByCourse($courseId, $optimize = false) {
-        $hits = $this->__index->find('doctype:fpost AND courseid:' . $courseId);
-        foreach ($hits as $hit)
-            $this->__index->delete($hit->getDocument()->id);
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getQueryInputByCourse($courseId) {
+        return 'doctype:fpost AND courseid:' . $courseId;
+    }
+    
+    /**
+     * Get all forum posts belonging to a given course from DB.
+     * 
+     * @param  int   $courseId - the given course id
+     * @return array           - array of DB fetched anonymous objects with property names that correspond to the column names
+     */
+    protected function getCourseResourcesFromDB($courseId) {
+        return Database::get()->queryArray("SELECT fp.*, f.course_id, ft.forum_id FROM forum_post fp 
+                            JOIN forum_topic ft ON fp.topic_id = ft.id 
+                            JOIN forum f ON ft.forum_id = f.id 
+                            JOIN forum_category fc ON fc.id = f.cat_id 
+                        WHERE fc.cat_order >= 0 AND f.course_id = ?d", $courseId);
     }
 
     /**
@@ -185,41 +135,16 @@ class ForumPostIndexer implements ResourceIndexerInterface {
      * @param boolean $optimize
      */
     public function removeByTopic($topicId, $optimize = false) {
+        if (!get_config('enable_indexing')) {
+            return;
+        }
+        
         $hits = $this->__index->find('doctype:fpost AND topicid:' . $topicId);
-        foreach ($hits as $hit)
-            $this->__index->delete($hit->getDocument()->id);
+        foreach ($hits as $hit) {
+            $this->__index->delete($hit->id);
+        }
 
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
-    }
-
-    /**
-     * Reindex all forum posts.
-     * 
-     * @param boolean $optimize
-     */
-    public function reindex($optimize = false) {
-        // remove all forum posts from index
-        $term = new Zend_Search_Lucene_Index_Term('fpost', 'doctype');
-        $docIds = $this->__index->termDocs($term);
-        foreach ($docIds as $id)
-            $this->__index->delete($id);
-
-        // get/index all forum posts from db
-        $res = db_query("SELECT fp.*, f.course_id, ft.forum_id FROM forum_post fp 
-            JOIN forum_topic ft ON fp.topic_id = ft.id 
-            JOIN forum f ON ft.forum_id = f.id 
-            JOIN forum_category fc ON fc.id = f.cat_id 
-            WHERE fc.cat_order >= 0");
-        while ($row = mysql_fetch_assoc($res))
-            $this->__index->addDocument(self::makeDoc($row));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+        $this->optimizeOrCommit($optimize);
     }
 
     /**
@@ -234,8 +159,9 @@ class ForumPostIndexer implements ResourceIndexerInterface {
                 isset($data['course_id']) && !empty($data['course_id'])) {
             $terms = explode(' ', Indexer::filterQuery($data['search_terms']));
             $queryStr = '(';
-            foreach ($terms as $term)
+            foreach ($terms as $term) {
                 $queryStr .= 'content:' . $term . '* ';
+            }
             $queryStr .= ') AND courseid:' . $data['course_id'] . ' AND doctype:fpost';
             return $queryStr;
         }

@@ -32,7 +32,7 @@ function visibility_select($current) {
         $selected = ($type == $current) ? ' selected' : '';
         $ret .= "<option value='$type'$selected>" . q($text) . "</option>\n";
     }
-    $ret .= "</select>\n";
+    $ret .= "</select>";
     return $ret;
 }
 
@@ -86,16 +86,14 @@ function find_backup_folders($basedir) {
     return $dirlist;
 }
 
-function restore_table($basedir, $table, $options) {
-    global $url_prefix_map, $restoreHelper, $backupData;
-
+function restore_table($basedir, $table, $options, $url_prefix_map, $backupData, $restoreHelper) {
     $set = get_option($options, 'set');
     if (!file_exists($basedir . "/" . $restoreHelper->getFile($table)) 
             && $restoreHelper->getBackupVersion() === RestoreHelper::STYLE_2X 
             && isset($backupData) && is_array($backupData) 
             && isset($backupData['query']) && is_array($backupData['query'])) {
         // look into backupData for our data
-        $backup = get_tabledata_from_parsed($table, $set);
+        $backup = get_tabledata_from_parsed($table, $backupData, $restoreHelper, $set);
     } else if (file_exists($basedir . "/" . $restoreHelper->getFile($table))) {
         $backup = unserialize(file_get_contents($basedir . "/" . $restoreHelper->getFile($table)));
     } else {
@@ -120,7 +118,7 @@ function restore_table($basedir, $table, $options) {
             }
         }
         if (!isset($sql_intro)) {
-            $sql_intro = "INSERT INTO `$table` " . field_names($data, $table) . ' VALUES ';
+            $sql_intro = "INSERT INTO `$table` " . field_names($data, $table, $restoreHelper) . ' VALUES ';
         }
         if (isset($options['map'])) {
             foreach ($options['map'] as $field => &$map) {
@@ -140,8 +138,8 @@ function restore_table($basedir, $table, $options) {
             }
         }
         if ($do_insert) {
-            $field_args = field_args($data, $table, $set, $url_prefix_map);
-            $lastid = Database::get()->query($sql_intro . field_placeholders($data, $table, $set), $field_args)->lastInsertID;
+            $field_args = field_args($data, $table, $set, $url_prefix_map, $restoreHelper);
+            $lastid = Database::get()->query($sql_intro . field_placeholders($data, $table, $set, $restoreHelper), $field_args)->lastInsertID;
         }
         if ($return_mapping) {
             $mapping[$old_id] = $lastid;
@@ -152,16 +150,14 @@ function restore_table($basedir, $table, $options) {
     }
 }
 
-function field_names($data, $table) {
-    global $restoreHelper;
+function field_names($data, $table, $restoreHelper) {
     foreach ($data as $name => $value) {
         $keys[] = '`' . $restoreHelper->getField($table, $name) . '`';
     }
     return '(' . implode(', ', $keys) . ')';
 }
 
-function field_placeholders($data, $table, $set) {
-    global $restoreHelper;
+function field_placeholders($data, $table, $set, $restoreHelper) {
     foreach ($data as $name => $value) {
         if (isset($set[$restoreHelper->getField($table, $name)])) {
             $value = $set[$restoreHelper->getField($table, $name)];
@@ -175,8 +171,7 @@ function field_placeholders($data, $table, $set) {
     return '(' . implode(', ', $values) . ')';
 }
 
-function field_args($data, $table, $set, $url_prefix_map) {
-    global $restoreHelper;
+function field_args($data, $table, $set, $url_prefix_map, $restoreHelper) {
     $values = array();
     foreach ($data as $name => $value) {
         if (isset($set[$restoreHelper->getField($table, $name)])) {
@@ -232,13 +227,13 @@ function course_details_form($code, $title, $prof, $lang, $type = null, $vis, $d
                    <tr><th>$langCourseCode:</th>
                        <td><input type='text' name='course_code' value='" . q($code) . "' /></td></tr>
                    <tr><th>$langLanguage:</th>
-                       <td>" . lang_select_options('languages') . "</td>
+                       <td>" . lang_select_options('course_lang') . "</td>
                    <tr><th>$langTitle:</th>
                        <td><input type='text' name='course_title' value='" . q($title) . "' size='50' /></td></tr>
                    <tr><th>$langCourseDescription:</th>
                        <td>" . rich_text_editor('desc', 10, 40, purify($desc)) . "</td></tr>
                        <tr><th>$langFaculty:</th>
-                       <td>" . $tree_html . "<br>$langOldValue: <i>$old_faculty</i></td></tr>
+                       <td>" . $tree_html . "<br>$langOldValue: <i> " . hierarchy::unserializeLangField($old_faculty) . "</i></td></tr>
                    <tr><th>$langCourseVis:</th><td>" . visibility_select($vis) . "</td></tr>
                    <tr><th>$langTeacher:</th>
                        <td><input type='text' name='course_prof' value='" . q($prof) . "' size='50' /></td></tr>
@@ -255,13 +250,13 @@ function course_details_form($code, $title, $prof, $lang, $type = null, $vis, $d
                    <tr><td>&nbsp;</td></tr>
                    <tr><td colspan='2'>
                       <input type='submit' name='create_restored_course' value='$langOk' />
-                      <input type='hidden' name='restoreThis' value='$_POST[restoreThis]' /></td></tr>
+                      <input type='hidden' name='restoreThis' value='" . q($_POST['restoreThis']) . "' /></td></tr>
                 </tbody></table>
                 </form>";
 }
 
-function restore_users($users, $cours_user, $departments) {
-    global $tool_content, $langRestoreUserExists, $langRestoreUserNew, $restoreHelper;
+function restore_users($users, $cours_user, $departments, $restoreHelper) {
+    global $tool_content, $langRestoreUserExists, $langRestoreUserNew;
 
     $userid_map = array();
     if ($_POST['add_users'] == 'none') {
@@ -315,8 +310,8 @@ function restore_users($users, $cours_user, $departments) {
     return $userid_map;
 }
 
-function register_users($course_id, $userid_map, $cours_user) {
-    global $langPrevId, $langNewId, $tool_content, $restoreHelper;
+function register_users($course_id, $userid_map, $cours_user, $restoreHelper) {
+    global $langPrevId, $langNewId, $tool_content;
 
     foreach ($cours_user as $cudata) {
         $old_id = $cudata['user_id'];
@@ -556,16 +551,29 @@ function unit_map_function(&$data, $maps) {
     return true;
 }
 
-function offset_map_function(&$data, $maps) {
-    list($key, $offset) = $maps;
-    if (isset($data[$key])) {
-        $data[$key] += $offset;
+function ratings_map_function(&$data, $maps) {
+    list($blog_post_map, $course_id) = $maps;
+    $rtype = $data['rtype'];
+    if ($rtype == 'blogpost') {
+        $data['rid'] = $blog_post_map[$data['rid']];
+    } elseif ($rtype == 'course') {
+        $data['rid'] = $course_id;
     }
     return true;
 }
 
-function get_tabledata_from_parsed($table, $set = array()) {
-    global $restoreHelper, $backupData;
+function comments_map_function(&$data, $maps) {
+    list($blog_post_map, $course_id) = $maps;
+    $rtype = $data['rtype'];
+    if ($rtype == 'blogpost') {
+        $data['rid'] = $blog_post_map[$data['rid']];
+    } elseif ($rtype == 'course') {
+        $data['rid'] = $course_id;
+    }
+    return true;
+}
+
+function get_tabledata_from_parsed($table, $backupData, $restoreHelper, $set = array()) {
     $backup = array();
     foreach ($backupData['query'] as $tableData) {
         if (is_array($tableData) && isset($tableData['table']) 

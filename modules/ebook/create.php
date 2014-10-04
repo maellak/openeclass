@@ -1,10 +1,10 @@
 <?php
 
 /* ========================================================================
- * Open eClass 2.4
+ * Open eClass 3.0
  * E-learning and Course Management System
  * ========================================================================
- * Copyright 2003-2011  Greek Universities Network - GUnet
+ * Copyright 2003-2014  Greek Universities Network - GUnet
  * A full copyright notice can be read in "/info/copyright.txt".
  * For a full list of contributors, see "credits.txt".
  *
@@ -31,13 +31,11 @@ $nameTools = $langEBookCreate;
 $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langEBook);
 define('EBOOK_DOCUMENTS', true);
 
-mysql_select_db($mysqlMainDb);
-
 if (!$is_editor) {
     redirect_to_home_page();
 } else {
     $title = trim(@$_POST['title']);
-    if (empty($title) or !isset($_FILES['file'])) {
+    if (empty($title) or ! isset($_FILES['file'])) {
         $tool_content .= "<p class='caution'>$langFieldsMissing</p>";
     }
     if (!preg_match('/\.zip$/i', $_FILES['file']['name'])) {
@@ -55,22 +53,20 @@ if (!$is_editor) {
     $zipFile = new pclZip($_FILES['file']['tmp_name']);
     validateUploadedZipFile($zipFile->listContent(), 2);
 
-    list($order) = mysql_fetch_row(db_query("SELECT MAX(`order`) FROM ebook WHERE course_id = $course_id"));
+    $order = Database::get()->querySingle("SELECT MAX(`order`) AS `order` FROM ebook WHERE course_id = ?d", $course_id)->order;
     if (!$order) {
         $order = 1;
     } else {
         $order++;
     }
-    db_query("INSERT INTO ebook SET `order` = $order, `course_id` = $course_id, `title` = " .
-            autoquote($title));
-    $ebook_id = mysql_insert_id();
+    $ebook_id = Database::get()->query("INSERT INTO ebook SET `order` = ?d, `course_id` = ?d, `title` = ?s", $order, $course_id, $title)->lastInsertID;
 
     // Initialize document subsystem global variables
     require_once 'modules/document/doc_init.php';
     require_once 'include/log.php';
 
     if (!mkdir($basedir, 0775, true)) {
-        db_query("DELETE FROM ebook WHERE course_id = $course_id AND id = $ebook_id");
+        Database::get()->query("DELETE FROM ebook WHERE course_id = ?d AND id = ?d", $course_id, $ebook_id);
         $tool_content .= "<p class='caution'>$langImpossible</p>";
         draw($tool_content, 2);
         exit;

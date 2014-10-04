@@ -49,12 +49,11 @@ if ($is_editor) {
 $nameTools = $langGlossary;
 
 $categories = array();
-$q = db_query("SELECT id, name, description, `order`
-                      FROM glossary_category WHERE course_id = $course_id
-                      ORDER BY name");
-while ($cat = mysql_fetch_assoc($q)) {
-    $categories[intval($cat['id'])] = $cat['name'];
-}
+Database::get()->queryFunc("SELECT id, name, description, `order`
+                      FROM glossary_category WHERE course_id = ?d
+                      ORDER BY name", function ($cat) use (&$categories) {
+    $categories[intval($cat->id)] = $cat->name;
+}, $course_id);
 if (isset($_GET['cat'])) {
     $cat_id = intval($_GET['cat']);
     $edit_url .= "&amp;cat=$cat_id";
@@ -65,18 +64,21 @@ if (isset($_GET['prefix'])) {
     $edit_url .= '&amp;prefix=' . urlencode($_GET['prefix']);
 }
 
-list($expand_glossary, $glossary_index) = mysql_fetch_row(db_query("SELECT glossary_expand, glossary_index
-                                         FROM course WHERE id = $course_id"));
-if ($glossary_index) {
-    $prefixes = array();
-    $q = db_query("SELECT DISTINCT UPPER(LEFT(term, 1)) AS prefix
-                              FROM glossary WHERE course_id = $course_id
-                              ORDER BY prefix");
-    while ($prefix = mysql_fetch_row($q)) {
-        $prefix = remove_accents($prefix[0]);
-        if (array_search($prefix, $prefixes) === false) {
-            $prefixes[] = $prefix;
-        }
+$glossary_data = Database::get()->querySingle("SELECT glossary_expand, glossary_index
+                                         FROM course WHERE id = ?d", $course_id);
+if ($glossary_data) {
+    $expand_glossary = $glossary_data->glossary_expand;
+    $glossary_index = $glossary_data->glossary_index;
+    if ($glossary_index) {
+        $prefixes = array();
+        Database::get()->queryFunc("SELECT DISTINCT UPPER(LEFT(term, 1)) AS prefix
+                              FROM glossary WHERE course_id = ?d
+                              ORDER BY prefix", function ($prefix) use (&$prefixes) {
+            $prefix = remove_accents($prefix->prefix);
+            if (array_search($prefix, $prefixes) === false) {
+                $prefixes[] = $prefix;
+            }
+        }, $course_id);
     }
 }
 
@@ -86,6 +88,26 @@ if ($glossary_index) {
  * ****************************************** */
 
 if ($is_editor) {
+    
+    if (isset($_GET['add']) or isset($_GET['config']) or isset($_GET['edit'])) {
+       $tool_content .= "<div id='operations_container'>
+         <ul id='opslist'>
+            <li><a href='$base_url'>$langBack</a></li>
+            </ul>
+       </div>";
+    } else {    
+         $tool_content .= "
+        <div id='operations_container'>
+          <ul id='opslist'>" .
+             ($categories ? "<li><a href='categories.php?course=$course_code'>$langCategories</a></li>" : '') . "
+            <li><a href='$base_url&amp;add=1'>$langAddGlossaryTerm</a></li>
+            <li><a href='$cat_url&amp;add=1'>$langCategoryAdd</a></li>
+            <li><a href='$base_url&amp;config=1'>$langConfig</a></li>
+            <li>$langGlossaryToCsv (<a href='dumpglossary.php?course=$course_code'>UTF8</a>&nbsp;-&nbsp;<a href='dumpglossary.php?course=$course_code&amp;enc=1253'>Windows 1253</a>)</li>
+          </ul>
+        </div>";
+    }
+    
     if (isset($_POST['url'])) {
         $url = trim($_POST['url']);
         if (!empty($url)) {
@@ -97,8 +119,9 @@ if ($is_editor) {
 
     if (isset($_POST['submit_config'])) {
         $expand_glossary = isset($_POST['expand']) ? 1 : 0;
-        db_query("UPDATE course SET glossary_expand = $expand_glossary,
-                                           glossary_index = " . (isset($_POST['index']) ? 1 : 0) . " WHERE id = $course_id");
+        Database::get()->query("UPDATE course SET glossary_expand = ?d,
+                                           glossary_index = ?d WHERE id = ?d"
+                , $expand_glossary, (isset($_POST['index']) ? 1 : 0), $course_id);
         invalidate_glossary_cache();
         $tool_content .= "<div class='success'>$langQuotaSuccess</div>";
     }
@@ -112,37 +135,39 @@ if ($is_editor) {
 
         if (isset($_POST['id'])) {
             $id = intval($_POST['id']);
-            $q = db_query("UPDATE glossary
-                                              SET term = " . autoquote($_POST['term']) . ",
-                                                  definition = " . autoquote($_POST['definition']) . ",
-                                                  url = " . autoquote($url) . ",
-                                                  notes = " . autoquote(purify($_POST['notes'])) . ",
-                                                  category_id = $category_id,
+            $q = Database::get()->query("UPDATE glossary
+                                              SET term = ?s,
+                                                  definition = ?s,
+                                                  url = ?s,
+                                                  notes = ?s,
+                                                  category_id = ?d ,
                                                   datestamp = NOW()
-                                              WHERE id = $id AND course_id = $course_id");
+                                              WHERE id = ?d AND course_id = ?d"
+                    , $_POST['term'], $_POST['definition'], $url, purify($_POST['notes']), $category_id, $id, $course_id);
             $log_action = LOG_MODIFY;
             $success_message = $langGlossaryUpdated;
         } else {
-            $q = db_query("INSERT INTO glossary
-                                              SET term = " . autoquote($_POST['term']) . ",
-                                                  definition = " . autoquote($_POST['definition']) . ",
-                                                  url = " . autoquote($url) . ",
-                                                  notes = " . autoquote(purify($_POST['notes'])) . ",
-                                                  category_id = $category_id,
+            $q = Database::get()->query("INSERT INTO glossary
+                                              SET term = ?s,
+                                                  definition = ?s,
+                                                  url = ?s,
+                                                  notes = ?s,
+                                                  category_id = ?d,
                                                   datestamp = NOW(),
-                                                  course_id = $course_id,
-                                                  `order` = " . findorder($course_id));
+                                                  course_id = ?d,
+                                                  `order` = ?d"
+                    , $_POST['term'], $_POST['definition'], $url, purify($_POST['notes']), $category_id, $course_id, findorder($course_id));
             $log_action = LOG_INSERT;
             $success_message = $langGlossaryAdded;
         }
-        $id = mysql_insert_id();
+        $id = $q->lastInsertID;
         Log::record($course_id, MODULE_ID_GLOSSARY, $log_action, array('id' => $id,
             'term' => $_POST['term'],
             'definition' => $_POST['definition'],
             'url' => $url,
             'notes' => purify($_POST['notes'])));
 
-        if ($q and mysql_affected_rows()) {
+        if ($q and $q->affectedRows) {
             invalidate_glossary_cache();
             $tool_content .= "<div class='success'>$success_message</div><br />";
         }
@@ -150,26 +175,17 @@ if ($is_editor) {
 
     if (isset($_GET['delete'])) {
         $id = $_GET['delete'];
-        $term = db_query_get_single_value("SELECT term FROM glossary WHERE ID = $id");
-        $q = db_query("DELETE FROM glossary WHERE id = $id AND course_id = $course_id");
+        $term = Database::get()->querySingle("SELECT term FROM glossary WHERE ID = ?d", $id)->term;
+        $q = Database::get()->query("DELETE FROM glossary WHERE id = ?d AND course_id = ?d", $id, $course_id);
         invalidate_glossary_cache();
         Log::record($course_id, MODULE_ID_GLOSSARY, LOG_DELETE, array('id' => $id,
-            'term' => $term));
-        if ($q and mysql_affected_rows()) {
+                                                                      'term' => $term));
+        if ($q and $q->affectedRows) {
             $tool_content .= "<div class='success'>$langGlossaryDeleted</div><br />";
         }
-    }
-
-    $tool_content .= "
-       <div id='operations_container'>
-         <ul id='opslist'>" .
-            ($categories ? "<li><a href='categories.php?course=$course_code'>$langCategories</a></li>" : '') . "
-           <li><a href='$base_url&amp;add=1'>$langAddGlossaryTerm</a></li>
-           <li><a href='$cat_url&amp;add=1'>$langCategoryAdd</a></li>
-           <li><a href='$base_url&amp;config=1'>$langConfig</a></li>
-           <li>$langGlossaryToCsv (<a href='dumpglossary.php?course=$course_code'>UTF8</a>&nbsp;-&nbsp;<a href='dumpglossary.php?course=$course_code&amp;enc=1253'>Windows 1253</a>)</li>
-         </ul>
-       </div>";
+        draw($tool_content, 2, null, $head_content);
+        exit;
+    }       
 
     // display configuration form
     if (isset($_GET['config'])) {
@@ -211,14 +227,13 @@ if ($is_editor) {
         } else {
             $nameTools = $langEditGlossaryTerm;
             $id = intval($_GET['edit']);
-            $q = db_query("SELECT term, definition, url, notes, category_id
-                                              FROM glossary WHERE id = $id");
-            if (mysql_num_rows($q)) {
-                $data = mysql_fetch_assoc($q);
+            $data = Database::get()->querySingle("SELECT term, definition, url, notes, category_id
+                                              FROM glossary WHERE id = ?d", $id);
+            if ($data) {
                 $html_id = "<input type = 'hidden' name='id' value='$id'>";
-                $html_term = " value='" . q($data['term']) . "'";
-                $html_url = " value='" . q($data['url']) . "'";
-                $category_id = is_null($data['category_id']) ? 'none' : $data['category_id'];
+                $html_term = " value='" . q($data->term) . "'";
+                $html_url = " value='" . q($data->url) . "'";
+                $category_id = is_null($data->category_id) ? 'none' : $data->category_id;
             }
             $submit_value = $langModify;
         }
@@ -249,7 +264,7 @@ if ($is_editor) {
                  </tr>
                  <tr>
                    <th valign='top'>$langGlossaryDefinition:</th>
-                   <td valign='top'>" . @text_area('definition', 4, 60, $data['definition']) . "
+                   <td valign='top'>" . @text_area('definition', 4, 60, $data->definition) . "
                    </td>
                  </tr>
                  <tr>
@@ -258,7 +273,7 @@ if ($is_editor) {
                  </tr>
                  <tr>
                    <th valign='top'>$langCategoryNotes:</th>
-                   <td valign='top'>" . @rich_text_editor('notes', 4, 60, $data['notes']) . "
+                   <td valign='top'>" . @rich_text_editor('notes', 4, 60, $data->notes) . "
                    </td>
                  </tr>
                  $category_selection
@@ -268,10 +283,10 @@ if ($is_editor) {
                  </tr>
                  </table>
                </fieldset>
-             </form>\n";
+             </form>";
     }
-    list($total_glossary_terms) = mysql_fetch_row(db_query("SELECT COUNT(*) FROM glossary
-                                                          WHERE course_id = $course_id"));
+    $total_glossary_terms = Database::get()->querySingle("SELECT COUNT(*) AS count FROM glossary
+                                                          WHERE course_id = ?d", $course_id)->count;
     if ($expand_glossary and $total_glossary_terms > $max_glossary_terms) {
         $tool_content .= sprintf("<p class='alert1'>$langGlossaryOverLimit</p>", "<b>$max_glossary_terms</b>");
     }
@@ -292,7 +307,7 @@ if ($glossary_index and count($prefixes) > 1) {
     $begin = true;
     foreach ($prefixes as $letter) {
         $active = (!isset($_GET['prefix']) && !$cat_id && $begin) ||
-                (isset($_GET['prefix']) and autounquote($_GET['prefix']) == $letter);
+                (isset($_GET['prefix']) and $_GET['prefix'] == $letter);
         $tool_content .= ($begin ? '' : ' | ') .
                 ($active ? '<b>' : "<a href='$base_url&amp;prefix=" . urlencode($letter) . "'>") .
                 q($letter) . ($active ? '</b>' : '</a>');
@@ -306,16 +321,21 @@ if ($glossary_index and count($prefixes) > 1) {
  * *********************************************** */
 
 $where = '';
+$terms = array();
 if (isset($_GET['edit'])) {
-    $where = "AND id = $id";
+    $where = "AND id = ?d";
+    $terms[] = intval($id);
 } elseif (isset($_GET['id'])) {
     $navigation[] = array('url' => $base_url,
         'name' => $langGlossary);
-    $where = "AND id = " . intval($_GET['id']);
+    $where = "AND id = ?d";
+    $terms[] = intval($_GET['id']);
 } elseif (isset($_GET['prefix'])) {
-    $where = " AND term LIKE " . quote($_GET['prefix'] . '%');
-} elseif ($glossary_index and !$cat_id and count($prefixes) > 1) {
-    $where = " AND term LIKE " . quote($prefixes[0] . '%');
+    $where = "AND term LIKE ?s";
+    $terms[] = $_GET['prefix'] . '%';
+} elseif ($glossary_index and ! $cat_id and count($prefixes) > 1) {
+    $where = "AND term LIKE ?s";
+    $terms[] = $prefixes[0] . '%';
 }
 if ($cat_id) {
     $navigation[] = array('url' => $base_url,
@@ -323,11 +343,11 @@ if ($cat_id) {
     $nameTools = q($categories[$cat_id]);
     $where .= " AND category_id = $cat_id";
 }
-$sql = db_query("SELECT id, term, definition, url, notes, category_id
-                        FROM glossary WHERE course_id = $course_id $where
+$sql = Database::get()->queryArray("SELECT id, term, definition, url, notes, category_id
+                        FROM glossary WHERE course_id = ?d $where
                         GROUP BY term
-                        ORDER BY term");
-if (mysql_num_rows($sql) > 0) {
+                        ORDER BY term", $course_id, $terms);
+if (count($sql) > 0) {
     $tool_content .= "
 	       <script type='text/javascript' src='../auth/sorttable.js'></script>
                <table class='sortable' id='t2' width='100%'>";
@@ -339,62 +359,57 @@ if (mysql_num_rows($sql) > 0) {
         $tool_content .= "
 		 <th width='20'>$langActions</th>";
     }
-    $tool_content .= "
-	       </tr>";
+    $tool_content .= "</tr>";
     $i = 0;
-    while ($g = mysql_fetch_assoc($sql)) {
+    foreach ($sql as $g) {
         if ($i == 0 and isset($_GET['id'])) {
-            $nameTools = q($g['term']);
+            $nameTools = q($g->term);
         }
         if ($i % 2) {
             $rowClass = "class='odd'";
         } else {
             $rowClass = "class='even'";
         }
-        if (!empty($g['url'])) {
-            $urllink = "<div><span class='smaller'>(<a href='" . q($g['url']) .
-                    "' target='_blank'>" . q($g['url']) . "</a>)</span></div>";
+        if (!empty($g->url)) {
+            $urllink = "<div><span class='smaller'>(<a href='" . q($g->url) .
+                    "' target='_blank'>" . q($g->url) . "</a>)</span></div>";
         } else {
             $urllink = '';
         }
 
-        if (!empty($g['category_id'])) {
-            $cat_descr = "<span class='smaller'>$langCategory: <a href='$base_url&amp;cat=$g[category_id]'>" . q($categories[$g['category_id']]) . "</a></span>";
+        if (!empty($g->category_id)) {
+            $cat_descr = "<span class='smaller'>$langCategory: <a href='$base_url&amp;cat=$g->category_id'>" . q($categories[$g->category_id]) . "</a></span>";
         } else {
             $cat_descr = '';
         }
 
-        if (!empty($g['notes'])) {
-            $urllink .= "<br />" . standard_text_escape($g['notes']);
+        if (!empty($g->notes)) {
+            $urllink .= "<br />" . standard_text_escape($g->notes);
         }
 
-        if (!empty($g['definition'])) {
-            $definition_data = q($g['definition']);
+        if (!empty($g->definition)) {
+            $definition_data = q($g->definition);
         } else {
             $definition_data = '-';
         }
 
         $tool_content .= "
 	       <tr $rowClass>
-		 <th width='150'><a href='$base_url&amp;id=$g[id]'>" . q($g['term']) . "</a> <div class='invisible'>$cat_descr</div></th>
+		 <th width='150'><a href='$base_url&amp;id=$g->id'>" . q($g->term) . "</a> <div class='invisible'>$cat_descr</div></th>
                  <td><em>$definition_data</em>$urllink</td>";
         if ($is_editor) {
             $tool_content .= "
-		 <td align='center' valign='top' width='50'><a href='$edit_url&amp;edit=$g[id]'>
+		 <td align='center' valign='top' width='50'><a href='$edit_url&amp;edit=$g->id'>
 		    <img src='$themeimg/edit.png' alt='$langEdit' title='$langEdit'></a>
-                    <a href='$edit_url&amp;delete=$g[id]' onClick=\"return confirmation('" .
+                    <a href='$edit_url&amp;delete=$g->id' onClick=\"return confirmation('" .
                     js_escape($langConfirmDelete) . "');\">
 		    <img src='$themeimg/delete.png' alt='$langDelete' title='$langDelete'></a>
 		 </td>";
         }
-        $tool_content .= "
-	       </tr>";
+        $tool_content .= "</tr>";
         $i++;
     }
-    $tool_content .= "
-	       </table>
-
-	       <br />\n";
+    $tool_content .= "</table><br />";
 } else {
     $tool_content .= "<p class='alert1'>$langNoResult</p>";
 }
@@ -405,8 +420,7 @@ draw($tool_content, 2, null, $head_content);
 /* * **************************************** */
 
 function findorder($course_id) {
-    $sql = db_query("SELECT MAX(`ORDER`) FROM glossary WHERE course_id = $course_id");
-    list($maxorder) = mysql_fetch_row($sql);
+    $maxorder = Database::get()->querySingle("SELECT MAX(`ORDER`) as maxorder FROM glossary WHERE course_id = ?d", $course_id)->maxorder;
     if ($maxorder > 0) {
         $maxorder++;
         return $maxorder;

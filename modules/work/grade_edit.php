@@ -43,7 +43,6 @@ if ($is_editor && isset($_GET['assignment']) && isset($_GET['submission'])) {
 function get_assignment_details($id) {
     global $course_id;
     return Database::get()->querySingle("SELECT * FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $id);
-//    return mysql_fetch_array(db_query("SELECT * FROM assignment WHERE course_id = $course_id AND id = '$id'"));
 }
 
 // Show to professor details of a student's submission and allow editing of fields
@@ -70,21 +69,21 @@ function show_edit_form($id, $sid, $assign) {
                 <table width='99%' class='tbl'>
                 <tr>
                     <th class='left' width='180'>${m['username']}:</th>
-                    <td>${uid_2_name} $group_submission</td>
+                    <td>${uid_2_name} ".q($group_submission)."</td>
                 </tr>
                 <tr>
                     <th class='left'>${m['sub_date']}:</th>
-                    <td>$sub->submission_date</td></tr>
+                    <td>".q($sub->submission_date)."</td></tr>
                 <tr>
                     <th class='left'>${m['filename']}:</th>
-                    <td><a href='index.php?course=$course_code&amp;get=$sub->id'>$sub->file_name</a></td>
+                    <td><a href='index.php?course=$course_code&amp;get=$sub->id'>".q($sub->file_name)."</a></td>
                 </tr>
                 <tr>
                     <th class='left'>$m[grade]:</th>
-                    <td><input type='text' name='grade' maxlength='3' size='3' value='$sub->grade'></td></tr>
+                    <td><input type='text' name='grade' maxlength='3' size='3' value='".q($sub->grade)."'></td></tr>
                 <tr>
                     <th class='left'>$m[gradecomments]:</th>
-                    <td><textarea cols='60' rows='3' name='comments'>$sub->grade_comments</textarea></td>
+                    <td><textarea cols='60' rows='3' name='comments'>".q($sub->grade_comments)."</textarea></td>
                 </tr>
                 <tr>
                     <th><label for='email_button'>$m[email_users]:</label></th>
@@ -98,7 +97,7 @@ function show_edit_form($id, $sid, $assign) {
                 </fieldset>
                 </form><br>";
     } else {
-        Session::set_flashdata($m['WorkNoSubmission'], 'caution');
+        Session::Messages($m['WorkNoSubmission'], 'caution');
         redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);
     }
 }

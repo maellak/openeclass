@@ -40,7 +40,6 @@ if (!session_id()) {
 
 header('Content-Type: text/html; charset=UTF-8');
 
-
 if (is_readable('config/config.php')) {
     require_once 'config/config.php';
 } else {
@@ -62,17 +61,15 @@ try {
     require_once 'include/not_installed.php';
 }
 
-if (isset($language)) {    
+if (isset($language)) {
     // Old-style config.php, redirect to upgrade
-    $language = langname_to_code($language);    
+    $language = langname_to_code($language);        
     if (isset($_SESSION['langswitch'])) {
         $_SESSION['langswitch'] = langname_to_code($_SESSION['langswitch']);
     }
     $session = new Session();
-    $uid = $session->user_id;
-    if (isset($active_ui_languages)) {
-        $active_ui_languages = explode(' ', $active_ui_languages);
-    } else {
+    $uid = $session->user_id;    
+    if (!isset($active_ui_languages)) {
         $active_ui_languages = array('el');
     }
     if (!defined('UPGRADE')) {
@@ -87,10 +84,29 @@ if (isset($language)) {
     $urlSecure = get_config('secure_url');
     if (empty($urlSecure)) {
         $urlSecure = $urlServer;
-    }    
+    }
     $session = new Session();
     $uid = $session->user_id;
-    $language = $session->language;
+    $language = $session->language;    
+}
+
+//Initializing Valitron (form validation library)
+require_once 'include/Valitron/Validator.php';
+use Valitron\Validator as V;
+V::langDir(__DIR__.'/valitron/lang'); // always set langDir before lang.
+V::lang($language);
+
+//Managing Session Flash Data
+if (isset($_SESSION['flash_old'])){
+    foreach($_SESSION['flash_old'] as $row){
+        unset($_SESSION[$row]);
+    }
+    unset($_SESSION['flash_old']);
+}
+
+if (isset($_SESSION['flash_new'])) {
+    $_SESSION['flash_old'] = $_SESSION['flash_new'];
+    unset($_SESSION['flash_new']);
 }
 
 $session = new Session();
@@ -358,17 +374,18 @@ $modules = array(
     MODULE_ID_QUESTIONNAIRE => array('title' => $langQuestionnaire, 'link' => 'questionnaire', 'image' => 'questionnaire'),
     MODULE_ID_LP => array('title' => $langLearnPath, 'link' => 'learnPath', 'image' => 'lp'),
     MODULE_ID_WIKI => array('title' => $langWiki, 'link' => 'wiki', 'image' => 'wiki'),
+    MODULE_ID_BLOG => array('title' => $langBlog, 'link' => 'blog', 'image' => 'blog'),
     MODULE_ID_GRADEBOOK => array('title' => $langGradebook, 'link' => 'gradebook', 'image' => 'gradebook'),
     MODULE_ID_GRADEBOOKTOTAL => array('title' => $langGradeTotal, 'link' => 'gradebookUserTotal', 'image' => 'gradebook'),
     MODULE_ID_ATTENDANCE => array('title' => $langAttendance, 'link' => 'attendance', 'image' => 'attendance'),
-    MODULE_ID_BBB => array('title' => $langBBB, 'link' => 'bbb', 'image' => 'conference')
+    MODULE_ID_BBB => array('title' => $langBBB, 'link' => 'bbb', 'image' => 'conference')        
 );
 // ----------------------------------------
 // course admin modules
 // ----------------------------------------
 $admin_modules = array(
     MODULE_ID_COURSEINFO => array('title' => $langCourseInfo, 'link' => 'course_info', 'image' => 'course_info'),
-    MODULE_ID_USERS => array('title' => $langAdminUsers, 'link' => 'user', 'image' => 'users'),
+    MODULE_ID_USERS => array('title' => $langUsers, 'link' => 'user', 'image' => 'users'),
     MODULE_ID_USAGE => array('title' => $langUsage, 'link' => 'usage', 'image' => 'usage'),
     MODULE_ID_TOOLADMIN => array('title' => $langToolManagement, 'link' => 'course_tools', 'image' => 'tooladmin'),
 );
@@ -379,8 +396,13 @@ $static_module_paths = array('user' => MODULE_ID_USERS,
     'course_info' => MODULE_ID_COURSEINFO,
     'course_tools' => MODULE_ID_TOOLADMIN,
     'units' => MODULE_ID_UNITS,
+    'weeks' => MODULE_ID_WEEKS,
     'search' => MODULE_ID_SEARCH,
-    'contact' => MODULE_ID_CONTACT);
+    'contact' => MODULE_ID_CONTACT,
+    'comments' => MODULE_ID_COMMENTS,
+    'rating' => MODULE_ID_RATING,
+    'sharing' => MODULE_ID_SHARING,
+    'notes' => MODULE_ID_NOTES);
 
 // the system admin adn power users has rights to all courses
 if ($is_admin or $is_power_user) {

@@ -61,8 +61,8 @@ if (isset($_POST['submit'])) {
         $cid = intval($value);
         if (!in_array($cid, $selectCourse)) {
             Database::get()->query("DELETE FROM course_user "
-                    . " WHERE status <> ?d AND stats <> ?d AND user_id = ?d "
-                    . " AND course_id = ?d", USER_TEACHER, USER_GUEST, intval($uid), intval($cid));
+                    . " WHERE status <> ?d AND status <> ?d AND user_id = ?d "
+                    . " AND course_id = ?d", USER_TEACHER, USER_GUEST, $uid, $cid);
             // logging
             Log::record($cid, MODULE_ID_USERS, LOG_DELETE, array('uid' => $uid, 'right' => 0));
         }
@@ -75,7 +75,7 @@ if (isset($_POST['submit'])) {
         if ($course_info) {
             if (($course_info->visible == COURSE_REGISTRATION or 
                     $course_info->visible == COURSE_OPEN) and !empty($course_info->password) and 
-                    $course_info->password !== autounquote($_POST['pass' . $cid])) {
+                    $course_info->password !== $_POST['pass' . $cid]) {
                 $errorExists = true;
                 $restrictedCourses[] = $course_info->public_code;
                 continue;
@@ -183,7 +183,6 @@ function getdepnumcourses($fac) {
  * @global type $langTutor
  * @global type $langBegin
  * @global type $langRegistration
- * @global type $mysqlMainDb
  * @global type $langRegistration
  * @global type $langCourseCode
  * @global type $langTeacher
@@ -199,7 +198,7 @@ function getdepnumcourses($fac) {
  * @return string
  */
 function expanded_faculte($facid, $uid) {
-    global $m, $icons, $langTutor, $langBegin, $langRegistration, $mysqlMainDb,
+    global $m, $icons, $langTutor, $langBegin, $langRegistration,
     $langRegistration, $langCourseCode, $langTeacher, $langType, $langFaculty,
     $langpres, $langposts, $langothers, $themeimg, $tree;
 
@@ -246,7 +245,7 @@ function expanded_faculte($facid, $uid) {
         if ($mycours->visible == COURSE_OPEN or $uid == COURSE_REGISTRATION) { //open course                
             $codelink = "<a href='../../courses/" . $mycours->k . "/'>$course_title</a>";
         } elseif ($mycours->visible == COURSE_CLOSED) { //closed course
-            $codelink = "<a href='../contact/index.php?from_reg=true&course_id=$cid'>$course_title</a>";
+            $codelink = "<a href='../contact/index.php?course_id=$cid'>$course_title</a>";
         } else {
             $codelink = $course_title;
         }

@@ -4,7 +4,7 @@
  * Open eClass 3.0
  * E-learning and Course Management System
  * ========================================================================
- * Copyright 2003-2012  Greek Universities Network - GUnet
+ * Copyright 2003-2014  Greek Universities Network - GUnet
  * A full copyright notice can be read in "/info/copyright.txt".
  * For a full list of contributors, see "credits.txt".
  *
@@ -20,50 +20,34 @@
  * ======================================================================== */
 
 require_once 'indexer.class.php';
+require_once 'abstractindexer.class.php';
 require_once 'resourceindexer.interface.php';
 require_once 'Zend/Search/Lucene/Document.php';
 require_once 'Zend/Search/Lucene/Field.php';
 require_once 'Zend/Search/Lucene/Index/Term.php';
 
-class AgendaIndexer implements ResourceIndexerInterface {
-
-    private $__indexer = null;
-    private $__index = null;
-
-    /**
-     * Constructor. You can optionally use an already instantiated Indexer object if there is one.
-     * 
-     * @param Indexer $idxer - optional indexer object
-     */
-    public function __construct($idxer = null) {
-        if ($idxer == null)
-            $this->__indexer = new Indexer();
-        else
-            $this->__indexer = $idxer;
-
-        $this->__index = $this->__indexer->getIndex();
-    }
+class AgendaIndexer extends AbstractIndexer implements ResourceIndexerInterface {
 
     /**
      * Construct a Zend_Search_Lucene_Document object out of an agenda db row.
      * 
      * @global string $urlServer
-     * @param  array  $agenda
+     * @param  object  $agenda
      * @return Zend_Search_Lucene_Document
      */
-    private static function makeDoc($agenda) {
+    protected function makeDoc($agenda) {
         global $urlServer;
         $encoding = 'utf-8';
 
         $doc = new Zend_Search_Lucene_Document();
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('pk', 'agenda_' . $agenda['id'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('pkid', $agenda['id'], $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('pk', 'agenda_' . $agenda->id, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('pkid', $agenda->id, $encoding));
         $doc->addField(Zend_Search_Lucene_Field::Keyword('doctype', 'agenda', $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('courseid', $agenda['course_id'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Text('title', Indexer::phonetics($agenda['title']), $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Text('content', Indexer::phonetics(strip_tags($agenda['content'])), $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Text('visible', $agenda['visible'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::UnIndexed('url', $urlServer . 'modules/agenda/index.php?course=' . course_id_to_code($agenda['course_id']), $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('courseid', $agenda->course_id, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Text('title', Indexer::phonetics($agenda->title), $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Text('content', Indexer::phonetics(strip_tags($agenda->content)), $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Text('visible', $agenda->visible, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::UnIndexed('url', $urlServer . 'modules/agenda/index.php?course=' . course_id_to_code($agenda->course_id), $encoding));
 
         return $doc;
     }
@@ -72,124 +56,63 @@ class AgendaIndexer implements ResourceIndexerInterface {
      * Fetch an Agenda from DB.
      * 
      * @param  int $agendaId
-     * @return array - the mysql fetched row
+     * @return object - the mysql fetched row
      */
-    private function fetch($agendaId) {
-        $res = db_query("SELECT * FROM agenda WHERE id = " . intval($agendaId));
-        $agenda = mysql_fetch_assoc($res);
-        if (!$agenda)
+    protected function fetch($agendaId) {
+        $agenda = Database::get()->querySingle("SELECT * FROM agenda WHERE id = ?d", $agendaId);        
+        if (!$agenda) {
             return null;
+        }
 
         return $agenda;
     }
-
+    
     /**
-     * Store an Agenda in the Index.
+     * Get Term object for locating a unique single agenda.
      * 
-     * @param  int     $agendaId
-     * @param  boolean $optimize
+     * @param  int $agendaId - the agenda id
+     * @return Zend_Search_Lucene_Index_Term
      */
-    public function store($agendaId, $optimize = false) {
-        $agenda = $this->fetch($agendaId);
-        if (!$agenda)
-            return;
-
-        // delete existing agenda from index
-        $this->remove($agendaId, false, false);
-
-        // add the agenda back to the index
-        $this->__index->addDocument(self::makeDoc($agenda));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getTermForSingleResource($agendaId) {
+        return new Zend_Search_Lucene_Index_Term('agenda_' . $agendaId, 'pk');
     }
-
+    
     /**
-     * Remove an Agenda from the Index.
+     * Get Term object for locating all possible agendas.
      * 
-     * @param int     $agendaId
-     * @param boolean $existCheck
-     * @param boolean $optimize
+     * @return Zend_Search_Lucene_Index_Term
      */
-    public function remove($agendaId, $existCheck = false, $optimize = false) {
-        if ($existCheck) {
-            $agenda = $this->fetch($agendaId);
-            if (!$agenda)
-                return;
-        }
-
-        $term = new Zend_Search_Lucene_Index_Term('agenda_' . $agendaId, 'pk');
-        $docIds = $this->__index->termDocs($term);
-        foreach ($docIds as $id)
-            $this->__index->delete($id);
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getTermForAllResources() {
+        return new Zend_Search_Lucene_Index_Term('agenda', 'doctype');
     }
-
+    
     /**
-     * Store all Agendas belonging to a Course.
+     * Get all possible agendas from DB.
      * 
-     * @param int     $courseId
-     * @param boolean $optimize
+     * @return array - array of DB fetched anonymous objects with property names that correspond to the column names
      */
-    public function storeByCourse($courseId, $optimize = false) {
-        // delete existing agendas from index
-        $this->removeByCourse($courseId);
-
-        // add the agendas back to the index
-        $res = db_query("SELECT * FROM agenda WHERE course_id = " . intval($courseId));
-        while ($row = mysql_fetch_assoc($res))
-            $this->__index->addDocument(self::makeDoc($row));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getAllResourcesFromDB() {
+        return Database::get()->queryArray("SELECT * FROM agenda");
     }
-
+    
     /**
-     * Remove all Agendas belonging to a Course.
+     * Get Lucene query input string for locating all agendas belonging to a given course.
      * 
-     * @param int     $courseId
-     * @param boolean $optimize
+     * @param  int $courseId - the given course id
+     * @return string        - the string that can be used as Lucene query input
      */
-    public function removeByCourse($courseId, $optimize = false) {
-        $hits = $this->__index->find('doctype:agenda AND courseid:' . $courseId);
-        foreach ($hits as $hit)
-            $this->__index->delete($hit->getDocument()->id);
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getQueryInputByCourse($courseId) {
+        return 'doctype:agenda AND courseid:' . $courseId;
     }
-
+    
     /**
-     * Reindex all agendas.
+     * Get all agendas belonging to a given course from DB.
      * 
-     * @param boolean $optimize
+     * @param  int   $courseId - the given course id
+     * @return array           - array of DB fetched anonymous objects with property names that correspond to the column names
      */
-    public function reindex($optimize = false) {
-        // remove all agendas from index
-        $term = new Zend_Search_Lucene_Index_Term('agenda', 'doctype');
-        $docIds = $this->__index->termDocs($term);
-        foreach ($docIds as $id)
-            $this->__index->delete($id);
-
-        // get/index all agendas from db
-        $res = db_query("SELECT * FROM agenda");
-        while ($row = mysql_fetch_assoc($res))
-            $this->__index->addDocument(self::makeDoc($row));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getCourseResourcesFromDB($courseId) {
+        return Database::get()->queryArray("SELECT * FROM agenda WHERE course_id = ?d", $courseId);
     }
 
     /**

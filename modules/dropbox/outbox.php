@@ -28,61 +28,111 @@ if(isset($_GET['course'])) {//course messages
 $guest_allowed = FALSE;
 
 include '../../include/baseTheme.php';
+include 'include/lib/fileDisplayLib.inc.php';
+require_once("class.msg.php");
 
 if (!isset($course_id)) {
     $course_id = 0;
 }
 
-require_once("class.msg.php");
-require_once("class.mailbox.php");
+if (isset($_GET['mid'])) {
 
-$mbox = new Mailbox($uid, $course_id);
+    $mid = intval($_GET['mid']);
+    $msg = new Msg($mid, $uid, 'msg_view');
+    if (!$msg->error) {
+         
+        $urlstr = '';
+        if ($course_id != 0) {
+            $urlstr = "?course=".$course_code;
+        }
+        $out = "<div style=\"float:right;\"><a href=\"outbox.php".$urlstr."\">$langBack</a></div>";
+        $out .= "<div id='out_del_msg'></div><div id='out_msg_area'><table>";
+        $out .= "<tr><td>$langSubject:</td><td>".q($msg->subject)."</td></tr>";
+        $out .= "<tr id='$msg->id'><td>$langDelete:</td><td><img src=\"".$themeimg.'/delete.png'."\" class=\"delete\"/></td></tr>";
+        if ($msg->course_id != 0 && $course_id == 0) {
+            $out .= "<tr><td>$langCourse:</td><td><a class=\"outtabs\" href=\"index.php?course=".course_id_to_code($msg->course_id)."\">".course_id_to_title($msg->course_id)."</a></td></tr>";
+        }
+        $out .= "<tr><td>$langDate:</td><td>".nice_format(date('Y-m-d H:i:s',$msg->timestamp), true)."</td></tr>";
+        $out .= "<tr><td>$langSender:</td><td>".display_user($msg->author_id, false, false, "outtabs")."</td></tr>";
+        
+        $recipients = '';
+        foreach ($msg->recipients as $r) {
+            if ($r != $msg->author_id) {
+                $recipients .= display_user($r, false, false, "outtabs").'<br/>';
+            }
+        }
+        
+        $out .= "<tr><td>$langRecipients:</td><td>".$recipients."</td></tr>";
+        $out .= "<tr><td>$langMessage:</td><td>".standard_text_escape($msg->body)."</td></tr>";
 
-$out_msgs = $mbox->getOutboxMsgs();
+        if ($msg->filename != '') {
+            $out .= "<tr><td>$langAttachedFile</td><td><a href=\"dropbox_download.php?course=".course_id_to_code($msg->course_id)."&amp;id=$msg->id\" class=\"outtabs\" target=\"_blank\">$msg->real_filename
+            <img class='outtabs' src='$themeimg/save.png' /></a>&nbsp;&nbsp;(".format_file_size($msg->filesize).")</td></tr>";
+        }
+        
+        $out .= "</table><br/>";
 
-if (empty($out_msgs)) {
-    $out = "<p class='alert1'>$langTableEmpty</p>";
+        $out .= '<script>
+        $(function() {
+        $(".delete").click(function() {
+            if (confirm("' . $langConfirmDelete . '")) {
+            var rowContainer = $(this).parent().parent();
+                    var id = rowContainer.attr("id");
+                    var string = \'mid=\'+ id;
+    
+                    $.ajax({
+                       type: "POST",
+                       url: "ajax_handler.php",
+                       data: string,
+                       cache: false,
+                       success: function(){
+                           $("#out_msg_area").slideUp(\'fast\', function() {
+                                $(this).remove();
+                                $("#out_del_msg").html("<p class=\'success\'>'.$langMessageDeleteSuccess.'</p>");
+                           });
+                       }
+                    });
+                    return false;
+            }
+        });
+        });
+        </script>';
+    }
 } else {
-    $out = "<div class=\"loading\" align=\"center\"><img src=\"".$themeimg."/ajax_loader.gif"."\" align=\"absmiddle\"/>".$langLoading."</div>";
+    
+    $out = "<div id='out_del_msg'></div><div id='outbox'>";
+    $out .= "<p>$langDeleteAllMsgs: <img src=\"".$themeimg.'/delete.png'."\" class=\"delete_all_out\"/></p><br/>";
     $out .= "<table id=\"outbox_table\">
                <thead>
                  <tr>
+                    <th>$langSubject</th>";
+    if ($course_id == 0) {
+        $out .= "<th>$langCourse</th>";
+    }
+    $out .= "      <th>$langRecipients</th>
                    <th>$langDate</th>
-                   <th>$langSubject</th>
-                   <th>$langRecipients</th>
-                   <th>$langMessage</th>
-                   <th>$langAttachedFile</th>
                    <th>$langDelete</th>
                  </tr>
                </thead>
-               <tbody>";
+               <tbody>
+               </tbody>
+             </table></div>";
     
-    foreach ($out_msgs as $m) {
-        $recipients = '';
-        foreach ($m->recipients as $r) {
-            $recipients .= uid_to_name($r).', ';
-        }
-        $recipients = substr($recipients, 0, strlen($recipients)-2);
-        $out .= "<tr id='$m->id'>
-                   <td>".nice_format(date('Y-m-d H:i:s',$m->timestamp), true)."</td>
-                   <td>".q($m->subject)."</td>
-                   <td>$recipients</td>
-                   <td>".standard_text_escape($m->body)."</td>";
-        if ($m->filename != '') {
-            $out .= "<td><a href=\"dropbox_download.php?course=".course_id_to_code($m->course_id)."&amp;id=$m->id\" class=\"outtabs\" target=\"_blank\">$m->real_filename</a></td>";
-        } else {
-            $out .= "<td></td>";
-        }
-        $out .= "  <td><img src=\"".$themeimg.'/delete.png'."\" class=\"delete\"/></td>
-                 </tr>";
-    }
-    
-    $out .= "  </tbody>
-             </table>";
-    $out .= "<script>
+    $out .= "<script type='text/javascript'>
                $(document).ready(function() {
-                 $('div.loading').hide();
-                 $('#outbox_table').dataTable({
+                 var oTable2 = $('#outbox_table').dataTable({
+                    'bStateSave' : true,
+                    'bProcessing': true,
+                    'sDom': '<\"top\"pfl<\"clear\">>rt<\"bottom\"ip<\"clear\">>',
+                    'bServerSide': true,
+                    'sAjaxSource': 'ajax_handler.php?mbox_type=outbox&course_id=$course_id',
+                    'aLengthMenu': [
+                       [10, 15, 20 , -1],
+                       [10, 15, 20, '$langAllOfThem'] // change per page values here
+                     ],
+                    'sPaginationType': 'full_numbers',
+                    'bSort': false,
+                    'bAutoWidth' : false,
                     'oLanguage': {
                             'sLengthMenu':   '$langDisplay _MENU_ $langResults2',
                             'sZeroRecords':  '".$langNoResult."',
@@ -94,39 +144,62 @@ if (empty($out_msgs)) {
                             'sUrl':          '',
                             'oPaginate': {
                                  'sFirst':    '&laquo;',
-                                 'sPrevious': '$langPrevious',
-                                 'sNext':     '$langNext',
+                                 'sPrevious': '&lsaquo;',
+                                 'sNext':     '&rsaquo;',
                                  'sLast':     '&raquo;'
                             }
-                        } 
-                    });
+                        }
+                    }).fnSetFilteringDelay(1000);
+                    
+                    $(document).on( 'click','.delete_out', function (e) {
+                        e.preventDefault();
+                        if (confirm('$langConfirmDelete')) {
+                            var rowContainer = $(this).parent().parent();
+                            var id = rowContainer.attr('id');
+                            var string = 'mid='+ id ;
+                            $.post('ajax_handler.php', string, function() {
+                                var num_page_records = oTable2.fnGetData().length;
+                                var per_page = oTable2.fnPagingInfo().iLength;
+                                var page_number = oTable2.fnPagingInfo().iPage;
+                                if(num_page_records==1){
+                                    if(page_number!=0) {
+                                        page_number--;
+                                    }
+                                }
+                                $('#out_del_msg').html('<p class=\'success\'>$langMessageDeleteSuccess</p>');
+                                $('.success').delay(3000).fadeOut(1500);
+                                oTable2.fnPageChange(page_number);
+                            }, 'json');
+                         }
+                     });
+                     
+                    $('.delete_all_out').click(function() {
+                      if (confirm('$langConfirmDeleteAllMsgs')) {
+                        var string = 'all_outbox=1';
+                        $.ajax({
+                          type: 'POST',
+                          url: 'ajax_handler.php?course_id=$course_id',
+                          data: string,
+                          cache: false,
+                          success: function(){
+                            var num_page_records = oTable2.fnGetData().length;
+                            var per_page = oTable2.fnPagingInfo().iLength;
+                            var page_number = oTable2.fnPagingInfo().iPage;
+                            if(num_page_records==1){
+                              if(page_number!=0) {
+                                page_number--;
+                              }
+                            }     
+                            $('#out_del_msg').html('<p class=\'success\'>$langMessageDeleteAllSuccess</p>');
+                            $('.success').delay(3000).fadeOut(1500);
+                            oTable2.fnPageChange(page_number);
+                          }
+                       });
+                       return false;
+                     }
+                   });
+               
                });
              </script>";
-    
-        $out .= '<script>
-                   $(function() {
-                     $(".delete").click(function() {
-                       if (confirm("' . $langConfirmDelete . '")) {
-                         $(\'div.loading\').fadeIn();
-                         var rowContainer = $(this).parent().parent();
-                         var id = rowContainer.attr("id");
-                         var string = \'mid=\'+ id ;
-        
-                         $.ajax({
-                           type: "POST",
-                           url: "delete.php",
-                           data: string,
-                           cache: false,
-                           success: function(){
-                             rowContainer.slideUp(\'slow\', function() {$(this).remove();});
-                             $(\'div.loading\').fadeOut();
-                           }
-                         });
-                         return false;
-                       }
-                     });
-                   });
-                 </script>';
 }
-
 echo $out;

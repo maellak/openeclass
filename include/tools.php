@@ -83,7 +83,7 @@ function getSideMenu($menuTypeID) {
  * to the parameter passed.
  *
  * @param string $cat Type of lesson tools
- * @return mysql_resource
+ * @return array of course_module objects
  * @see function lessonToolsMenu
  */
 
@@ -113,35 +113,41 @@ function getToolsArray($cat) {
                                         ORDER BY module_id";
             if (!check_guest()) {
                 if (isset($_SESSION['uid']) and $_SESSION['uid']) {
-                    $result = db_query("SELECT * FROM course_module
+                    $result = Database::get()->queryArray("SELECT * FROM course_module
                                                         WHERE visible = 1 AND
-                                                        course_id = $cid
-                                                        ORDER BY module_id");
+                                                        course_id = ?d
+                                                        ORDER BY module_id", $cid);
                 } else {
-                    $result = db_query($sql);
+                    $result = Database::get()->queryArray($sql);
                 }
             } else {
-                $result = db_query($sql);
+                $result = Database::get()->queryArray($sql);
             }
             break;
         case 'PublicButHide':
-            $result = db_query("SELECT * FROM course_module
+            $result = Database::get()->queryArray("SELECT * FROM course_module
                                          WHERE visible = 0 AND
-                                         course_id = $cid
-                                         ORDER BY module_id");
+                                         course_id = ?d
+                                         ORDER BY module_id", $cid);
             break;
     }
     return $result;
 }
 
+
+/**
+ * get course external links
+ * @global type $course_id
+ * @return boolean
+ */
 function getExternalLinks() {
 
-    global $course_code, $course_id;
+    global $course_id;
 
-    $result = db_query("SELECT url, title FROM link
-                                   WHERE category IN (-1, -2) AND
-                                         course_id = $course_id");
-    if (mysql_num_rows($result) > 0) {
+    $result = Database::get()->queryArray("SELECT url, title FROM link
+                                            WHERE category IN (-1, -2) AND
+                                        course_id = ?d", $course_id);
+    if ($result) {
         return $result;
     } else {
         return false;
@@ -241,12 +247,11 @@ function loggedInMenu() {
     $arrMenuType['class'] = 'user';
     array_push($sideMenuSubGroup, $arrMenuType);
 
-    $res2 = db_query("SELECT status FROM user WHERE id = $uid");
-
-    if ($row = mysql_fetch_row($res2))
-        $status = $row[0];
-
-    if (isset($status) and ($status == 1)) {
+    $res2 = Database::get()->querySingle("SELECT status FROM user WHERE id = ?d", $uid);
+    if ($res2) {
+        $status = $res2->status;
+    }        
+    if (isset($status) and ($status == USER_TEACHER)) {
         array_push($sideMenuText, $GLOBALS['langCourseCreate']);
         array_push($sideMenuLink, $urlServer . "modules/create_course/create_course.php");
         array_push($sideMenuImg, "arrow.png");
@@ -255,19 +260,29 @@ function loggedInMenu() {
     require_once 'modules/dropbox/class.mailbox.php';
     
     $mbox = new Mailbox($uid, 0);
-    $new_msgs = $mbox->unreadThreadsNumber();
+    $new_msgs = $mbox->unreadMsgsNumber();
     if ($new_msgs == 0) {
-        array_push($sideMenuText, $GLOBALS['langDropBox']);
+        array_push($sideMenuText, $GLOBALS['langMyDropBox']);
     } else {
-        array_push($sideMenuText, "<b>".$GLOBALS['langDropBox']." (".$new_msgs.")</b>");
+        array_push($sideMenuText, "<b>".$GLOBALS['langMyDropBox']." (".$new_msgs.")</b>");
     }
     array_push($sideMenuLink, $urlServer . "modules/dropbox/index.php");
     array_push($sideMenuImg, "arrow.png");
 
     array_push($sideMenuText, $GLOBALS['langMyAgenda']);
-    array_push($sideMenuLink, $urlServer . "modules/agenda/myagenda.php");
+    array_push($sideMenuLink, $urlServer . "main/personal_calendar/index.php");
     array_push($sideMenuImg, "arrow.png");
 
+    array_push($sideMenuText, $GLOBALS['langNotes']);
+    array_push($sideMenuLink, $urlServer . "main/notes/index.php");
+    array_push($sideMenuImg, "arrow.png");
+    
+    if (isset($status) and ($status == USER_STUDENT)) {
+        array_push($sideMenuText, $GLOBALS['langGradeTotal']);
+        array_push($sideMenuLink, $urlServer . "main/gradebookUserTotal/index.php");
+        array_push($sideMenuImg, "arrow.png");
+    }
+    
     array_push($sideMenuText, $GLOBALS['langModifyProfile']);
     array_push($sideMenuLink, $urlServer . "main/profile/profile.php");
     array_push($sideMenuImg, "arrow.png");
@@ -341,11 +356,9 @@ function loggedOutMenu() {
 /**
  * Creates the administrator menu
  * 
- * @global type $urlAppend
  * @global type $language
  * @global type $phpSysInfoURL
  * @global type $phpMyAdminURL
- * @global type $siteName
  * @global type $urlServer
  * @global type $is_admin
  * @global type $is_power_user
@@ -354,8 +367,8 @@ function loggedOutMenu() {
  */
 function adminMenu() {
 
-    global $urlAppend, $language, $phpSysInfoURL, $phpMyAdminURL;
-    global $siteName, $urlServer;
+    global $language, $phpSysInfoURL, $phpMyAdminURL;
+    global $urlServer;
     global $is_admin, $is_power_user, $is_departmentmanage_user;
 
     $sideMenuGroup = array();
@@ -448,15 +461,7 @@ function adminMenu() {
         array_push($sideMenuLink, "../admin/hierarchy.php");
         array_push($sideMenuImg, "arrow.png");
         array_push($sideMenuText, $GLOBALS['langMultiCourse']);
-        array_push($sideMenuLink, "../admin/multicourse.php");
-
-        // check if we have betacms enabled
-        if (get_config('betacms') == TRUE) {
-            array_push($sideMenuImg, "arrow.png");
-            array_push($sideMenuText, $GLOBALS['langBrowseBCMSRepo']);
-            array_push($sideMenuLink, "../betacms_bridge/browserepo.php");
-        }
-
+        array_push($sideMenuLink, "../admin/multicourse.php");       
         array_push($sideMenuImg, "arrow.png");
         array_push($sideMenuSubGroup, $sideMenuText);
         array_push($sideMenuSubGroup, $sideMenuLink);
@@ -526,7 +531,7 @@ function adminMenu() {
         array_push($sideMenuText, $GLOBALS['langBBBConfig']);
         array_push($sideMenuLink, "../admin/bbbmoduleconf.php");
         array_push($sideMenuImg, "arrow.png");
-        array_push($sideMenuText, $GLOBALS['langStats']);
+        array_push($sideMenuText, $GLOBALS['langStat']);
         array_push($sideMenuLink, "../admin/stateclass.php");
         array_push($sideMenuImg, "arrow.png");
         if (get_config('enable_common_docs')) {
@@ -566,7 +571,7 @@ function adminMenu() {
  * @return array
  */
 function lessonToolsMenu() {
-    global $is_editor, $is_course_admin;
+    global $uid, $is_editor, $is_course_admin;
     global $course_code, $langAdministrationTools, $langExternalLinks;
     global $modules, $admin_modules, $urlAppend;
 
@@ -611,10 +616,23 @@ function lessonToolsMenu() {
                              'text' => $section['title'],
                              'class' => $section['class']);
         array_push($sideMenuSubGroup, $arrMenuType);
-
-        while ($toolsRow = mysql_fetch_array($result)) {
-            $mid = $toolsRow['module_id'];
-            array_push($sideMenuText, q($modules[$mid]['title']));
+        
+        foreach ($result as $toolsRow) {
+            $mid = $toolsRow->module_id;
+            if ($mid == MODULE_ID_DROPBOX) {
+                require_once 'modules/dropbox/class.mailbox.php';
+                
+                $mbox = new Mailbox($uid, course_code_to_id($course_code));
+                $new_msgs = $mbox->unreadMsgsNumber();
+                if ($new_msgs != 0) {
+                    array_push($sideMenuText, "<b>".q($modules[$mid]['title'])." (".$new_msgs.")</b>");
+                } else {
+                    array_push($sideMenuText, q($modules[$mid]['title']));
+                }
+            } else {
+                array_push($sideMenuText, q($modules[$mid]['title']));
+            }
+            
             array_push($sideMenuLink, q($urlAppend . 'modules/' . $modules[$mid]['link'] .
                             '/?course=' . $course_code));
             array_push($sideMenuImg, $modules[$mid]['image'] . $section['iconext']);
@@ -636,9 +654,9 @@ function lessonToolsMenu() {
                              'text' => $langExternalLinks,
                              'class' => 'external');
         array_push($sideMenuSubGroup, $arrMenuType);
-        while ($ex_link = mysql_fetch_array($result2)) {
-            array_push($sideMenuText, $ex_link['title']);
-            array_push($sideMenuLink, q($ex_link['url']));
+        foreach ($result2 as $ex_link) {        
+            array_push($sideMenuText, q($ex_link->title));
+            array_push($sideMenuLink, q($ex_link->url));
             array_push($sideMenuImg, "external_link" . $section['iconext']);
         }
         array_push($sideMenuSubGroup, $sideMenuText);
@@ -700,17 +718,15 @@ function pickerMenu() {
     array_push($sideMenuSubGroup, $arrMenuType);
 
     if (isset($course_id) and $course_id >= 1) {
-        $visible = ($is_editor) ? '' : 'AND visible = 1';
-        $sql = "SELECT * FROM course_module
-                               WHERE course_id = $course_id AND
+        $visible = ($is_editor) ? '' : 'AND visible = 1';        
+        $result = Database::get()->queryArray("SELECT * FROM course_module
+                               WHERE course_id = ?d AND
                                      module_id IN (" . MODULE_ID_DOCS . ', ' . MODULE_ID_VIDEO . ', ' . MODULE_ID_LINKS . ")
                                      $visible
-                               ORDER BY module_id";
-
-        $result = db_query($sql);
-
-        while ($module = mysql_fetch_assoc($result)) {
-            $mid = $module['module_id'];
+                               ORDER BY module_id", $course_id);
+        
+        foreach ($result as $module) {
+            $mid = $module->module_id;
             array_push($sideMenuText, q($modules[$mid]['title']));
             array_push($sideMenuLink, q($urlServer . 'modules/' .
                             $modules[$mid]['link'] . '/' . $params));
@@ -732,6 +748,10 @@ function pickerMenu() {
     return $sideMenuGroup;
 }
 
+/**
+ * display number of open courses
+ * @global type $urlServer
+ */
 function openCoursesExtra() {
     global $urlServer;
 

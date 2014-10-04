@@ -4,7 +4,7 @@
  * Open eClass 3.0
  * E-learning and Course Management System
  * ========================================================================
- * Copyright 2003-2012  Greek Universities Network - GUnet
+ * Copyright 2003-2014  Greek Universities Network - GUnet
  * A full copyright notice can be read in "/info/copyright.txt".
  * For a full list of contributors, see "credits.txt".
  *
@@ -20,50 +20,34 @@
  * ======================================================================== */
 
 require_once 'indexer.class.php';
+require_once 'abstractindexer.class.php';
 require_once 'resourceindexer.interface.php';
 require_once 'Zend/Search/Lucene/Document.php';
 require_once 'Zend/Search/Lucene/Field.php';
 require_once 'Zend/Search/Lucene/Index/Term.php';
 
-class AnnouncementIndexer implements ResourceIndexerInterface {
-
-    private $__indexer = null;
-    private $__index = null;
-
-    /**
-     * Constructor. You can optionally use an already instantiated Indexer object if there is one.
-     * 
-     * @param Indexer $idxer - optional indexer object
-     */
-    public function __construct($idxer = null) {
-        if ($idxer == null)
-            $this->__indexer = new Indexer();
-        else
-            $this->__indexer = $idxer;
-
-        $this->__index = $this->__indexer->getIndex();
-    }
+class AnnouncementIndexer extends AbstractIndexer implements ResourceIndexerInterface {
 
     /**
      * Construct a Zend_Search_Lucene_Document object out of an announcement db row.
      * 
      * @global string $urlServer
-     * @param  array  $announce
+     * @param  object  $announce
      * @return Zend_Search_Lucene_Document
      */
-    private static function makeDoc($announce) {
+    protected function makeDoc($announce) {
         global $urlServer;
         $encoding = 'utf-8';
 
         $doc = new Zend_Search_Lucene_Document();
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('pk', 'announce_' . $announce['id'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('pkid', $announce['id'], $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('pk', 'announce_' . $announce->id, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('pkid', $announce->id, $encoding));
         $doc->addField(Zend_Search_Lucene_Field::Keyword('doctype', 'announce', $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Keyword('courseid', $announce['course_id'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Text('title', Indexer::phonetics($announce['title']), $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Text('content', Indexer::phonetics(strip_tags($announce['content'])), $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::Text('visible', $announce['visible'], $encoding));
-        $doc->addField(Zend_Search_Lucene_Field::UnIndexed('url', $urlServer . 'modules/announcements/index.php?course=' . course_id_to_code($announce['course_id']) . '&amp;an_id=' . $announce['id'], $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Keyword('courseid', $announce->course_id, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Text('title', Indexer::phonetics($announce->title), $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Text('content', Indexer::phonetics(strip_tags($announce->content)), $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::Text('visible', $announce->visible, $encoding));
+        $doc->addField(Zend_Search_Lucene_Field::UnIndexed('url', $urlServer . 'modules/announcements/index.php?course=' . course_id_to_code($announce->course_id) . '&amp;an_id=' . $announce->id, $encoding));
 
         return $doc;
     }
@@ -72,124 +56,63 @@ class AnnouncementIndexer implements ResourceIndexerInterface {
      * Fetch an Announcement from DB.
      * 
      * @param  int $announceId
-     * @return array - the mysql fetched row
+     * @return object - the mysql fetched row
      */
-    private function fetch($announceId) {
-        $res = db_query("SELECT * FROM announcement WHERE id = " . intval($announceId));
-        $announce = mysql_fetch_assoc($res);
-        if (!$announce)
+    protected function fetch($announceId) {
+        $announce = Database::get()->querySingle("SELECT * FROM announcement WHERE id = ?d", $announceId);        
+        if (!$announce) {
             return null;
+        }
 
         return $announce;
     }
-
+    
     /**
-     * Store an Announcement in the Index.
+     * Get Term object for locating a unique single announcement.
      * 
-     * @param  int     $announceId
-     * @param  boolean $optimize
+     * @param  int $announceId - the announcement id
+     * @return Zend_Search_Lucene_Index_Term
      */
-    public function store($announceId, $optimize = false) {
-        $announce = $this->fetch($announceId);
-        if (!$announce)
-            return;
-
-        // delete existing announcement from index
-        $this->remove($announceId, false, false);
-
-        // add the announcement back to the index
-        $this->__index->addDocument(self::makeDoc($announce));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getTermForSingleResource($announceId) {
+        return new Zend_Search_Lucene_Index_Term('announce_' . $announceId, 'pk');
     }
-
+    
     /**
-     * Remove an Announcement from the Index.
+     * Get Term object for locating all possible announcements.
      * 
-     * @param int     $announceId
-     * @param boolean $existCheck
-     * @param boolean $optimize
+     * @return Zend_Search_Lucene_Index_Term
      */
-    public function remove($announceId, $existCheck = false, $optimize = false) {
-        if ($existCheck) {
-            $announce = $this->fetch($announceId);
-            if (!$announce)
-                return;
-        }
-
-        $term = new Zend_Search_Lucene_Index_Term('announce_' . $announceId, 'pk');
-        $docIds = $this->__index->termDocs($term);
-        foreach ($docIds as $id)
-            $this->__index->delete($id);
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getTermForAllResources() {
+        return new Zend_Search_Lucene_Index_Term('announce', 'doctype');
     }
-
+    
     /**
-     * Store all Announcements belonging to a Course.
+     * Get all possible announcements from DB.
      * 
-     * @param int     $courseId
-     * @param boolean $optimize
+     * @return array - array of DB fetched anonymous objects with property names that correspond to the column names
      */
-    public function storeByCourse($courseId, $optimize = false) {
-        // delete existing announcements from index
-        $this->removeByCourse($courseId);
-
-        // add the announcements back to the index
-        $res = db_query("SELECT * FROM announcement WHERE course_id = " . intval($courseId));
-        while ($row = mysql_fetch_assoc($res))
-            $this->__index->addDocument(self::makeDoc($row));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getAllResourcesFromDB() {
+        return Database::get()->queryArray("SELECT * FROM announcement");
     }
-
+    
     /**
-     * Remove all Announcements belonging to a Course.
+     * Get Lucene query input string for locating all announcements belonging to a given course.
      * 
-     * @param int     $courseId
-     * @param boolean $optimize
+     * @param  int $courseId - the given course id
+     * @return string        - the string that can be used as Lucene query input
      */
-    public function removeByCourse($courseId, $optimize = false) {
-        $hits = $this->__index->find('doctype:announce AND courseid:' . $courseId);
-        foreach ($hits as $hit)
-            $this->__index->delete($hit->getDocument()->id);
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getQueryInputByCourse($courseId) {
+        return 'doctype:announce AND courseid:' . $courseId;
     }
-
+    
     /**
-     * Reindex all announcements.
+     * Get all announcements belonging to a given course from DB.
      * 
-     * @param boolean $optimize
+     * @param  int   $courseId - the given course id
+     * @return array           - array of DB fetched anonymous objects with property names that correspond to the column names
      */
-    public function reindex($optimize = false) {
-        // remove all announcements from index
-        $term = new Zend_Search_Lucene_Index_Term('announce', 'doctype');
-        $docIds = $this->__index->termDocs($term);
-        foreach ($docIds as $id)
-            $this->__index->delete($id);
-
-        // get/index all announcements from db
-        $res = db_query("SELECT * FROM announcement");
-        while ($row = mysql_fetch_assoc($res))
-            $this->__index->addDocument(self::makeDoc($row));
-
-        if ($optimize)
-            $this->__index->optimize();
-        else
-            $this->__index->commit();
+    protected function getCourseResourcesFromDB($courseId) {
+        return Database::get()->queryArray("SELECT * FROM announcement WHERE course_id = ?d", $courseId);
     }
 
     /**
