@@ -255,11 +255,7 @@ if ($is_editor) {
             $titleToModify = q($announce->title);
             $showFrom = q($announce->start_display);
             $showUntil = q($announce->stop_display);
-            
-            Facebook_API_Call($urlServer, $course_code, $id);
         }
-        
-        
     }
 
     /* submit */
@@ -346,11 +342,6 @@ if ($is_editor) {
         else {
             $message = "<p class='success'>$langAnnAdd</p>";
         }
-        
-        
-        
-       Facebook_API_Call($urlServer, $course_code, $id);
-        
     } // end of if $submit
 
 
@@ -477,45 +468,3 @@ $head_content .= "<script type='text/javascript'>$(document).ready(function () {
 });</script>
 <link href='../../js/jquery.multiselect.css' rel='stylesheet' type='text/css'>";
 draw($tool_content, 2, null, $head_content);
-
-function Facebook_API_Call($urlServer, $course_code, $id)
-{
-    
-     // Facebook API call
-        $url = 'https://graph.facebook.com/v2.1/695730993849543/feed?access_token=CAANapFfgn3QBAA1reXj15nCo4RgZB3cEViKnXe0i0dTDnjhirBYYjVTv46sPL6sVosAR1L832I5wvlc3ObX4JCaZA8hubsW1qgEz0sS1bpuuDQKLZCAmMEY8guSz0BiNqQwEbpiSauM0wqwtW299p8BBzJUkTVtPMaJJNSCct3baXAwY1gy';
-    
-    $edit_message = strip_tags($_POST['newContent']);
-    $countries="";
-    
-    while(($edit_message=strstr($edit_message, '#')) !== false){
-           $country = substr($edit_message, 1,2);
-           if( $countries =="")
-            $countries = $countries."'".$country."'";
-               else
-           $countries = $countries.",'".$country."'";
-           $edit_message = substr(strstr($edit_message, '#'), 3);
-    }
-    
-        $fields = array('message' => urlencode(strip_tags($_POST['newContent'])), 'link' =>urlencode($urlServer.'modules/announcements/index.php?course='.$course_code.'&an_id='.$id), 'targeting' =>"{'countries':[".$countries."]}");
-        
-        //url-ify the data for the POST
-       
-        $fields_string = null;
-        foreach($fields as $key=>$value)
-        {
-            $fields_string .= $key.'='.$value.'&';
-        }
-        rtrim($fields_string, '&');
-        //open connection
-        $ch = curl_init();
-        //set the url, number of POST vars, POST data
-        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, FALSE);
-        curl_setopt($ch,CURLOPT_URL, $url);
-        curl_setopt($ch,CURLOPT_POST, count($fields));
-        curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
-        //execute post
-        $result = curl_exec($ch);
-        //close connection
-        curl_close($ch);
-}
