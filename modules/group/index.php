@@ -242,7 +242,8 @@ if ($is_editor) {
         // Move group directory to garbage collector
         $groupGarbage = uniqid(20);
         $myDir = Database::get()->querySingle("SELECT secret_directory, forum_id, name FROM `group` WHERE id = ?d", $id);
-        rename("courses/$course_code/group/$myDir->secret_directory", "courses/garbage/$groupGarbage");        
+        if ($myDir)
+            rename("courses/$course_code/group/$myDir->secret_directory", "courses/garbage/$groupGarbage");        
         
         /*         * ********Delete Group FORUM*********** */
         $result = Database::get()->querySingle("SELECT `forum_id` FROM `group` WHERE `course_id` = ?d AND `id` = ?d AND `forum_id` <> 0 AND `forum_id` IS NOT NULL", $course_id, $id);
@@ -280,7 +281,7 @@ if ($is_editor) {
         /*         * *********************************** */
 
         Log::record($course_id, MODULE_ID_GROUPS, LOG_DELETE, array('gid' => $id,
-                                                                    'name' => $myDir->name));
+            'name' => $myDir? $myDir->name:"[no name]"));
 
         $message = $langGroupDel;
     } elseif (isset($_REQUEST['empty'])) {
@@ -333,26 +334,45 @@ if ($is_editor) {
 
     // Show DB messages
     if (isset($message)) {
-        $tool_content .= "<p class='success'>$message</p><br />";
+        $tool_content .= "<div class='alert alert-success'>$message</div><br>";
     }
-    $tool_content .= "
-        <div id='operations_container'>
-          <ul id='opslist'>
-            <li><a href='group_creation.php?course=$course_code' title='$langNewGroupCreate'>$langCreate</a></li>
-            <li><a href='group_properties.php?course=$course_code' title='$langPropModify'>$langGroupProperties</a></li>";
-                
+    
     $groupSelect = Database::get()->queryArray("SELECT id FROM `group` WHERE course_id = ?d ORDER BY id", $course_id);
     $num_of_groups = count($groupSelect);
-    // groups list
-    if ($num_of_groups > 0) {
+    $tool_content .= "
+        <div id='operations_container'>" .
+            action_bar(array(
+                array('title' => $langCreate,
+                    'url' => "group_creation.php?course=$course_code",
+                    'icon' => 'fa-plus-circle',
+                    'level' => 'primary-label',
+                    'button-class' => 'btn-success'),
+                array('title' => $langGroupProperties,
+                    'url' => "group_properties.php?course=$course_code",
+                    'icon' => 'fa-gear',
+                    'level' => 'primary'),
+                array('title' => $langDeleteGroups,
+                    'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete_all=yes",
+                    'icon' => 'fa-times',
+                    'level' => 'primary',
+                    'class' => 'delete',
+                    'confirm' => $langDeleteGroupAllWarn,
+                    'show' => $num_of_groups > 0),
+                array('title' => $langFillGroupsAll,
+                    'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;fill=yes",
+                    'icon' => 'fa-pencil',
+                    'level' => 'primary',
+                    'show' => $num_of_groups > 0),
+                array('title' => $langEmtpyGroups,
+                    'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;empty=yes",
+                    'icon' => 'fa-trash',
+                    'level' => 'primary',
+                    'class' => 'delete',
+                    'confirm' => $langEmtpyGroups,
+                    'confirm_title' => $langEmtpyGroupsAll,
+                    'show' => $num_of_groups > 0))) .
+            "</div>";
 
-        $tool_content .="<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete_all=yes' onClick=\"return confirmation('delall');\" title='$langDeleteGroups'>$langDelete</a></li>
-            <li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;fill=yes' title='$langFillGroups'>$langFillGroupsAll</a></li>
-            <li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;empty=yes' onClick=\"return confirmation('emptyall');\" title='$langEmtpyGroups'>$langEmtpyGroupsAll</a></li>";
-                
-    }
-    $tool_content .="</ul>
-        </div>";
 
     // ---------- display properties ------------------------
     /*
@@ -479,53 +499,54 @@ if ($is_editor) {
     // groups list
     if ($num_of_groups > 0) {
         $tool_content .= "<br />
-                <table width='100%' align='left' class='tbl_alt'>
+                <div class='table-responsive'>
+                <table class='table-default'>
                 <tr>
-                  <th colspan='2'><div align='left'>$langGroupName</div></th>
+                  <th>$langGroupName</th>
                   <th width='250'>$langGroupTutor</th>
                   <th width='30'>$langRegistered</th>
                   <th width='30'>$langMax</th>
-                  <th width='30'>$langActions</th>
+                  <th class='text-center'>".icon('fa-gears', $langActions)."</th>
                 </tr>";
         foreach ($groupSelect as $group) {
             initialize_group_info($group->id);
-            if ($myIterator % 2 == 0) {
-                $tool_content .= "<tr class='even'>";
-            } else {
-                $tool_content .= "<tr class='odd'>";
-            }
-            $tool_content .= "<td width='16'>
-                        <img src='$themeimg/arrow.png' alt='' /></td><td>
+            $tool_content .= "<tr>";
+            $tool_content .= "<td>
                         <a href='group_space.php?course=$course_code&amp;group_id=$group->id'>" . q($group_name) . "</a></td>";
             $tool_content .= "<td class='center'>";
             foreach ($tutors as $t) {                
                 $tool_content .= display_user($t->user_id) . "<br />";
             }
-            $tool_content .= "</td><td class='center'>$member_count</td>";
+            $tool_content .= "</td><td class='text-center'>$member_count</td>";
             if ($max_members == 0) {
                 $tool_content .= "<td>-</td>";
             } else {
-                $tool_content .= "<td class='center'>$max_members</td>";
+                $tool_content .= "<td class='text-center'>$max_members</td>";
             }
-            $tool_content .= "<td class='center'>
-                        <a href='group_edit.php?course=$course_code&amp;group_id=$group->id'>
-                        <img src='$themeimg/edit.png' alt='$langEdit' title='$langEdit' /></a>
-                        <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete=$group->id' onClick=\"return confirmation('" .
-                    js_escape($group_name) . "');\">
-                        <img src='$themeimg/delete.png' alt='$langDelete' title='$langDelete' /></a></td></tr>";
+            $tool_content .= "<td class='option-btn-cell'>" .
+                    action_button(array(
+                        array('title' => $langEdit,
+                            'url' => "group_edit.php?course=$course_code&amp;group_id=$group->id",
+                            'icon' => 'fa-edit'),
+                        array('title' => $langDelete,
+                            'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete=$group->id",
+                            'icon' => 'fa-times',
+                            'class' => 'delete',
+                            'confirm' => $langConfirmDelete))) .
+                        "</td></tr>";
             $totalRegistered += $member_count;
             $myIterator++;
         }
-        $tool_content .= "</table><br />";
+        $tool_content .= "</table></div><br>";
     } else {
-        $tool_content .= "<p class='alert1'>$langNoGroup</p>";
+        $tool_content .= "<div class='alert alert-warning'>$langNoGroup</div>";
     }          
     
 } else {
     // Begin student view
     $q = Database::get()->queryArray("SELECT id FROM `group` WHERE course_id = ?d", $course_id);
     if (count($q) == 0) {
-        $tool_content .= "<p class='alert1'>$langNoGroup</p>";
+        $tool_content .= "<div class='alert alert-warning'>$langNoGroup</div>";
     } else {
         $tool_content .= "<table width='100%' align='left' class='tbl_alt'>
                 <tr>
@@ -554,8 +575,8 @@ if ($is_editor) {
             }
             if ($user_group_description) {
                 $tool_content .= "<br />" . q($user_group_description) . "&nbsp;&nbsp;" .
-                        icon('edit', $langModify, "group_description.php?course=$course_code&amp;group_id=$group_id") . "&nbsp;" .
-                        icon('delete', $langDelete, "group_description.php?course=$course_code&amp;group_id=$group_id&amp;delete=true", 'onClick="return confirmation();"');
+                        icon('fa-edit', $langModify, "group_description.php?course=$course_code&amp;group_id=$group_id") . "&nbsp;" .
+                        icon('fa-times', $langDelete, "group_description.php?course=$course_code&amp;group_id=$group_id&amp;delete=true", 'onClick="return confirmation();"');
             } elseif ($is_member) {
                 $tool_content .= "<br /><a href='group_description.php?course=$course_code&amp;group_id=$group_id'><i>$langAddDescription</i></a>";
             }

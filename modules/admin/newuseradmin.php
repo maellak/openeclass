@@ -36,8 +36,6 @@ $user = new User();
 $navigation[] = array("url" => "../admin/index.php", "name" => $langAdmin);
 
 // javascript
-load_js('jquery');
-load_js('jquery-ui');
 load_js('jstree');
 load_js('pwstrength.js');
 $head_content .= <<<hContent
@@ -96,14 +94,26 @@ if ($submit) {
 
     // check if there are empty fields
     if (!$all_set) {
-        $tool_content .= "<p class='caution'>$langFieldsMissing</p>
-                        <br><br><p align='right'><a href='$backlink'>$langAgain</a></p>";
+        $tool_content .= "<div class='alert alert-danger'>$langFieldsMissing</p>";
+        $tool_content .= action_bar(array(
+            array('title' => $langAgain,
+                'url' => "$backlink",
+                'icon' => 'fa-reply',
+                'level' => 'primary-label')));
     } elseif ($user_exist) {
-        $tool_content .= "<p class='caution'>$langUserFree</p>
-                        <br><br><p align='right'><a href='$backlink'>$langAgain</a></p>";
+        $tool_content .= "<div class='alert alert-danger'>$langUserFree</div>";
+        $tool_content .= action_bar(array(
+            array('title' => $langAgain,
+                'url' => "$backlink",
+                'icon' => 'fa-reply',
+                'level' => 'primary-label')));
     } elseif (!email_seems_valid($email_form)) {
-        $tool_content .= "<p class='caution_small'>$langEmailWrong.</p>
-                        <br /><br /><p align='right'><a href='$backlink'>$langAgain</a></p>";
+        $tool_content .= "<div class='alert alert-danger'>$langEmailWrong.</div>";
+        $tool_content .= action_bar(array(
+            array('title' => $langAgain,
+                'url' => "$backlink",
+                'icon' => 'fa-reply',
+                'level' => 'primary-label')));
     } else {
         validateNode(intval($depid), isDepartmentAdmin());
         $hasher = new PasswordHash(8, false);
@@ -131,7 +141,12 @@ if ($submit) {
             $type_message = '';
             // $langAsUser;
         }
-        $tool_content .= "<p class='success'>$message</p><br><br><p align='right'><a href='../admin/listreq.php$reqtype'>$langBackRequests</a></p>";
+        $tool_content .= "<div class='alert alert-success'>$message</div><br><br><p align='pull-right'>";
+        $tool_content .= action_bar(array(
+            array('title' => $langBackRequests,
+                'url' => "../admin/listreq.php$reqtype",
+                'icon' => 'fa-reply',
+                'level' => 'primary-label')));
 
         // send email
         $telephone = get_config('phone');
@@ -158,21 +173,23 @@ $langEmail : " . get_config('email_helpdesk') . "\n";
 
         $res = Database::get()->querySingle("SELECT givenname, surname, username, email, faculty_id, phone, am,
                         comment, lang, date_open, status, verified_mail FROM user_request WHERE id =?d", $id);
-        $ps = $res->surname;
-        $pn = $res->givenname;
-        $pu = $res->username;
-        $pe = $res->email;
-        $pv = intval($res->verified_mail);
-        $pt = intval($res->faculty_id);
-        $pam = $res->am;
-        $pphone = $res->phone;
-        $pcom = $res->comment;
-        $language = $res->lang;
-        $pstatus = intval($res->status);
-        $pdate = nice_format(date('Y-m-d', strtotime($res->date_open)));
+        if ($res) {
+            $ps = $res->surname;
+            $pn = $res->givenname;
+            $pu = $res->username;
+            $pe = $res->email;
+            $pv = intval($res->verified_mail);
+            $pt = intval($res->faculty_id);
+            $pam = $res->am;
+            $pphone = $res->phone;
+            $pcom = $res->comment;
+            $language = $res->lang;
+            $pstatus = intval($res->status);
+            $pdate = nice_format(date('Y-m-d', strtotime($res->date_open)));
 
-        // faculty id validation
-        validateNode($pt, isDepartmentAdmin());
+            // faculty id validation
+            validateNode($pt, isDepartmentAdmin());
+        }
 
         // display actions toolbar
         $tool_content .= "<div id='operations_container'>
@@ -249,7 +266,7 @@ $langEmail : " . get_config('email_helpdesk') . "\n";
     }
     $tool_content .= "
         <tr><th>&nbsp;</th>
-            <td class='right'><input type='submit' name='submit' value='$langRegistration' />
+            <td class='right'><input class='btn btn-primary' type='submit' name='submit' value='$langRegistration' />
                </td></tr>
         </table>
       </fieldset><div class='right smaller'>$langRequiredFields</div>
@@ -262,7 +279,11 @@ $langEmail : " . get_config('email_helpdesk') . "\n";
     } else {
         $reqtype = '';
     }
-    $tool_content .= "<p align='right'><a href='../admin/index.php'>$langBack</a></p>";
+    $tool_content .= action_bar(array(
+        array('title' => $langBack,
+            'url' => "../admin/index.php",
+            'icon' => 'fa-reply',
+            'level' => 'primary-label')));
 }
 
 draw($tool_content, 3, null, $head_content);

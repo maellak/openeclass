@@ -29,51 +29,50 @@ $require_admin = true;
 require_once '../../include/baseTheme.php';
 
 load_js('tools.js');
-load_js('jquery');
-load_js('jquery-ui');
-load_js('jquery-ui-timepicker-addon.min.js');
+load_js('bootstrap-datetimepicker');
 
-$head_content .= "<link rel='stylesheet' type='text/css' href='{$urlAppend}js/jquery-ui-timepicker-addon.min.css'>
-<script type='text/javascript'>
-$(function() {
-$('input[name=u_date_start]').datetimepicker({
-    dateFormat: 'yy-mm-dd', 
-    timeFormat: 'hh:mm'
-    });
-});
-
-$(function() {
-$('input[name=u_date_end]').datetimepicker({
-    dateFormat: 'yy-mm-dd', 
-    timeFormat: 'hh:mm'
-    });
-});
-</script>";
+$head_content .= "<script type='text/javascript'>
+        $(function() {
+            $('#u_date_start, #u_date_end').datetimepicker({
+                format: 'dd-mm-yyyy hh:ii',
+                pickerPosition: 'bottom-left',
+                language: '".$language."',
+                autoclose: true    
+            });            
+        });
+    </script>";
 
 $nameTools = $langVisitsCourseStats;
 $navigation[] = array('url' => 'index.php', 'name' => $langAdmin);
 
-$tool_content .= "
-  <div id='operations_container'>
-    <ul id='opslist'>
-      <li><a href='stateclass.php'>$langPlatformGenStats</a></li>
-      <li><a href='platformStats.php?first='>$langVisitsStats</a></li>
-      <li><a href='oldStats.php' onClick='return confirmation(\"$langOldStatsExpireConfirm\");'>" . $langOldStats . "</a></li>
-      <li><a href='monthlyReport.php'>$langMonthlyReport</a></li>
-    </ul>
-  </div>";
+require_once 'admin_statistics_tools_bar.php';
+admin_statistics_tools("visitsCourseStats");
 
 /* * ******************************************
   start making the chart
  * ******************************************* */
 require_once 'modules/graphics/plotter.php';
 
+if (isset($_POST['u_date_start'])) {
+    $uds = DateTime::createFromFormat('d-m-Y H:i', $_POST['u_date_start']);
+    $u_date_start = $uds->format('Y-m-d H:i');
+} else {
+    $date_start = new DateTime();
+    $date_start->sub(new DateInterval('P30D'));
+    $u_date_start = $date_start->format('d-m-Y H:i');
+}
+if (isset($_POST['u_date_end'])) {
+    $ude = DateTime::createFromFormat('d-m-Y H:i', $_POST['u_date_end']);
+    $u_date_end = $ude->format('Y-m-d H:i');
+} else {
+    $date_end = new DateTime();    
+    $u_date_end = $date_end->format('d-m-Y H:i');
+}
+
 //default values for chart
 $usage_defaults = array(
     'u_interval' => 'daily',
-    'u_course_id' => -1,
-    'u_date_start' => strftime('%Y-%m-%d', strtotime('now -30 day')),
-    'u_date_end' => strftime('%Y-%m-%d', strtotime('now')),
+    'u_course_id' => -1,    
 );
 
 foreach ($usage_defaults as $key => $val) {
@@ -280,11 +279,29 @@ $tool_content .= '
     <tbody>
     <tr>
       <th width="220" class="left">' . $langStartDate . '</th>
-      <td><input type="text" name="u_date_start" value = "' . $u_date_start . '"></td>      
+      <td>';
+$tool_content .= "<div class='input-append date form-group' id='u_date_start' data-date = '" . q($u_date_start) . "'>
+                <div class='col-xs-11'>        
+                    <input name='u_date_start' type='text' value = '" . q($u_date_start) . "'>
+                </div>
+            <span class='add-on'><i class='fa fa-times'></i></span>
+            <span class='add-on'><i class='fa fa-calendar'></i></span>
+            </div>";
+
+$tool_content .= '</td>      
     </tr>
     <tr>
       <th class="left">' . $langEndDate . '</th>
-      <td><input type="text" name="u_date_end" value = "' . $u_date_end . '"></td>
+      <td>';
+      
+$tool_content .= "<div class='input-append date form-group' id='u_date_end' data-date= '" . q($u_date_end) . "'>
+                <div class='col-xs-11'>
+                    <input name='u_date_end' type='text' value= '" . q($u_date_end) . "'>
+                </div>
+            <span class='add-on'><i class='fa fa-times'></i></span>
+            <span class='add-on'><i class='fa fa-calendar'></i></span>
+            </div>";
+    $tool_content .= '</td>
     </tr>
     <tr>
       <th class="left">' . $langFirstLetterCourse . '</th>
@@ -300,7 +317,7 @@ $tool_content .= '
     </tr>
     <tr>
       <th class="left">&nbsp;</th>
-      <td><input type="submit" name="btnUsage" value="' . $langSubmit . '"></td>
+      <td><input class="btn btn-primary" type="submit" name="btnUsage" value="' . $langSubmit . '"></td>
     </tr>
     </tbody>
     </table>

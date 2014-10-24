@@ -786,7 +786,7 @@ switch ($action) {
     	
 		$tool_content .= '</div>' . "\n";
 		$message = $langWikiLockInfo;
-		$tool_content .= "<div class='caution'>$message</div></br />";
+		$tool_content .= "<div class='alert alert-danger'>$message</div></br />";
 
 
 		if (isset($content) && $content != '') {
@@ -809,7 +809,6 @@ switch ($action) {
                 //Do not show progress bar if a lock conflict was detected
                 if (!isset($pre_action) || $pre_action != 'conflict') {
                     //add lock time progress bar
-                    load_js('jquery');
                     
                     $head_content .= "<script type='text/javascript'>
                         function secondsToHms(d) {
@@ -870,14 +869,14 @@ switch ($action) {
                  if ($wikiStore->pageExists($wikiId, $wiki_title)) {
                      $wikiPage->loadPage($wiki_title);
                      if ($wikiPage->delete()) {
-                         $message = "<p class='success'>$langWikiPageDeleted</p>";
-                         $tool_content .= $message . "<br/>";
+                         $message = "<div class='alert alert-success'>$langWikiPageDeleted</div>";
+                         $tool_content .= $message . "<br>";
                      } else {
-                         $message = "<p class='caution'>$langWikiDeletePageError</p>";
-                         $tool_content .= $message . "<br/>";
+                         $message = "<div class='alert alert-danger'>$langWikiDeletePageError</div>";
+                         $tool_content .= $message . "<br>";
                      }
                  } else {
-                     $message = "<p class='caution'>$langWikiPageNotFound</p>";
+                     $message = "<div class='alert alert-danger'>$langWikiPageNotFound</div>";
                      $tool_content .= $message . "<br/>";
                  }
              }
@@ -1013,7 +1012,7 @@ switch ($action) {
                 . '<input type="hidden" name="course" value="' . $course_code . '" />' . "\n"
                 . '<input type="hidden" name="wikiId" value="' . $wikiId . '" />' . "\n"
                 . '<input type="hidden" name="title" value="' . $wiki_title . '" />' . "\n"
-                . '<input type="submit" name="action[diff]" value="' . $langWikiShowDifferences . '" />' . "\n"
+                . '<input class="btn btn-primary" type="submit" name="action[diff]" value="' . $langWikiShowDifferences . '" />' . "\n"
                 . '</div>' . "\n"
         ;
 
@@ -1126,7 +1125,7 @@ switch ($action) {
             . $langSearch
             . '</label><br />'."\n"
             . '<input type="text" id="searchPattern" name="searchPattern" />'."\n"
-            . '<input type="submit" value="'.$langSubmit.'" />'."\n"
+            . '<input class="btn btn-primary" type="submit" value="'.$langSubmit.'" />'."\n"
             . disp_button(
                 htmlspecialchars($_SERVER['SCRIPT_NAME'].'?wikiId='.$wikiId.'&course='.$course_code), $langCancel)
             . '</form>'."\n";

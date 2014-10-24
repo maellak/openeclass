@@ -108,12 +108,12 @@ function claro_disp_wiki_editor($wikiId, $title, $versionId
             . '" />' . "\n"
     ;
 
-    $out .= '<input type="submit" name="action[preview]" value="'
+    $out .= '<input class="btn btn-primary" type="submit" name="action[preview]" value="'
             . $langPreview . '" />' . "\n"
     ;
 
     if (!$forcePreview) {
-        $out .= '<input type="submit" name="action[save]" value="'
+        $out .= '<input class="btn btn-primary" type="submit" name="action[save]" value="'
                 . $langSave . '" />' . "\n"
         ;
     }
@@ -150,7 +150,7 @@ function claro_disp_wiki_preview(&$wikiRenderer, $title, $content = '') {
     $title = "<h1 class=\"wikiTitle\">$langWikiPreviewTitle$title</h1>\n";
     $out .= $title;
     $out .= '</div>' . "\n";
-    $out .= "<div class='caution'>$langWikiPreviewWarning</div><br />";
+    $out .= "<div class='alert alert-danger'>$langWikiPreviewWarning</div><br />";
     $out .= '<div class="wiki2xhtml">' . "\n";
 
     if ($content != '') {
@@ -200,10 +200,10 @@ function claro_disp_wiki_preview_buttons($wikiId, $title, $content, $changelog =
             . '" />' . "\n"
     ;
 
-    $out .= '<input type="submit" name="action[save]" value="'
+    $out .= '<input class="btn btn-primary" type="submit" name="action[save]" value="'
             . $langSave . '" />' . "\n"
     ;
-    $out .= '<input type="submit" name="action[edit]" value="'
+    $out .= '<input class="btn btn-primary" type="submit" name="action[edit]" value="'
             . $langEdit . '"/>' . "\n"
     ;
 
@@ -260,9 +260,12 @@ function claro_disp_wiki_properties_form($wikiId = 0, $title = '', $desc = '', $
 
     $script = ( is_null($script) ) ? $_SERVER['SCRIPT_NAME'] . "?course=$course_code" : $script;
 
-    $form = "<div id='operations_container'><ul id='opslist'>
-                <li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></li>
-                </ul></div>";
+    $form = action_bar(array(
+        array('title' => $langBack,
+              'url' => "$_SERVER[SCRIPT_NAME]'?course=$course_code",
+              'icon' => 'fa-reply',
+              'level' => 'primary-label',)
+    ));
     
     $form .= '   <form method="POST" id="wikiProperties" action="' . $script . '">' . "\n"
             . '   <fieldset>' . "\n"
@@ -370,7 +373,7 @@ function claro_disp_wiki_properties_form($wikiId = 0, $title = '', $desc = '', $
 
     $form .= '</td></tr><tr><th>&nbsp;</th><td>';
 
-    $form .= '<input type="submit" name="action[exEdit]" value="' . $langSave . '" />';
+    $form .= '<input class="btn btn-primary" type="submit" name="action[exEdit]" value="' . $langSave . '" />';
 
     $form .= '</td></tr></table></fieldset></form>';
 

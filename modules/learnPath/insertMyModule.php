@@ -169,13 +169,13 @@ foreach ($result as $list) {
 
     //CHECKBOX, NAME, RENAME, COMMENT
     if ($list->contentType == CTEXERCISE_) {
-        $moduleImg = 'exercise_on';
+        $moduleImg = 'fa-pencil-square-o';
     } else if ($list->contentType == CTLINK_) {
-        $moduleImg = 'links_on';
+        $moduleImg = 'fa-link';
     } else if ($list->contentType == CTCOURSE_DESCRIPTION_) {
-        $moduleImg = 'description_on';
+        $moduleImg = 'fa-info-circle';
     } else if ($list->contentType == CTMEDIA_ || $list->contentType == CTMEDIALINK_) {
-        $moduleImg = 'videos_on';
+        $moduleImg = 'fa-film';
     } else {
         $moduleImg = choose_image(basename($list->path));
     }
@@ -216,14 +216,20 @@ if (!$atleastOne) {
 if ($atleastOne) {
     $tool_content .= '    <tr>' . "\n"
             . '      <th colspan="2"><div align="right">' . "\n"
-            . '        <input type="submit" value="' . $langReuse . '" />' . "\n"
+            . '        <input class="btn btn-primary" type="submit" value="' . $langReuse . '" />' . "\n"
             . '        <input type="hidden" name="cmdglobal" value="add"></div>' . "\n"
             . '      </th>' . "\n"
             . '    </tr>' . "\n";
 }
 
 $tool_content .= "\n" . '    </table>' . "\n" . '    </form>';
-$tool_content .= "<p align=\"right\"><a href=\"learningPathAdmin.php?course=$course_code&amp;path_id=" . (int) $_SESSION['path_id'] . "\">$langBackToLPAdmin</a></p>";
+
+$tool_content .= 
+         action_bar(array(
+            array('title' => $langBack,
+                'url' => "learningPathAdmin.php?course=$course_code&amp;path_id=" . (int) $_SESSION['path_id'],
+                'icon' => 'fa-reply',
+                'level' => 'primary-label'))) ;
 //####################################################################################\\
 //################################## MODULES LIST ####################################\\
 //####################################################################################\\

@@ -47,14 +47,12 @@ require_once 'main/notes/notes.class.php';
 //angela: Do we need recording of personal actions????
 // The following is added for statistics purposes
 //require_once 'include/action.php';
-
 //$action = new action();
 //$action->record(MODULE_ID_ANNOUNCE);
 
 $nameTools = $langNotes;
 
 ModalBoxHelper::loadModalBox();
-load_js('jquery');
 load_js('tools.js');
 load_js('references.js');
 $head_content .= '<script type="text/javascript">var langEmptyGroupName = "' .
@@ -73,27 +71,27 @@ if (isset($_GET['up'])) {
     Notes::moveup_note($thisNoteId);
 }
 
-/* submit form: new or updated note*/
+/* submit form: new or updated note */
 if (isset($_POST['submitNote'])) {
-    
-    $newTitle = $_POST['newTitle'];       
+
+    $newTitle = $_POST['newTitle'];
     $newContent = $_POST['newContent'];
-    $refobjid = ($_POST['refobjid'] == "0")? $_POST['refcourse']:$_POST['refobjid'];
+    $refobjid = ($_POST['refobjid'] == "0") ? $_POST['refcourse'] : $_POST['refobjid'];
     if (!empty($_POST['id'])) { //existing note
         $id = intval($_POST['id']);
         Notes::update_note($id, $newTitle, $newContent, $refobjid);
-        $message = "<p class='success'>$langNoteModify</p>";
+        $message = "<div class='alert alert-success'>$langNoteModify</div>";
     } else { // new note
         $id = Notes::add_note($newTitle, $newContent, $refobjid);
-        $message = "<p class='success'>$langNoteAdd</p>";
-    }    
+        $message = "<div class='alert alert-success'>$langNoteAdd</div>";
+    }
 } // end of if $submit
 
 /* delete */
 if (isset($_GET['delete'])) {
     $thisNoteId = intval($_GET['delete']);
     Notes::delete_note($thisNoteId);
-    $message = "<p class='success'>$langNoteDel</p>";
+    $message = "<div class='alert alert-success'>$langNoteDel</div>";
 }
 
 /* edit */
@@ -118,7 +116,7 @@ if (isset($message) && $message) {
 }
 
 /* display form */
-if ($displayForm and (isset($_GET['addNote']) or isset($_GET['modify']))) {
+if ($displayForm and ( isset($_GET['addNote']) or isset($_GET['modify']))) {
     $tool_content .= "
     <form method='post' action='$_SERVER[SCRIPT_NAME]' onsubmit=\"return checkrequired(this, 'antitle');\">
     <fieldset>
@@ -144,7 +142,7 @@ if ($displayForm and (isset($_GET['addNote']) or isset($_GET['modify']))) {
         $type_selected = null;
     if (!isset($object_selected))
         $object_selected = null;
-    
+
     $tool_content .= "
     <tr><th>$langNoteTitle:</th></tr>
     <tr>
@@ -156,12 +154,12 @@ if ($displayForm and (isset($_GET['addNote']) or isset($_GET['modify']))) {
     </tr>
     <tr><th>$langReferencedObject:</th></tr>
     <tr>
-      <td>".
-      References::build_object_referennce_fields($gen_type_selected, $course_selected, $type_selected, $object_selected)
-   ."</td>
+      <td>" .
+            References::build_object_referennce_fields($gen_type_selected, $course_selected, $type_selected, $object_selected)
+            . "</td>
     </tr>
     <tr>
-      <td class='right'><input type='submit' name='submitNote' value='$langAdd' /></td>
+      <td class='right'><input class='btn btn-primary' type='submit' name='submitNote' value='$langAdd'></td>
     </tr>
     </table>
     <input type='hidden' name='id' value='$noteToModify' />
@@ -170,11 +168,14 @@ if ($displayForm and (isset($_GET['addNote']) or isset($_GET['modify']))) {
 } else {
     /* display actions toolbar */
     $tool_content .= "
-    <div id='operations_container'>
-      <ul id='opslist'>
-        <li><a href='$_SERVER[SCRIPT_NAME]?addNote=1'>" . $langAddNote . "</a></li>
-      </ul>
-    </div>";
+    <div id='operations_container'>"
+            . action_bar(array(
+                array('title' => $langAddNote,
+                    'url' => "$_SERVER[SCRIPT_NAME]?addNote=1",
+                    'icon' => 'fa-plus-circle',
+                    'level' => 'primary-label',
+                    'button-class' => 'btn-success'))) .
+            "</div>";
 }
 
 
@@ -182,7 +183,7 @@ if ($displayForm and (isset($_GET['addNote']) or isset($_GET['modify']))) {
 //$notelist = isset($_GET['nid']) ? array(Notes::get_note(intval($_GET['nid']))) : Notes::get_user_notes();
 if (isset($_GET['course'])) {
     $cid = course_code_to_id($_GET['course']);
-    $notelist = Notes::get_general_course_notes($cid);
+    $notelist = Notes::get_all_course_notes($cid);
 } else { 
     if (isset($_GET['nid'])) {
         $notelist = array(Notes::get_note(intval($_GET['nid'])));
@@ -200,12 +201,7 @@ $tool_content .= "
         <table width='100%' class='sortable' id='t1'>";
 if ($noteNumber > 0) {
     $tool_content .= "<tr><th colspan='2'>$langNotes</th>";
-    if ($noteNumber > 1) {
-        $colsNum = 2;
-    } else {
-        $colsNum = 2;
-    }
-    $tool_content .= "<th width='60' colspan='$colsNum' class='center'>$langActions</th>";
+    $tool_content .= "<th width='60' class='text'>$langActions</th>";
     $tool_content .= "</tr>";
 }
 $k = 0;
@@ -216,7 +212,7 @@ if ($notelist)
         if ($k % 2 == 0) {
             $tool_content .= "<tr class='even'>";
         } else {
-          $tool_content .= "<tr class='odd'>";
+            $tool_content .= "<tr class='odd'>";
         }
         $tool_content .= "<td width='16' valign='top'>
 			<img style='padding-top:3px;' src='$themeimg/arrow.png' title='bullet' /></td>
@@ -227,7 +223,7 @@ if ($notelist)
             $tool_content .= "<a href='$_SERVER[SCRIPT_NAME]?nid=$note->id'>" . q($note->title) . "</a>";
         }
         $tool_content .= "</b><div class='smaller'>" . nice_format($note->date_time) . "</div>";
-        if(!is_null($note->reference_obj_type)){
+        if (!is_null($note->reference_obj_type)) {
             $tool_content .= "<div class='smaller'>$langReferencedObject: " . References::item_link($note->reference_obj_module, $note->reference_obj_type, $note->reference_obj_id, $note->reference_obj_course) . "</div>";
         }
         if (isset($_GET['nid'])) {
@@ -239,29 +235,26 @@ if ($notelist)
         }
         $tool_content .= "</td>";
 
-        $tool_content .= "
-            <td width='70' class='right'>
-                  <a href='$_SERVER[SCRIPT_NAME]?modify=$note->id'>
-                  <img src='$themeimg/edit.png' title='" . $langModify . "' /></a>&nbsp;
-                  <a href='$_SERVER[SCRIPT_NAME]?delete=$note->id' onClick=\"return confirmation('$langSureToDelNote');\">
-                  <img src='$themeimg/delete.png' title='" . $langDelete . "' /></a>&nbsp;
-            </td>";
-        if ($noteNumber > 1) {
-            $tool_content .= "<td align='center' width='35' class='right'>";
-        }
-        if ($iterator != 1) {
-            $tool_content .= "<a href='$_SERVER[SCRIPT_NAME]?up=$note->id'>
-                        <img class='displayed' src='$themeimg/up.png' title='" . $langMove . " " . $langUp . "' />
-                        </a>";
-        }
-        if ($iterator < $bottomNote) {
-            $tool_content .= "<a href='$_SERVER[SCRIPT_NAME]?down=" . $note->id . "'>
-                        <img class='displayed' src='$themeimg/down.png' title='" . $langMove . " " . $langDown . "' />
-                        </a>";
-        }
-        if ($noteNumber > 1) {
-            $tool_content .= "</td>";
-        }
+        $tool_content .= "<td width='3' class='right'>" .
+                action_button(array(
+                    array('title' => $langModify,
+                        'url' => "$_SERVER[SCRIPT_NAME]?modify=$note->id",
+                        'icon' => 'fa-edit'),
+                    array('title' => $langGroupProperties,
+                        'url' => "$_SERVER[SCRIPT_NAME]?delete=$note->id",
+                        'confirm' => $langSureToDelNote,
+                        'class' => 'delete',
+                        'icon' => 'fa-gear'),
+                    array('title' => $langMove . " " . $langUp,
+                        'url' => "$_SERVER[SCRIPT_NAME]?up=$note->id",
+                        'show' => $iterator != 1,
+                        'icon' => 'fa-arrow-up'),
+                    array('title' => $langMove . " " . $langDown,
+                        'url' => "$_SERVER[SCRIPT_NAME]?down=" . $note->id,
+                        'show' => $iterator < $bottomNote,
+                        'icon' => 'fa-arrow-down')
+                )) .
+                "</td>";
 
         $tool_content .= "</tr>";
         $iterator ++;
@@ -278,7 +271,7 @@ if ($noteNumber < 1) {
         $no_content = false;
     }
     if ($no_content) {
-        $tool_content .= "<p class='alert1'>$langNoNote</p>\n";
+        $tool_content .= "<p class='alert alert-warning text-center'>$langNoNote</p>\n";
     }
 }
 

@@ -103,8 +103,6 @@ if (isset($_POST['submit'])) {
     $course = new course();
     $user = new user();
 
-    load_js('jquery');
-    load_js('jquery-ui');
     load_js('jstree');
 
     $tool_content .= "<div class='noteit'>" . $langMultiCourseInfo . "</div>
@@ -120,8 +118,7 @@ if (isset($_POST['submit'])) {
 	  <th>$langFaculty:</th>
           <td>";
 
-    list($js, $html) = $tree->buildCourseNodePicker(
-            array('allowables' => $user->getDepartmentIds($uid)));
+    list($js, $html) = $tree->buildCourseNodePicker(array('allowables' => $user->getDepartmentIds($uid)));
     $head_content .= $js;
     $tool_content .= $html;
 
@@ -156,12 +153,12 @@ if (isset($_POST['submit'])) {
 	  <tr class='smaller'>
 	    <th valign='top'><img src='$themeimg/lock_closed.png' title='" . $m['legclosed'] . "' alt='" . $m['legclosed'] . "' width=\"16\" height=\"16\" /> " . $m['legclosed'] . "</th>
 	    <td valign='top'><input name='formvisible' type='radio' value='0' /></td>
-	    <td>$langPrivate</td>
+	    <td>$langClosedCourseShort</td>
 	  </tr>
           <tr class='smaller'>
 	    <th valign='top'><img src='$themeimg/lock_inactive.png' title='" . $m['linactive'] . "' alt='" . $m['linactive'] . "' width='16' height='16' /> " . $m['linactive'] . "</th>
 	    <td valign='top'><input name='formvisible' type='radio' value='3' /></td>
-	    <td>$langCourseInactive</td>
+	    <td>$langCourseInactiveShort</td>
 	  </tr>
 	  </table>      
 	  <br />
@@ -268,14 +265,18 @@ if (isset($_POST['submit'])) {
         <tr>
             <th>&nbsp;</th>
             <td class='right'>
-            <input type='submit' name='submit' value='" . q($langSubmit) . "'></td>
+            <input class='btn btn-primary' type='submit' name='submit' value='" . q($langSubmit) . "'></td>
         </tr>
         </table>
         </fieldset>
         </form>";
 }
 
-$tool_content .= "<div class='right'><a href='index.php'>$langBackAdmin</a></div><br/>\n";
+$tool_content .= action_bar(array(
+    array('title' => $langBackAdmin,
+        'url' => "index.php",
+        'icon' => 'fa-reply',
+        'level' => 'primary-label')));
 draw($tool_content, 3, null, $head_content);
 
 // Helper function
@@ -290,13 +291,12 @@ function prof_query($sql, $terms) {
 
 // Find a professor by name ("Name surname") or username
 function find_prof($uname) {
-    if ($uid = prof_query('username = ?s', array($uname))) {
+    if (($uid = prof_query('username = ?s', array($uname)))) {
         return $uid;
     } else {
         $names = explode(' ', $uname);
         if (count($names) == 2 and
-            $uid = prof_query('(surname = ?s AND givenname = ?s) OR (givenname = ?s AND surname = ?s)',
-                              array($names[0], $names[1], $names[0], $names[1]))) {
+                $uid = prof_query('(surname = ?s AND givenname = ?s) OR (givenname = ?s AND surname = ?s)', array($names[0], $names[1], $names[0], $names[1]))) {
             return $uid;
         }
     }

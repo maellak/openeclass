@@ -96,14 +96,15 @@ function list_docs() {
     $urlbase = $_SERVER['SCRIPT_NAME'] . "?course=$course_code$dir_setter&amp;type=doc&amp;id=$id&amp;path=";
 
     foreach ($result as $row) {
+        $fullpath = $basedir . $row->path;
         if ($row->extra_path) {
             $size = 0;
         } else {
-            $size = filesize($basedir . $row->path);
+            $size = file_exists($fullpath)? filesize($fullpath): 0;
         }
         $fileinfo[] = array(
             'id' => $row->id,
-            'is_dir' => is_dir($basedir . $row->path),
+            'is_dir' => is_dir($fullpath),
             'size' => $size,
             'title' => $row->title,
             'name' => htmlspecialchars($row->filename),
@@ -116,7 +117,7 @@ function list_docs() {
             'object' => MediaResourceFactory::initFromDocument($row));
     }
     if (count($fileinfo) == 0) {
-        $tool_content .= "\n  <p class='alert1'>$langNoDocuments</p>\n";
+        $tool_content .= "\n  <div class='alert alert-warning'>$langNoDocuments</div>\n";
     } else {
         if (empty($path)) {
             $dirname = '';
@@ -129,7 +130,7 @@ function list_docs() {
             $dirname = "/" . htmlspecialchars($dirname);
             $parentlink = $urlbase . $parentpath;
             $parenthtml = "<th class='right'><a href='$parentlink'>$langUp</a> " .
-                    icon('folder_up', $langUp, $parentlink) . "</th>";
+                    icon('fa-upload', $langUp, $parentlink) . "</th>";
             $colspan = 4;
         }
         $tool_content .= "<form action='insert.php?course=$course_code' method='post'><input type='hidden' name='id' value='$id' />" .
@@ -153,7 +154,7 @@ function list_docs() {
                 }
                 $dir = $entry['path'];
                 if ($is_dir) {
-                    $image = 'folder';
+                    $image = 'fa-folder-o';
                     $file_url = $urlbase . $dir;
                     $link_text = $entry['name'];
 
@@ -202,7 +203,7 @@ function list_docs() {
             }
         }
         $tool_content .= "<tr><th colspan=$colspan><div align='right'>";
-        $tool_content .= "<input type='submit' name='submit_doc' value='$langAddModulesButton' /></div></th>";
+        $tool_content .= "<input class='btn btn-primary' type='submit' name='submit_doc' value='$langAddModulesButton' /></div></th>";
         $tool_content .= "</tr></table>$dir_html</form>\n";
     }
 }

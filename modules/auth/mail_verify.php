@@ -82,7 +82,7 @@ if (!empty($code) and (!empty($u_id) or !empty($req_id))) {
                             "$langProfUname: $username\n$langProfEmail : $usermail\n" .
                             "$contactphone: $userphone\n\n\n$logo\n\n";
 
-                    if (!send_mail('', $usermail, '', get_config('email_helpdesk'), $subject, $MailMessage, $charset)) {
+                    if (!send_mail($siteName, $emailAdministrator, '', get_config('email_helpdesk'), $subject, $MailMessage, $charset, "Reply-To: $usermail")) {
                         $user_msg = $langMailErrorMessage;
                     } else {
                         $user_msg = $infoprof;
@@ -102,7 +102,7 @@ if (!empty($code) and (!empty($u_id) or !empty($req_id))) {
                     if (isset($_SESSION['mail_verification_required'])) {
                         unset($_SESSION['mail_verification_required']);
                     }
-                    $tool_content = "<div class='info'>$langMailVerifySuccess2 </div>
+                    $tool_content = "<div class='alert alert-info'>$langMailVerifySuccess2 </div>
 					<p>$user_msg<br /><br />$click <a href='$urlServer' class='mainpage'>$langHere</a>
 						$langBackPage</p>";
                     draw($tool_content, 0);
@@ -114,21 +114,21 @@ if (!empty($code) and (!empty($u_id) or !empty($req_id))) {
                     if (isset($_SESSION['mail_verification_required'])) {
                         unset($_SESSION['mail_verification_required']);
                     }
-                    $tool_content = "<div class='info'>$langMailVerifySuccess2 </div>
+                    $tool_content = "<div class='alert alert-info'>$langMailVerifySuccess2 </div>
 					<p>$user_msg<br /><br />$click <a href='$urlServer' class='mainpage'>$langHere</a>
 						$langBackPage</p>";
                     draw($tool_content, 0);
                     exit;
                 }
 
-                $tool_content = "<div class='success'>$langMailVerifySuccess </div>
+                $tool_content = "<div class='alert alert-success'>$langMailVerifySuccess </div>
 					<p>$user_msg<br /><br />$click <a href='$urlServer' class='mainpage'>$langHere</a>
 					$langBackPage</p>";
             }
             // code and id given but they are wrong!
             else {
                 $user_error_msg = $langMailVerifyCodeError;
-                $tool_content = "<div class='caution'>$user_error_msg </div>
+                $tool_content = "<div class='alert alert-danger'>$user_error_msg </div>
 					<p>$click <a href='$urlServer' class='mainpage'>$langHere</a>
 					$langBackPage</p>";
             }
@@ -138,7 +138,7 @@ if (!empty($code) and (!empty($u_id) or !empty($req_id))) {
         } else {
             $user_error_msg = $langMailVerifyNoAccount;
         }
-        $tool_content = "<div class='caution'>$user_error_msg </div>
+        $tool_content = "<div class='alert alert-danger'>$user_error_msg </div>
                             <p>$click <a href='$urlServer' class='mainpage'>$langHere</a>
                             $langBackPage</p>";
     }    
@@ -146,7 +146,7 @@ if (!empty($code) and (!empty($u_id) or !empty($req_id))) {
 // no code given and no id given
 else {
     $user_error_msg = $langMailVerifyNoCode;
-    $tool_content = "<div class='caution'>$user_error_msg </div>
+    $tool_content = "<div class='alert alert-danger'>$user_error_msg </div>
 		<p>$click <a href='$urlServer' class='mainpage'>$langHere</a>
 		$langBackPage</p>";
 }

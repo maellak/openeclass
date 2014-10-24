@@ -365,7 +365,7 @@ if ($module->contentType != CTLABEL_) { //
     if ($module->startAsset_id != "" && $asset->asset_id == $module->startAsset_id) {
         $tool_content .= '' . "\n"
                 . '        <form action="./viewer.php?course=' . $course_code . '" method="post">' . "\n"
-                . '        <input type="submit" value="' . $langStartModule . '" />' . "\n"
+                . '        <input class="btn btn-primary" type="submit" value="' . $langStartModule . '" />' . "\n"
                 . '        </form>' . "\n";
     } else {
         $tool_content .= '        <p><center>' . $langNoStartAsset . '</center></p>' . "\n";
@@ -412,7 +412,11 @@ if ($is_editor) {
 } else {
     $pathBack = "./learningPath.php";
 }
-$tool_content .= "
-    <p align=\"right\"><a href=\"" . $pathBack . "?course=$course_code\">" . $langBackToLPAdmin . "</a></p>";
+$tool_content .= 
+         action_bar(array(
+            array('title' => $langBack,
+                'url' => $pathBack . "?course=$course_code",
+                'icon' => 'fa-reply',
+                'level' => 'primary-label'))) ;
 
 draw($tool_content, 2, null, $head_content, $body_action);

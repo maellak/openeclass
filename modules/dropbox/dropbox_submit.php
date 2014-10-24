@@ -86,7 +86,9 @@ if (isset($_POST['submit'])) {
                 if (preg_match('/^_/', $r)) {
                     $sql_res = Database::get()->queryArray("SELECT user_id FROM group_members WHERE group_id = SUBSTRING_INDEX(?s, '_', -1)", $r);
                     foreach ($sql_res as $ar) {
-                        $recipients[] = $ar->user_id;
+                        if ($ar->user_id != $uid) {
+                            $recipients[] = $ar->user_id;
+                        }
                     }
                 } else {
                     $recipients[] = $r;
@@ -189,14 +191,14 @@ if (isset($_POST['submit'])) {
                 }
             }
         }
-        $tool_content .= "<p class='success'>$langdocAdd<br />";
+        $tool_content .= "<div class='alert alert-success'>$langdocAdd<br>";
     } else { //end if(!$error)
-        $tool_content .= "<p class='caution'>$errormsg<br />";
+        $tool_content .= "<div class='alert alert-danger'>$errormsg<br>";
     }
     if ($course_id == 0) {
-        $tool_content .= "<a href='index.php'>$langBack</a></p><br />";
+        $tool_content .= "<a href='index.php'>$langBack</a></div><br>";
     } else {
-        $tool_content .= "<a href='index.php?course=$course_code'>$langBack</a></p><br />";
+        $tool_content .= "<a href='index.php?course=$course_code'>$langBack</a></div><br>";
     }
 }
 

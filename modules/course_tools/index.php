@@ -67,12 +67,12 @@ if (isset($_REQUEST['toolStatus'])) {
     if ($loopCount > 0) {
         Database::get()->query("UPDATE course_module SET visible = 1
                                  WHERE $tool_id AND
-                                 course_id = ?d", $course_id);        
+                                 course_id = ?d", $course_id);
     }
 }
 
 if (isset($_POST['delete'])) {
-    $delete = intval($_POST['delete']);    
+    $delete = intval($_POST['delete']);
     $r = Database::get()->querySingle("SELECT url, title, category FROM link WHERE id = ?d", $delete);
     if ($r->category == -2) { //  backward compatibility ----- if we want to delete html page also delete file
         $link = explode(" ", $r->url);
@@ -80,11 +80,11 @@ if (isset($_POST['delete'])) {
         $file2Delete = $webDir . "/" . $path;
         unlink($file2Delete);
     }
-    Database::get()->query("DELETE FROM link WHERE id = ?d", $delete);    
+    Database::get()->query("DELETE FROM link WHERE id = ?d", $delete);
     Log::record($course_id, MODULE_ID_TOOLADMIN, LOG_DELETE, array('id' => $delete,
-                                                                   'link' => $r->url,
-                                                                   'name_link' => $r->title));    
-    $tool_content .= "<p class='success'>$langLinkDeleted</p>";
+        'link' => $r->url,
+        'name_link' => $r->title));
+    $tool_content .= "<div class='alert alert-success'>$langLinkDeleted</div>";
 }
 
 /**
@@ -93,9 +93,13 @@ if (isset($_POST['delete'])) {
 if (isset($_POST['submit'])) {
     $link = isset($_POST['link']) ? $_POST['link'] : '';
     $name_link = isset($_POST['name_link']) ? $_POST['name_link'] : '';
-    if ((trim($link) == 'http://') or (trim($link) == 'ftp://') or empty($link) or empty($name_link) or !is_url_accepted($link)) {
-        $tool_content .= "<p class='caution'>$langInvalidLink<br />
-                        <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;action=2'>$langHome</a></p><br />";
+    if ((trim($link) == 'http://') or ( trim($link) == 'ftp://') or empty($link) or empty($name_link) or ! is_url_accepted($link)) {
+        $tool_content .= "<div class='alert alert-danger'>$langInvalidLink</div>" .
+                action_bar(array(
+                    array('title' => $langBack,
+                        'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;action=2",
+                        'icon' => 'fa-reply',
+                        'level' => 'primary-label')));
         draw($tool_content, 2, null, $head_content);
         exit();
     }
@@ -103,10 +107,10 @@ if (isset($_POST['submit'])) {
     $sql = Database::get()->query("INSERT INTO link (course_id, url, title, category, description)
                             VALUES (?d, ?s, ?s, -1, ' ')", $course_id, $link, $name_link);
     $id = $sql->lastInsertID;
-    $tool_content .= "<p class='success'>$langLinkAdded</p>";
+    $tool_content .= "<div class='alert alert-success'>$langLinkAdded</div>";
     Log::record($course_id, MODULE_ID_TOOLADMIN, LOG_INSERT, array('id' => $id,
-                                                                   'link' => $link,
-                                                                   'name_link' => $name_link));
+        'link' => $link,
+        'name_link' => $name_link));
 } elseif (isset($_GET['action'])) { // add external link
     $nameTools = $langAddExtLink;
     $navigation[] = array('url' => "$_SERVER[SCRIPT_NAME]?course=$course_code", 'name' => $langToolManagement);
@@ -127,7 +131,7 @@ if (isset($_POST['submit'])) {
             </tr>
             <tr>
               <th>&nbsp;</th>
-              <td><input type='submit' name='submit' value='$langAdd'></td>
+              <td><input class='btn btn-primary' type='submit' name='submit' value='$langAdd'></td>
               <td>&nbsp;</td>
             </tr>
             </table>
@@ -151,11 +155,14 @@ if (is_array($toolArr)) {
 }
 
 $tool_content .= "
-<div id='operations_container'>
-  <ul id='opslist'>    
-    <li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;action=true'>$langAddExtLink</a></li>
-  </ul>
-</div>";
+<div id='operations_container'>" .
+        action_bar(array(
+            array('title' => $langAddExtLink,
+                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;action=true",
+                'icon' => 'fa-plus-circle',
+                'level' => 'primary-label',
+                'button-class' => 'btn-success'))) .
+        "</div>";
 
 $tool_content .= <<<tForm
 <form name="courseTools" action="$_SERVER[SCRIPT_NAME]?course=$course_code" method="post" enctype="multipart/form-data">

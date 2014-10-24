@@ -66,14 +66,22 @@ $navigation[] = array('url' => "index.php?course=$course_code", 'name' => $langF
 $navigation[] = array('url' => "viewforum.php?course=$course_code&amp;forum=$forum_id", 'name' => q($forum_name));
 
 if (!does_exists($forum_id, "forum")) {
-    $tool_content .= "<div class='caution'>$langErrorPost</div>";
+    $tool_content .= "<div class='alert alert-danger'>$langErrorPost</div>";
     draw($tool_content, 2);
     exit;
 }
 
-$tool_content .= "<div id='operations_container'><ul id='opslist'>";
-$tool_content .= "<li><a href='viewforum.php?course=$course_code&forum=$forum_id'>$langBack</a></li>";
-$tool_content .= "</ul></div>";
+if (!isset($_POST['submit'])) {
+    $dynbar = array(
+        array('title' => $langBack,
+            'url' => "viewforum.php?course=$course_code&forum=$forum_id",
+            'icon' => 'fa-reply',
+            'level' => 'primary-label'
+             )
+    );
+
+    $tool_content .= action_bar($dynbar);
+}
 
 if (isset($_POST['submit'])) {
     $subject = trim($_POST['subject']);
@@ -94,7 +102,7 @@ if (isset($_POST['submit'])) {
     $post_id = Database::get()->query("INSERT INTO forum_post (topic_id, post_text, poster_id, post_time, poster_ip) VALUES (?d, ?s, ?d, ?t, ?s)"
                     , $topic_id, $message, $uid, $time, $poster_ip)->lastInsertID;
     $fpdx->store($post_id);
-    
+
     $forum_user_stats = Database::get()->querySingle("SELECT COUNT(*) as c FROM forum_post 
                         INNER JOIN forum_topic ON forum_post.topic_id = forum_topic.id
                         INNER JOIN forum ON forum.id = forum_topic.forum_id
@@ -147,9 +155,18 @@ if (isset($_POST['submit'])) {
     }
     // end of notification
 
-    $tool_content .= "<p class='success'>$langStored</p>
-		<p class='back'>&laquo; <a href='viewtopic.php?course=$course_code&amp;topic=$topic_id&amp;forum=$forum_id&amp;$total_topic'>$langReturnMessages</a></p>
-		<p class='back'>&laquo; <a href='viewforum.php?course=$course_code&amp;forum=$forum_id'>$langReturnTopic</a></p>";
+    $dynbar = array(
+            array('title' => $langReturnMessages,
+                    'url' => "viewtopic.php?course=$course_code&amp;topic=$topic_id&amp;forum=$forum_id&amp;$total_topic",
+                    'icon' => 'fa-reply',
+                    'level' => 'primary-label'),
+            array('title' => $langReturnTopic,
+                    'url' => "viewforum.php?course=$course_code&forum=$forum_id",
+                    'icon' => 'fa-reply',
+                    'level' => 'primary-label')
+    );
+    $tool_content .= action_bar($dynbar);
+    $tool_content .= "<div class='alert alert-success'>$langStored</div>";
 } else {
     $tool_content .= "
         <form action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;topic=$topic&forum=$forum_id' method='post'>
@@ -167,7 +184,7 @@ if (isset($_POST['submit'])) {
 	  <tr>
             <th>&nbsp;</th>
 	    <td class='right'>
-	       <input class='Login' type='submit' name='submit' value='$langSubmit' />&nbsp;	       
+	       <input class='btn btn-primary' type='submit' name='submit' value='$langSubmit' />&nbsp;	       
 	    </td>
           </tr>
 	  </table>

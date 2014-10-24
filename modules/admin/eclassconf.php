@@ -28,15 +28,7 @@ require_once 'modules/auth/auth.inc.php';
 $nameTools = $langEclassConf;
 $navigation[] = array('url' => 'index.php', 'name' => $langAdmin);
 
-load_js('jquery');
-load_js('jquery-ui');
 $head_content .= <<<EOF
-<style type="text/css">
-    .no-close .ui-dialog-titlebar-close {
-        display: none;
-    }
-</style>
-
 <script type='text/javascript'>
 /* <![CDATA[ */
 
@@ -95,25 +87,22 @@ $(document).ready(function() {
     }
     
     // Search Engine checkboxes
-    $("#confirmIndexDialog").dialog({
-        autoOpen: false,
-        height: 400,
-        width: 600,
-        modal: true,
-        dialogClass: "no-close",
-        closeOnEscape: false,
-        buttons: {
-            "$langCancel": function() {
-                $('#index_enable')
-                    .prop('checked', false)
-                    .prop('disabled', false);
-                $('#search_enable').prop('checked', false);
-                $(this).dialog("close");
-            },
-            "$langOk": function() {
-                $(this).dialog("close");
-            }
-        }
+    $('#confirmIndexDialog').modal({
+        show: false,
+        keyboard: false,
+        backdrop: 'static'
+    });
+        
+    $("#confirmIndexCancel").click(function() {
+        $('#index_enable')
+            .prop('checked', false)
+            .prop('disabled', false);
+        $('#search_enable').prop('checked', false);
+        $("#confirmIndexDialog").modal("hide");
+    });
+        
+    $("#confirmIndexOk").click(function() {
+        $("#confirmIndexDialog").modal("hide");
     });
     
     $('#search_enable').change(function(event) {
@@ -137,32 +126,29 @@ $(document).ready(function() {
     
     $('#index_enable').change(function(event) {
         if ($('#index_enable').is(":checked")) {
-            $("#confirmIndexDialog").dialog("open");
+            $("#confirmIndexDialog").modal("show");
         }
     });
         
     // Mobile API Confirmations    
-    $("#confirmMobileAPIDialog").dialog({
-        autoOpen: false,
-        height: 200,
-        width: 600,
-        modal: true,
-        dialogClass: "no-close",
-        closeOnEscape: false,
-        buttons: {
-            "$langCancel": function() {
-                $('#mobileapi_enable').prop('checked', false);
-                $(this).dialog("close");
-            },
-            "$langOk": function() {
-                $(this).dialog("close");
-            }
-        }
+    $('#confirmMobileAPIDialog').modal({
+        show: false,
+        keyboard: false,
+        backdrop: 'static'
+    });
+        
+    $("#confirmMobileAPICancel").click(function() {
+        $('#mobileapi_enable').prop('checked', false);
+        $("#confirmMobileAPIDialog").modal("hide");
+    });
+        
+    $("#confirmMobileAPIOk").click(function() {
+        $("#confirmMobileAPIDialog").modal("hide");
     });
         
     $('#mobileapi_enable').change(function(event) {
         if ($('#mobileapi_enable').is(":checked")) {
-            $("#confirmMobileAPIDialog").dialog("open");
+            $("#confirmMobileAPIDialog").modal("show");
         }
     });
 
@@ -222,7 +208,7 @@ if (isset($_POST['submit'])) {
         'dropbox_allow_personal_messages' => true,
         'block_username_change' => true,
         'display_captcha' => true,
-        'insert_xml_metadata' => true,        
+        'insert_xml_metadata' => true,
         'enable_mobileapi' => true,
         'doc_quota' => true,
         'group_quota' => true,
@@ -263,7 +249,7 @@ if (isset($_POST['submit'])) {
     if ($GLOBALS['opencourses_enable'] == 1) {
         $GLOBALS['course_metadata'] = 1;
     }
-    
+
     if ($GLOBALS['enable_search'] == 1) {
         $GLOBALS['enable_indexing'] = 1;
     }
@@ -272,7 +258,7 @@ if (isset($_POST['submit'])) {
     if ($GLOBALS['restrict_owndep'] == 0) {
         $GLOBALS['restrict_teacher_owndep'] = 0;
     }
-    
+
     $scheduleIndexing = false;
     // indexing was previously off, but now set to on, need to schedule re-indexing
     if (!get_config('enable_indexing') && $enable_indexing) {
@@ -282,7 +268,7 @@ if (isset($_POST['submit'])) {
             Database::get()->query("INSERT INTO idx_queue (course_id) VALUES (?d)", $r->id);
         });
     }
-    
+
     // indexing was previously on, but now set to off, need to empty it
     if (get_config('enable_indexing') && !$enable_indexing) {
         require_once 'modules/search/indexer.class.php';
@@ -294,13 +280,13 @@ if (isset($_POST['submit'])) {
     foreach ($config_vars as $varname => $what) {
         set_config($varname, $GLOBALS[$varname]);
     }
-    
+
     // Display result message
-    $tool_content .= "<p class='success'>$langFileUpdatedSuccess</p>";
-    
+    $tool_content .= "<div class='alert alert-success'>$langFileUpdatedSuccess</div>";
+
     // schedule indexing if necessary
     if ($scheduleIndexing) {
-        $tool_content .= "<p class='alert1'>{$langIndexingNeeded} <a id='idxpbut' href='../search/idxpopup.php' onclick=\"return idxpopup('../search/idxpopup.php', 600, 500)\">{$langHere}.</a></p>";
+        $tool_content .= "<div class='alert alert-warning'>{$langIndexingNeeded} <a id='idxpbut' href='../search/idxpopup.php' onclick=\"return idxpopup('../search/idxpopup.php', 600, 500)\">{$langHere}.</a></div>";
         $head_content .= <<<EOF
 <script type='text/javascript'>
 /* <![CDATA[ */
@@ -333,9 +319,6 @@ $(document).ready(function() {
 </script>
 EOF;
     }
-    
-    // Display link to go back to index.php
-    $tool_content .= "<p class='right'><a href='index.php'>$langBack</a></p>";
 } // end of if($submit)
 // Display config.php edit form
 else {
@@ -523,7 +506,7 @@ else {
     $cbox_display_captcha = get_config('display_captcha') ? 'checked' : '';
     $cbox_dropbox_allow_student_to_student = get_config('dropbox_allow_student_to_student') ? 'checked' : '';
     $cbox_dropbox_allow_personal_messages = get_config('dropbox_allow_personal_messages') ? 'checked' : '';
-    $cbox_block_username_change = get_config('block_username_change') ? 'checked' : '';    
+    $cbox_block_username_change = get_config('block_username_change') ? 'checked' : '';
     $cbox_enable_mobileapi = get_config('enable_mobileapi') ? 'checked' : '';
     $max_glossary_terms = get_config('max_glossary_terms');
     $cbox_enable_indexing = get_config('enable_indexing') ? 'checked' : '';
@@ -662,19 +645,13 @@ else {
           </tr>
           </table>
           </fieldset>
-	    <input type='submit' name='submit' value='$langModify'>
+	    <input class='btn btn-primary' type='submit' name='submit' value='$langModify'>
         </form>";
-    // Display link to index.php
-    $tool_content .= "<p align='right'><a href='index.php'>$langBack</a></p>";
-    
+
     // Modal dialogs
-    $tool_content .= "<div id='confirmIndexDialog' title='" . $langConfirmEnableIndexTitle . "'>
-            <p>" . $langConfirmEnableIndex . "</p>
-        </div>";
-    $tool_content .= "<div id='confirmMobileAPIDialog' title='" . $langConfirmEnableMobileAPITitle . "'>
-            <p>" . $langConfirmEnableMobileAPI . "</p>
-        </div>";
-    
+    $tool_content .= modalConfirmation('confirmIndexDialog', 'confirmIndexLabel', $langConfirmEnableIndexTitle, $langConfirmEnableIndex, 'confirmIndexCancel', 'confirmIndexOk');
+    $tool_content .= modalConfirmation('confirmMobileAPIDialog', 'confirmMobileAPILabel', $langConfirmEnableMobileAPITitle, $langConfirmEnableMobileAPI, 'confirmMobileAPICancel', 'confirmMobileAPIOk');
+
     // After restored values have been inserted into form then bring back
     // values from original config.php, so the rest of the page can be displayed correctly
     if (isset($_GET['restore']) && $_GET['restore'] == "yes") {
@@ -682,4 +659,30 @@ else {
     }
 }
 
+// Display link to index.php
+$tool_content .= action_bar(array(
+    array('title' => $langBack,
+        'url' => "index.php",
+        'icon' => 'fa-reply',
+        'level' => 'primary-label')));
 draw($tool_content, 3, null, $head_content);
+
+function modalConfirmation($id, $labelId, $title, $body, $cancelId, $okId) {
+    global $langCancel, $langOk;
+    return <<<htmlEOF
+<div class='modal fade' id='$id' tabindex='-1' role='dialog' aria-labelledby='$labelId' aria-hidden='true'>
+    <div class='modal-dialog'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h4 class='modal-title' id='$labelId'>$title</h4>
+            </div>
+            <div class='modal-body'><p>$body</p></div>
+            <div class='modal-footer'>
+                <button id='$cancelId' type='button' class='btn btn-default'>$langCancel</button>
+                <button id='$okId' type='button' class='btn btn-primary'>$langOk</button>
+            </div>
+        </div>
+    </div>
+</div>
+htmlEOF;
+}

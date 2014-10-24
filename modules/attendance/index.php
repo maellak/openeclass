@@ -35,20 +35,19 @@ $nameTools = $langAttendance;
 
 //Datepicker
 load_js('tools.js');
-load_js('jquery');
-load_js('jquery-ui');
-load_js('jquery-ui-timepicker-addon.min.js');
+load_js('bootstrap-datetimepicker');
 load_js('datatables');
 load_js('datatables_filtering_delay');
 
-$head_content .= "<link rel='stylesheet' type='text/css' href='{$urlAppend}js/jquery-ui-timepicker-addon.min.css'>
+$head_content .= "
 <script type='text/javascript'>
 $(function() {
-    $('input[name=date]').datetimepicker({
-        dateFormat: 'yy-mm-dd', 
-        timeFormat: 'hh:mm'
-        });
-    var oTable = $('#users_table{$course_id}').DataTable ({
+    $('#date').datetimepicker({
+        format: 'dd-mm-yyyy hh:ii', pickerPosition: 'bottom-left', 
+        language: '".$language."',
+        autoclose: true
+    });
+    var oTable = $('#users_table{$course_id}').dataTable ({
         'aLengthMenu': [
                    [10, 15, 20 , -1],
                    [10, 15, 20, '$langAllOfThem'] // change per page values here
@@ -76,6 +75,25 @@ $(function() {
                    }
     });
 });
+
+function showCCFields() {
+        $('.assignShow').show();
+}
+function hideCCFields() {
+        $('.assignShow').hide();
+}
+
+$(document).ready(function() {
+    $('.assignCheck').change(function () {
+        if ($('.assignCheck').is(':checked')) {
+            showCCFields();
+        } else {
+            hideCCFields();
+        }
+    }).change();
+    
+});
+
 </script>";
 
 
@@ -113,23 +131,35 @@ if ($attendance) {
 if ($is_editor) {  
 
     // TOP MENU
-    $tool_content .= "<div id='operations_container'><ul id='opslist'>";
-    if(isset($_GET['editUsers']) || isset($_GET['addActivity']) || isset($_GET['attendanceBook']) || isset($_GET['modify']) || isset($_GET['book']) || isset($_GET['statsAttendance'])) {
-        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langAttendanceManagement</a></li>";
-    }
-    if(!isset($_GET['editUsers'])){
-        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;editUsers=1'>$langAdminUsers</a></li>";
-    }
-    if(!isset($_GET['attendanceBook'])) {
-        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;attendanceBook=1'>$langAttendanceBook</a></li>";
-    }
-    if(!isset($_GET['addActivity'])) {
-        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addActivity=1'>$langAttendanceAddActivity</a></li>";
-    }
-    if(!isset($_GET['statsAttendance'])){
-        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;statsAttendance=1'>$langStat</a></li>";
-    }
-    $tool_content .= "</ul></div>";
+    $tool_content .= "<div id='operations_container'>" .
+            action_bar(array(
+                array('title' => $langAttendanceManagement,
+                    'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code",
+                    'icon' => 'fa-check-square-o',
+                    'level' => 'primary',
+                    'show' => isset($_GET['editUsers']) || isset($_GET['addActivity']) || isset($_GET['attendanceBook']) || isset($_GET['modify']) || isset($_GET['book']) || isset($_GET['statsAttendance'])),
+                array('title' => $langAdminUsers,
+                    'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;editUsers=1",
+                    'icon' => 'fa-users',
+                    'level' => 'primary',
+                    'show' => !isset($_GET['editUsers'])),
+                array('title' => $langAttendanceBook,
+                    'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;attendanceBook=1",
+                    'icon' => 'fa-pencil',
+                    'level' => 'primary',
+                    'show' => !isset($_GET['attendanceBook'])),
+                array('title' => $langAttendanceAddActivity,
+                    'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addActivity=1",
+                    'icon' => 'fa-plus-circle',
+                    'level' => 'primary',
+                    'show' => !isset($_GET['addActivity'])),
+                array('title' => $langStat,
+                    'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;statsAttendance=1",
+                    'icon' => 'fa-area-chart',
+                    'level' => 'primary',
+                    'show' => !isset($_GET['statsAttendance'])),
+            )) .
+            "</div>";
 
     //FLAG: flag to show the activities
     $showAttendanceActivities = 1;       
@@ -140,7 +170,7 @@ if ($is_editor) {
         $attendance_users_limit = intval($_POST['usersLimit']);
         if($attendance_users_limit ==1 || $attendance_users_limit == 0){
             Database::get()->querySingle("UPDATE attendance SET `students_semester` = ?d WHERE id = ?d ", $attendance_users_limit, $attendance_id);
-            $message = "<p class='success'>$langAttendanceEdit</p>";
+            $message = "<div class='alert alert-success'>$langAttendanceEdit</div>";
             $tool_content .= $message . "<br/>";
         }
         //update value for the check box and the users query
@@ -160,12 +190,11 @@ if ($is_editor) {
     
     //DISPLAY: new (or edit) activity form to attendance module
     if(isset($_GET['addActivity']) OR isset($_GET['modify'])){
-
+        $nameTools= $langAttendanceActivity;
         $tool_content .= "
-            <form method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code'>
-            <fieldset>
-            <legend>$langAttendanceActivity</legend>
-            <table class='tbl' width='100%'>";
+            <div class='form-wrapper'>
+            <form class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code'>
+            <fieldset>";
         
         if (isset($_GET['modify'])) { //edit an existed activity
             $id = intval($_GET['modify']);
@@ -175,7 +204,8 @@ if ($is_editor) {
             $titleToModify = $mofifyActivity->title;
             $contentToModify = $mofifyActivity->description;
             $attendanceActivityToModify = $id;
-            $date = $mofifyActivity->date;
+            $actDate_obj = DateTime::createFromFormat('Y-m-d H:i:s',$mofifyActivity->date);
+            $date = $actDate_obj->format('d-m-Y H:i');            
             $module_auto_id = $mofifyActivity->module_auto_id;
             $auto = $mofifyActivity->auto;
 
@@ -183,36 +213,46 @@ if ($is_editor) {
             $attendanceActivityToModify = "";
             $titleToModify = '';
             $contentToModify = '';
+            $date = '';
         }
 
         $tool_content .= "
-            <tr><th>$langTitle:</th></tr>
-            <tr>
-              <td><input type='text' name='actTitle' value='$titleToModify' size='50' /></td>
-            </tr>
-            <tr><th>$langAttendanceActivityDate:</th></tr>
-            <tr>
-              <td><input type='text' name='date' value='" . @datetime_remove_seconds($date) . "'></td>
-            </tr>
-            <tr><th>$langDescription:</th></tr>
-            <tr>
-              <td>" . rich_text_editor('actDesc', 4, 20, $contentToModify) . "</td>
-            </tr>";
-        if (isset($module_auto_id) and $module_auto_id) { //accept the auto booking mechanism            
-            $tool_content .= "<tr><td>$langAttendanceAutoBook: <input type='checkbox' value='1' name='auto' ";
-            if ($auto) {
-                $tool_content .= " checked";
-            }
-            $tool_content .= " /></td>";
+            <div class='form-group'>
+                <label for='actTitle' class='col-sm-2 control-label'>$langTitle:</label>
+                <div class='col-sm-10'>
+                    <input type='text' name='actTitle' id='actTitle' placeholder='$langTitle' value='$titleToModify' size='50'>
+                </div>
+            </div>
+            <div class='form-group'>
+                <label for='date' class='col-sm-2 control-label'>$langAttendanceActivityDate:</label>
+                <div class='col-sm-10'>
+                    <input type='text' name='date' id='date' placeholder='$langAttendanceActivityDate' value='$date'>
+                </div>
+            </div>
+            <div class='form-group'>
+                <label for='actDesc' class='col-sm-2 control-label'>$langDescription:</label>
+                <div class='col-sm-10'>
+                    " . rich_text_editor('actDesc', 4, 20, $contentToModify) . "
+                </div>
+            </div>";
+        if (isset($module_auto_id) and $module_auto_id) { //accept the auto booking mechanism     
+            $tool_content .= "<div class='form-group'>
+                <label for='auto' class='col-sm-2 control-label'>$langAttendanceAutoBook:</label>
+                <div class='col-sm-10'>
+                    <input type='checkbox' value='1' id='auto' name='auto' ".(($auto) ? "checked" : "").">
+                </div>
+            </div>";
         }    
         $tool_content .= "
-                <tr>
-                  <td class='right'><input type='submit' name='submitAttendanceActivity' value='$langAdd' /></td>
-                </tr>
-            </table>
             <input type='hidden' name='id' value='$attendanceActivityToModify' />
+            <div class='form-group'>
+                <div class='col-sm-10 col-sm-offset-2'>
+                    <input class='btn btn-primary' type='submit' name='submitAttendanceActivity' value='$langAdd'>
+                    <a class='btn btn-default' href='index.php?course=$course_code'>$langCancel</a>
+                </div>
+            </div>
             </fieldset>
-            </form>";
+            </form></div>";
         
         //do not show the activities list
         $showAttendanceActivities = 0;
@@ -264,13 +304,14 @@ if ($is_editor) {
     //EDIT DB: add or edit activity to attendance module (edit concerns and course automatic activities)
     elseif(isset($_POST['submitAttendanceActivity'])){
 
-        if (!ctype_alnum($_POST['actTitle'])) {
+        if (ctype_alnum($_POST['actTitle'])) {
             $actTitle = $_POST['actTitle'];
         } else {
             $actTitle = "";
         }
         $actDesc = purify($_POST['actDesc']);
-        $actDate = $_POST['date'];
+        $actDate_obj = DateTime::createFromFormat('d-m-Y H:i',$_POST['date']);
+        $actDate = $actDate_obj->format('Y-m-d H:i:s');        
         if (isset($_POST['auto'])) {
             $auto = intval($_POST['auto']);
         } else {
@@ -282,13 +323,13 @@ if ($is_editor) {
             //update
             $id = intval($_POST['id']);
             Database::get()->query("UPDATE attendance_activities SET `title` = ?s, date = ?t, description = ?s, `auto` = ?d WHERE id = ?d", $actTitle, $actDate, $actDesc, $auto, $id);            
-            $message = "<p class='success'>$langAttendanceEdit</p>";
+            $message = "<div class='alert alert-success'>$langAttendanceEdit</div>";
             $tool_content .= $message . "<br/>";
         }
         else{
             //insert
             $insertAct = Database::get()->query("INSERT INTO attendance_activities SET attendance_id = ?d, title = ?s, `date` = ?t, description = ?s", $attendance_id, $actTitle, $actDate, $actDesc);            
-            $message = "<p class='success'>$langAttendanceSucInsert</p>";
+            $message = "<div class='alert alert-success'>$langAttendanceSucInsert</div>";
             $tool_content .= $message . "<br/>";
         }
         //show activities list
@@ -300,7 +341,7 @@ if ($is_editor) {
         $attendance_limit = intval($_POST['limit']);
         Database::get()->querySingle("UPDATE attendance SET `limit` = ?d WHERE id = ?d ", $attendance_limit, $attendance_id);
         
-        $message = "<p class='success'>$langAttendanceLimit</p>";
+        $message = "<div class='alert alert-success'>$langAttendanceLimit</div>";
         $tool_content .= $message . "<br/>";
     }
 
@@ -312,9 +353,9 @@ if ($is_editor) {
             $showAttendanceActivities = 1; //show list activities
             
             if($delAct){
-                $message = "<p class='success'>$langAttendanceDel</p>";
+                $message = "<div class='alert alert-success'>$langAttendanceDel</div>";
             }else{
-                $message = "<p class='alert1'>$langAttendanceDelFailure</p>";
+                $message = "<div class='alert alert-warning'>$langAttendanceDelFailure</div>";
             }
             $tool_content .= $message . "<br/>";
         }
@@ -332,7 +373,7 @@ if ($is_editor) {
             $tool_content .= "<th width='60' class='center'>$langAttendanceMEANS</th>";
             $tool_content .= "</tr>";
         } else {
-            $tool_content .= "<p class='alert1'>$langAttendanceNoActMessage1 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addActivity=1'>$langHere</a> $langAttendanceNoActMessage3</p>\n";
+            $tool_content .= "<div class='alert alert-warning'>$langAttendanceNoActMessage1 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addActivity=1'>$langHere</a> $langAttendanceNoActMessage3</div>\n";
         }
         $k = 0;
         if ($result){
@@ -406,7 +447,7 @@ if ($is_editor) {
                     }
                 }
                 
-                $message = "<p class='success'>$langAttendanceEdit</p>";
+                $message = "<div class='alert alert-success'>$langAttendanceEdit</div>";
                 $tool_content .= $message . "<br/>";
             }
         }
@@ -421,7 +462,7 @@ if ($is_editor) {
             //check if there are booking records for the user, otherwise alert message for first input
             $checkForRecords = Database::get()->querySingle("SELECT COUNT(attendance_book.id) as count FROM attendance_book, attendance_activities WHERE attendance_book.attendance_activity_id = attendance_activities.id AND uid = ?d AND attendance_activities.attendance_id = ?d", $userID, $attendance_id)->count;
             if(!$checkForRecords){
-                $tool_content .="<div class='alert1'>$langAttendanceNewBookRecord</div>";
+                $tool_content .="<div class='alert alert-warning'>$langAttendanceNewBookRecord</div>";
             }
             
             //get all the activities
@@ -440,7 +481,7 @@ if ($is_editor) {
                 $tool_content .= "<th width='60' class='center'>" . $langAttendanceBooking . "</th>";
                 $tool_content .= "</tr>";
             } else {
-                $tool_content .= "<p class='alert1'>$langAttendanceNoActMessage1 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addActivity=1'>$langHere</a> $langAttendanceNoActMessage3</p>\n";
+                $tool_content .= "<div class='alert alert-warning'>$langAttendanceNoActMessage1 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addActivity=1'>$langHere</a> $langAttendanceNoActMessage3</div>\n";
             }
             
             //ui counter 
@@ -514,7 +555,7 @@ if ($is_editor) {
                     $k++;
                 } // end of while
             }
-            $tool_content .= "<tr><td colspan=6 class='right'><input type='submit' name='bookUser' value='$langAttendanceBooking' /></td></tr></table></form></fieldset>";
+            $tool_content .= "<tr><td colspan=6 class='right'><input class='btn btn-primary' type='submit' name='bookUser' value='$langAttendanceBooking' /></td></tr></table></form></fieldset>";
         }
         
         //======================
@@ -547,7 +588,7 @@ if ($is_editor) {
                         <td> " . display_user($resultUser->userID). " ($langAm: $resultUser->am)</td>
                         <td>" . nice_format($resultUser->reg_date) . "</td>
                         <td>". userAttendTotal($attendance_id, $resultUser->userID). "/" . $attendance_limit . "</td>    
-                        <td class='center'>". icon('edit', $langEdit, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;book=$resultUser->userID"). "</td>
+                        <td class='center'>". icon('fa-edit', $langEdit, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;book=$resultUser->userID"). "</td>
                     </tr>";
             }
 
@@ -654,7 +695,7 @@ if ($is_editor) {
                                     $tool_content .= "</td>";
 
                                     $tool_content .= "<td class='center'>". userAttendTotal($attendance_id, $myrow->userID). "/" . $attendance_limit . "</td>";
-                                    $tool_content .= "<td class='center'>". icon('edit', $langEdit, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;book=$myrow->userID"). "</td>";
+                                    $tool_content .= "<td class='center'>". icon('fa-edit', $langEdit, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;book=$myrow->userID"). "</td>";
                                     $i++;
                                 }, 
                         $limitDate, $course_id, USER_STUDENT, $order_sql);
@@ -662,7 +703,7 @@ if ($is_editor) {
         $tool_content .= "</table>";
 
         // display number of users
-        $tool_content .= "<div class='info'><b>$langTotal</b>: <span class='grey'><b>$countUser </b><em>$langStudents &nbsp;</em></span><br />
+        $tool_content .= "<div class='alert alert-info'><b>$langTotal</b>: <span class='grey'><b>$countUser </b><em>$langStudents &nbsp;</em></span><br />
                         <b>$langDumpUser $langCsv</b>: 1. <a href='dumpuser.php?course=$course_code'>$langcsvenc2</a>
                         2. <a href='dumpuser.php?course=$course_code&amp;enc=1253'>$langcsvenc1</a>
         </div>";
@@ -716,7 +757,7 @@ if ($is_editor) {
                     Database::get()->querySingle("INSERT INTO attendance_users (attendance_id, uid) VALUES (?d, ?d)", $attendance_id, $newUsers->userID);
                 }
             }else{
-                $tool_content .= "<div class='alert1'>Δεν υπάρχουν φοιτητές στο διάστημα που επιλέξατε</div>";
+                $tool_content .= "<div class='alert alert-warning'>$langNoStudents</div>";
             }
             
         }
@@ -726,20 +767,20 @@ if ($is_editor) {
         $tool_content .= "
         <form method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code&editUsers=1' onsubmit=\"return checkrequired(this, 'antitle');\">
             <fieldset>
-            <h3>Ανανέωση της λίστας μαθητών (reset)</h3>
+            <h3>$langRefreshList</h3>
             <select name='usersLimit'>
                 <option value=''>$langChoice</option>
                 <option value='1'>$langAttendanceActiveUsersSemester</option>
-                <option value='2'>Φοιτητές μόνο τελευταίου τριμήνου</option>
-                <option value='3'>Όλοι οι εγγεγραμμένοι φοιτητές</option>
+                <option value='2'>$langStudLastSemester</option>
+                <option value='3'>$langAllRegStudents</option>
             </select>
-            <input type='submit' name='resetAttendance' value='$langAttendanceUpdate'>
+            <input class='btn btn-primary' type='submit' name='resetAttendance' value='$langAttendanceUpdate'>
             </fieldset>
         </form>";
         
         
         //attendance users
-        $tool_content .= "<h3>Μαθητές παρουσιολογίου</h3><br><form method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code&editUsers=1' onsubmit=\"return checkrequired(this, 'antitle');\">";
+        $tool_content .= "<h3>$langAttendanceActiveUsers</h3><br><form method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code&editUsers=1' onsubmit=\"return checkrequired(this, 'antitle');\">";
         
         $resultUsers = Database::get()->queryArray("SELECT attendance_users.id as recID, attendance_users.uid, user.surname as surname, user.givenname as name, user.am as am, course_user.reg_date as reg_date   FROM attendance_users, user, course_user  WHERE attendance_id = ?d AND attendance_users.uid = user.id AND `user`.id = `course_user`.`user_id` AND `course_user`.`course_id` = ?d ", $attendance_id, $course_id);
         
@@ -773,11 +814,11 @@ if ($is_editor) {
                 </tbody>
             </table>";
 
-            $tool_content .= "<input type='Submit' name='deleteSelectedUsers' value='Διαγραφή επιλεγμένων'>";
+            $tool_content .= "<input class='btn btn-primary' type='submit' name='deleteSelectedUsers' value='$langDelete'>";
 
             $tool_content .= "</form>";
         }else{
-            $tool_content .= "<div class='alert1'>Δεν υπάρχουν μαθητές στο παρουσιολόγιο</div>";
+            $tool_content .= "<div class='alert alert-warning'>$langNoStudentsInAttendance</div>";
         }
         
         
@@ -801,12 +842,13 @@ if ($is_editor) {
             $tool_content .= "</tr>";
         }
         else{
-            $tool_content .= "<p class='alert1'>$langAttendanceNoActMessage1 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addActivity=1'>$langHere</a> $langAttendanceNoActMessage3</p>\n";
+            $tool_content .= "<div class='alert alert-warning'>$langAttendanceNoActMessage1 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addActivity=1'>$langHere</a> $langAttendanceNoActMessage3</div>\n";
         }
         $k = 0;
         if ($result){
-            foreach ($result as $announce) {
-                $content = standard_text_escape($announce->description);
+            foreach ($result as $announce) {               
+                $content = ellipsize_html($announce->description, 50);
+                
                 $d = strtotime($announce->date);
                 
                 if ($k % 2 == 0) {
@@ -829,7 +871,7 @@ if ($is_editor) {
                         . "<td><div class='smaller'><span class='day'>" . ucfirst(claro_format_locale_date($dateFormatLong, $d)) . "</span> ($langHour: " . ucfirst(date('H:i', $d)) . ")</div></td>"
                         . "<td>" . $content . "</td>";
 
-                if($announce->module_auto_id){
+                if($announce->module_auto_id) {
                     $tool_content .= "<td class='smaller'>$langAttendanceActCour";
                     if($announce->auto){
                         $tool_content .= "<br>($langAttendanceInsAut)";
@@ -837,16 +879,22 @@ if ($is_editor) {
                         $tool_content .= "<br>($langAttendanceInsMan)";
                     }
                     $tool_content .= "</td>";
-                }else{
+                } else {
                     $tool_content .= "<td class='smaller'>$langAttendanceActAttend</td>";
                 }
 
-                $tool_content .= "
-                <td width='70' class='right'>
-                      <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;modify=$announce->id'>
-                      <img src='$themeimg/edit.png' title='" . $langModify . "' /></a>&nbsp;
-                      <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete=$announce->id' onClick=\"return confirm('$langSureToDelAnnounce');\">
-                      <img src='$themeimg/delete.png' title='" . $langDelete . "' /></a>&nbsp;</td>";
+                $tool_content .= "<td width='70' class='right'>" .
+                        action_button(array(
+                            array('title' => $langModify,
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;modify=$announce->id",
+                                'icon' => 'fa-edit'),
+                            array('title' => $langDelete,
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete=$announce->id",
+                                'class' => 'delete',
+                                'confirm' => $langSureToDelAnnounce,
+                                'icon' => 'fa-times')
+                        )) .
+                        "</td>";
                 $k++;
             } // end of while
         }
@@ -859,17 +907,21 @@ if ($is_editor) {
         $checkForAssNumber = count($checkForAss);
         
         $tool_content .= "<br><br>";
-
-        if ($checkForAssNumber > 0) {
-            $tool_content .= "<fieldset><legend>$langAttendanceActToAddAss</legend>";
-            $tool_content .= "<script type='text/javascript' src='../auth/sorttable.js'></script>
-                              <table width='100%' class='sortable' id='t1'>";
-            $tool_content .= "<tr><th  colspan='2'>$langTitle</th><th >$langAttendanceActivityDate2</th><th>Περιγραφή</th>";
+        $tool_content .= "<fieldset><legend>$langAttendanceActToAdd</legend>";
+        
+        if ($checkForAssNumber > 0) {            
+            $tool_content .= "$checkForAssNumber $langWorks - <small>$langDisplay <input type='checkbox' class='assignCheck'></small>";
+            
+            
+            $tool_content .= "<table width='100%' class='sortable assignShow' id='t1'>";
+            $tool_content .= "<tr><th>$langWorks</th></tr>";
+            
+            $tool_content .= "<tr ><th colspan='2'>$langTitle</th><th >$langAttendanceActivityDate2</th><th>$langDescription</th>";
             $tool_content .= "<th width='60' class='center'>$langActions</th>";
             $tool_content .= "</tr>";
             $k = 0;        
             foreach ($checkForAss as $newAssToAttendance) {
-                $content = standard_text_escape($newAssToAttendance->description);                
+                $content = ellipsize_html($newAssToAttendance->description, 50);
                 $d = strtotime($newAssToAttendance->deadline);
                 if ($k % 2 == 0) {
                     $tool_content .= "<tr class='even'>";
@@ -891,12 +943,10 @@ if ($is_editor) {
                         . "<td><div class='smaller'><span class='day'>" . ucfirst(claro_format_locale_date($dateFormatLong, $d)) . "</span> ($langHour: " . ucfirst(date('H:i', $d)) . ")</div></td>"
                         . "<td>" . $content . "</td>";
 
-                $tool_content .= "<td width='70' class='center'>".icon('add', $langAdd, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addCourseActivity=$newAssToAttendance->id&amp;type=1")."&nbsp;";
+                $tool_content .= "<td width='70' class='center'>".icon('fa-plus', $langAdd, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addCourseActivity=$newAssToAttendance->id&amp;type=1")."&nbsp;";
                 $k++;         
             }
-            $tool_content .= "</table></fieldset>";
-        } else {
-            $tool_content .= "<p class='alert1'>$langAttendanceNoActMessageAss4</p>";
+            $tool_content .= "</table>";
         }        
         
         
@@ -907,16 +957,16 @@ if ($is_editor) {
 
         $tool_content .= "<br><br>";
 
-        if ($checkForExerNumber > 0) {
-            $tool_content .= "<fieldset><legend>$langAttendanceActToAddExe</legend>";
+        if ($checkForExerNumber > 0) {            
             $tool_content .= "<script type='text/javascript' src='../auth/sorttable.js'></script>
                               <table width='100%' class='sortable' id='t1'>";
-            $tool_content .= "<tr><th  colspan='2'>$langTitle</th><th >$langAttendanceActivityDate2</th><th>Περιγραφή</th>";
+            $tool_content .= "<tr><th colspan='2'>$langExercises</th></tr>";
+            $tool_content .= "<tr><th  colspan='2'>$langTitle</th><th >$langAttendanceActivityDate2</th><th>$langDescription</th>";
             $tool_content .= "<th width='60' class='center'>$langActions</th>";
             $tool_content .= "</tr>";
             $k = 0;        
             foreach ($checkForExer as $newExerToAttendance) {
-                $content = standard_text_escape($newExerToAttendance->description);
+                $content = ellipsize_html($newExerToAttendance->description, 50);
                 $d = strtotime($newExerToAttendance->end_date);
 
                 if ($k % 2 == 0) {
@@ -939,12 +989,10 @@ if ($is_editor) {
                         . "<td><div class='smaller'><span class='day'>" . ucfirst(claro_format_locale_date($dateFormatLong, $d)) . "</span> ($langHour: " . ucfirst(date('H:i', $d)) . ")</div></td>"
                         . "<td>" . $content . "</td>";
 
-                $tool_content .= "<td width='70' class='center'>".icon('add', $langAdd, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addCourseActivity=$newExerToAttendance->id&amp;type=2")."&nbsp;";                     
+                $tool_content .= "<td width='70' class='center'>".icon('fa-plus', $langAdd, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addCourseActivity=$newExerToAttendance->id&amp;type=2")."&nbsp;";                     
                 $k++;
             } // end of while
             $tool_content .= "</table></fieldset>";
-        } else {
-            $tool_content .= "<p class='alert1'>$langAttendanceNoActMessageExe4</p>";
         }        
         
 
@@ -960,7 +1008,7 @@ if ($is_editor) {
                   <th>$langAttendanceLimitNumber:</th><td><input type='text' name='limit' value='$attendance_limit' size='5' /></td>
                 </tr>
                 <tr>
-                  <td class='left'><input type='submit' name='submitAttendanceLimit' value='$langAttendanceUpdate' /></td>
+                  <td class='left'><input class='btn btn-primary' type='submit' name='submitAttendanceLimit' value='$langAttendanceUpdate' /></td>
                 </tr>
             </table>
             </fieldset>
@@ -983,7 +1031,7 @@ if ($is_editor) {
                $tool_content .= " /></td>
                 </tr>
                 <tr>
-                  <td class='left'><input type='submit' name='submitAttendanceActiveUsers' value='$langAttendanceUpdate' /></td>
+                  <td class='left'><input class='btn btn-primary' type='submit' name='submitAttendanceActiveUsers' value='$langAttendanceUpdate' /></td>
                 </tr>
             </table>
             </fieldset>
@@ -999,7 +1047,7 @@ if ($is_editor) {
     //check if there are booking records for the user, otherwise alert message that there is no input
     $checkForRecords = Database::get()->querySingle("SELECT COUNT(attendance_book.id) as count FROM attendance_book, attendance_activities WHERE attendance_book.attendance_activity_id = attendance_activities.id AND uid = ?d AND attendance_activities.attendance_id = ?d", $userID, $attendance_id)->count;
     if (!$checkForRecords) {
-        $tool_content .="<div class='alert1'>$langAttendanceStudentFailure</div>";
+        $tool_content .="<div class='alert alert-warning'>$langAttendanceStudentFailure</div>";
     }
 
     $result = Database::get()->queryArray("SELECT * FROM attendance_activities  WHERE attendance_id = ?d  ORDER BY `DATE` DESC", $attendance_id);
@@ -1007,12 +1055,12 @@ if ($is_editor) {
 
     if ($announcementNumber > 0) {
         $tool_content .= "<fieldset><legend>$langAttendanceΑbsences</legend>";
-        $tool_content .= "<div class='info'>" . userAttendTotal($attendance_id, $userID) ." ". $langAttendanceΑbsencesFrom . " ". $attendance_limit . " " . $langAttendanceΑbsencesFrom2. " </div><br>";
+        $tool_content .= "<div class='alert alert-info'>" . userAttendTotal($attendance_id, $userID) ." ". $langAttendanceΑbsencesFrom . " ". $attendance_limit . " " . $langAttendanceΑbsencesFrom2. " </div><br>";
         $tool_content .= "<script type='text/javascript' src='../auth/sorttable.js'></script>
                             <table width='100%' class='sortable' id='t2'>";
         $tool_content .= "<tr><th colspan='2'>$langTitle</th><th>$langAttendanceActivityDate2</th><th>$langDescription</th><th>$langAttendanceΑbsencesYesNo</th></tr>";
     } else {
-        $tool_content .= "<p class='alert1'>$langAttendanceNoActMessage5</p>";
+        $tool_content .= "<div class='alert alert-warning'>$langAttendanceNoActMessage5</div>";
     }
     $k = 0;
 
@@ -1048,11 +1096,11 @@ if ($is_editor) {
             $tool_content .= "<td width='70' class='center'>";
                     
             if ($userAttend) {
-                $tool_content .= icon('tick', $langAttendanceΑbsencesYes); 
+                $tool_content .= icon('fa-check-square-o', $langAttendanceΑbsencesYes); 
             } elseif($announce->date > date("Y-m-d")) {
                 $tool_content .= "-";
             } else {
-                $tool_content .= icon('delete', $langAttendanceΑbsencesΝο);
+                $tool_content .= icon('fa-times', $langAttendanceΑbsencesΝο);
             }
             $tool_content .= "</td>";            
             $k++;

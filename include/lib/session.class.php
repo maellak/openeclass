@@ -98,7 +98,7 @@ class Session {
         }   
     }    
     //Sets automatically generated on next request messages
-    public static function Messages($messages, $class='alert1'){
+    public static function Messages($messages, $class='alert-warning'){
         if ( !is_array($messages)) $messages = array($class => array($messages));
         foreach ($messages as $message) {
             if (is_array($message)) {
@@ -124,12 +124,14 @@ class Session {
     }
     // Flashes posted variable errors
     public function Errors($errors){
+        $keys = array();
         foreach ($errors as $key => $error) {
             $_SESSION[$key]['errors'] = $error;
+            $keys[] = $key;
         }
-        if(!isset($_SESSION['flash_new'])) $_SESSION['flash_new'] = array();
+        if (!isset($_SESSION['flash_new'])) $_SESSION['flash_new'] = array();
         $keys = array_unique($keys);
-        foreach($keys as $key) {
+        foreach ($keys as $key) {
             array_push($_SESSION['flash_new'], $key);
         }
         array_push($_SESSION['flash_new'], 'messages');         
@@ -141,10 +143,20 @@ class Session {
         } else {
             return FALSE;
         }
-    }   
-    public static function getError($key, $class='caution') {
+    }
+    public static function hasErrors() {
+        if(isset($_SESSION['flash_old'])) {
+            foreach ($_SESSION['flash_old'] as $row) {
+                if (isset($_SESSION[$row]['errors'][0])){                
+                    return TRUE;
+                }
+            }
+        }
+        return FALSE;
+    }    
+    public static function getError($key) {
         if (isset($_SESSION[$key]['errors'][0])){
-            return "<div class='$class'>".$_SESSION[$key]['errors'][0]."</div>";
+            return $_SESSION[$key]['errors'][0];
         } else {
             return FALSE;
         }
@@ -157,7 +169,7 @@ class Session {
         $msg_boxes = '';
 
         foreach($item_messages as $class => $value){
-            $msg_boxes .= "<div class='$class'><ul><li>".(is_array($value) ? implode('</li><li>', $value) : $value)."</li></ul></div>";
+            $msg_boxes .= "<div class='alert $class'><ul><li>".(is_array($value) ? implode('</li><li>', $value) : $value)."</li></ul></div>";
         }
         unset($_SESSION['messages']);
         return $msg_boxes;

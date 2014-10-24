@@ -30,9 +30,9 @@ $nameTools = $langChoiceLesson;
 $navigation[] = array('url' => 'courses.php', 'name' => $langChoiceDepartment);
 
 $icons = array(
-    COURSE_OPEN => "<img src='$themeimg/lock_open.png' alt='" . $m['legopen'] . "' title='" . $m['legopen'] . "' />",
-    COURSE_REGISTRATION => "<img src='$themeimg/lock_registration.png' alt='" . $m['legrestricted'] . "' title='" . $m['legrestricted'] . "' />",
-    COURSE_CLOSED => "<img src='$themeimg/lock_closed.png' alt='" . $m['legclosed'] . "' title='" . $m['legclosed'] . "' />"
+    COURSE_OPEN => "<img src='$themeimg/lock_open.png' alt='" . $langOpenCourse . "' title='" . $langOpenCourse . "' />",
+    COURSE_REGISTRATION => "<img src='$themeimg/lock_registration.png' alt='" . $langRegCourse . "' title='" . $langRegCourse . "' />",
+    COURSE_CLOSED => "<img src='$themeimg/lock_closed.png' alt='" . $langClosedCourse . "' title='" . $langClosedCourse . "' />"
 );
 
 if (isset($_REQUEST['fc'])) {
@@ -91,10 +91,10 @@ if (isset($_POST['submit'])) {
     }
 
     if ($errorExists) {
-        $tool_content .= "<p class='caution'>$langWrongPassCourse " .
-                q(join(', ', $restrictedCourses)) . "</p><br />";
+        $tool_content .= "<div class='alert alert-danger'>$langWrongPassCourse " .
+                q(join(', ', $restrictedCourses)) . "</div><br />";
     } else {
-        $tool_content .= "<p class='success'>$langRegDone</p>";
+        $tool_content .= "<div class='alert alert-success'>$langRegDone</div>";
     }
     $tool_content .= "<div><a href='../../index.php'>$langHome</a></div>";
 } else {
@@ -125,7 +125,7 @@ if (isset($_POST['submit'])) {
 
         if ($numofcourses > 0) {
             $tool_content .= expanded_faculte($fc, $uid);
-            $tool_content .= "<br /><div align='right'><input class='Login' type='submit' name='submit' value='$langRegistration' />&nbsp;&nbsp;</div>";
+            $tool_content .= "<br /><div align='right'><input class='btn btn-primary' type='submit' name='submit' value='$langRegistration' />&nbsp;&nbsp;</div>";
         } else {
             $tool_content .= $tree->buildDepartmentChildrenNavigationHtml($fc, 'courses');
             $subTrees = $tree->buildSubtrees(array($fc));
@@ -147,8 +147,6 @@ var lang = {
         invalidCode: '" . js_escape($langInvalidCode) . "',
 };</script>";
 
-load_js('jquery');
-load_js('jquery-ui');
 load_js('tools.js');
 
 draw($tool_content, 1, null, $head_content);

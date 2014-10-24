@@ -42,7 +42,6 @@ $navigation[] = array('url' => 'index.php', 'name' => $langAdmin);
 $navigation[] = array('url' => 'edituser.php', 'name' => $langEditUser);
 
 // javascript
-load_js('jquery');
 load_js('pwstrength.js');
 $head_content .= <<<hContent
 <script type="text/javascript">
@@ -96,7 +95,7 @@ if (!isset($_POST['changePass'])) {
   </tr>
   <tr>
     <th class='left'>&nbsp;</th>
-    <td class='right'><input type='submit' name='changePass' value='$langModify' /></td>
+    <td class='right'><input class='btn btn-primary' type='submit' name='changePass' value='$langModify' /></td>
   </tr>
   </table>
 </fieldset>

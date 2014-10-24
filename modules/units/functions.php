@@ -48,7 +48,7 @@ function process_actions() {
             $cidx->store($course_id, true);
             CourseXMLElement::refreshCourse($course_id, $course_code);
         }
-        $tool_content .= "<p class='success'>$langResourceUnitModified</p>";
+        $tool_content .= "<div class='alert alert-success'>$langResourceUnitModified</div>";
     } elseif (isset($_REQUEST['del'])) { // delete resource from course unit
         $res_id = intval($_GET['del']);
         if ($id = check_admin_unit_resource($res_id)) {
@@ -56,7 +56,7 @@ function process_actions() {
             $urdx->remove($res_id, false, false);
             $cidx->store($course_id, true);
             CourseXMLElement::refreshCourse($course_id, $course_code);
-            $tool_content .= "<p class='success'>$langResourceCourseUnitDeleted</p>";
+            $tool_content .= "<div class='alert alert-success'>$langResourceCourseUnitDeleted</div>";
         }
     } elseif (isset($_REQUEST['vis'])) { // modify visibility in text resources only
         $res_id = intval($_REQUEST['vis']);
@@ -224,7 +224,7 @@ function show_doc($title, $comments, $resource_id, $file_id) {
             return '';
         }
         $status = 'del';
-        $image = 'delete';
+        $image = 'fa-times';
         $link = "<span class='invisible'>" . q($title) . " ($langWasDeleted)</span>";
     } else {        
         $status = $file->visible;
@@ -232,7 +232,7 @@ function show_doc($title, $comments, $resource_id, $file_id) {
             return '';
         }
         if ($file->format == '.dir') {
-            $image = 'folder';
+            $image = 'fa-folder-o';
             $link = "<a href='{$urlServer}modules/document/index.php?course=$course_code&amp;openDir=$file->path&amp;unit=$id'>";
         } else {
             $image = choose_image('.' . $file->format);
@@ -1256,7 +1256,7 @@ function edit_res($resource_id) {
     $tool_content .= "<tr><th>$message:</th>
                               <td>" . rich_text_editor('rescomments', 4, 20, $rescomments) . "</td></tr>
                           <tr><th>&nbsp;</th>
-                              <td><input type='submit' name='edit_res_submit' value='$langModify'></td></tr>
+                              <td><input class='btn btn-primary' type='submit' name='edit_res_submit' value='$langModify'></td></tr>
                         </table>
                       </fieldset>
                     </form>";

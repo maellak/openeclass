@@ -42,7 +42,7 @@ function list_links() {
     
     $result = Database::get()->queryArray("SELECT * FROM link WHERE course_id = ?d", $course_id);
     if (count($result) == 0) {
-        $tool_content .= "<p class='alert1'>$langNoLinksExist</p>";
+        $tool_content .= "<div class='alert alert-warning'>$langNoLinksExist</div>";
     } else {
         $tool_content .= "<form action='insert.php?course=$course_code' method='post'>
 				<input type='hidden' name='id' value='$id' />" .
@@ -99,7 +99,7 @@ function list_links() {
         }
         $tool_content .= "<tr>" .
                 "<th colspan='3'><div align='right'>" .
-                "<input type='submit' name='submit_link' value='$langAddModulesButton' /></div></th>" .
+                "<input class='btn btn-primary' type='submit' name='submit_link' value='$langAddModulesButton' /></div></th>" .
                 "</tr></table></form>";
     }
 }

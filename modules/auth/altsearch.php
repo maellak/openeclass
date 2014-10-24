@@ -36,8 +36,6 @@ require_once 'include/lib/hierarchy.class.php';
 $tree = new Hierarchy();
 $userObj = new User();
 
-load_js('jquery');
-load_js('jquery-ui');
 load_js('jstree');
 
 $user_registration = get_config('user_registration');
@@ -45,7 +43,7 @@ $alt_auth_stud_reg = get_config('alt_auth_stud_reg'); //user registration via al
 $alt_auth_prof_reg = get_config('alt_auth_prof_reg'); // prof registration via alternative auth methods
 
 if (!$user_registration) {
-    $tool_content .= "<div class='info'>$langCannotRegister</div>";
+    $tool_content .= "<div class='alert alert-info'>$langCannotRegister</div>";
     draw($tool_content, 0);
     exit;
 }
@@ -61,13 +59,13 @@ if (isset($_SESSION['u_prof'])) {
     $prof = intval($_SESSION['u_prof']);
 }
 if (!$_SESSION['u_prof'] and !$alt_auth_stud_reg) {
-    $tool_content .= "<div class='caution'>$langForbidden</div>";
+    $tool_content .= "<div class='alert alert-danger'>$langForbidden</div>";
     draw($tool_content, 0);
     exit;
 }
 
 if ($_SESSION['u_prof'] and !$alt_auth_prof_reg) {
-    $tool_content .= "<div class='caution'>$langForbidden</div>";
+    $tool_content .= "<div class='alert alert-danger'>$langForbidden</div>";
     draw($tool_content, 0);
     exit;
 }
@@ -123,7 +121,7 @@ if (!isset($_SESSION['was_validated']) or
         unset($_SESSION['was_validated']);
         if ($auth != 7 and $auth != 6 and
                 ($uname === '' or $passwd === '')) {
-            $tool_content .= "<p class='caution'>$ldapempty $errormessage</p>";
+            $tool_content .= "<div class='alert alert-danger'>$ldapempty $errormessage</div>";
             draw($tool_content, 0);
             exit();
         } else {
@@ -156,7 +154,7 @@ if (!isset($_SESSION['was_validated']) or
             $_SESSION['was_validated']['auth_user_info'] = $GLOBALS['auth_user_info'];
         }
     } else {
-        $tool_content .= "<p class='caution'>$langConnNo<br/>$langAuthNoValidUser</p>" .
+        $tool_content .= "<div class='alert alert-danger'>$langConnNo<br>$langAuthNoValidUser</div>" .
                 "<p>&laquo; <a href='$lastpage'>$langBack</a></p>";
     }
 } else {
@@ -194,7 +192,7 @@ if ($is_valid) {
     }
 
     if (!$ok and $submit) {
-        $tool_content .= "<p class='caution'>$langFieldsMissing</p>";
+        $tool_content .= "<div class='alert alert-danger'>$langFieldsMissing</div>";
     }
     $depid = intval($department);
     if (isset($auth_user_info)) {
@@ -206,15 +204,15 @@ if ($is_valid) {
     }
     if (!empty($email) and !email_seems_valid($email)) {
         $ok = NULL;
-        $tool_content .= "<p class='caution'>$langEmailWrong</p>";
+        $tool_content .= "<div class='alert alert-danger'>$langEmailWrong</div>";
     } else {
         $email = mb_strtolower(trim($email));
     }
 
-    $tool_content .= $init_auth ? ("<p class='success'>$langTheUser $ldapfound.</p>") : '';
+    $tool_content .= $init_auth ? ("<div class='alert alert-success'>$langTheUser $ldapfound.</div>") : '';
     if (@(!empty($_SESSION['was_validated']['uname_exists']) and $_POST['p'] != 1)) {
-        $tool_content .= "<p class='caution'>$langUserFree<br />
-                                <br />$click <a href='$urlServer' class='mainpage'>$langHere</a> $langBackPage</p>";
+        $tool_content .= "<div class='alert alert-danger'>$langUserFree<br />
+                                <br />$click <a href='$urlServer' class='mainpage'>$langHere</a> $langBackPage</div>";
         draw($tool_content, 0, null, $head_content);
         exit();
     }
@@ -293,7 +291,7 @@ if ($is_valid) {
                 "$langEmail: $emailhelpdesk";
 
         if (!empty($email)) {
-            send_mail('', $emailhelpdesk, '', $email, $emailsubject, $emailbody, $charset);
+            send_mail($siteName, $emailAdministrator, '', $email, $emailsubject, $emailbody, $charset, "Reply-To: $emailhelpdesk");
         }
         
         $myrow = Database::get()->querySingle("SELECT id, surname, givenname FROM user WHERE id = ?d", $last_id);
@@ -311,13 +309,13 @@ if ($is_valid) {
             $_SESSION['surname'] = $surname;
             $_SESSION['uname'] = canonicalize_whitespace($username);            
 
-            $tool_content .= "<div class='success'><p>$greeting,</p><p>";
+            $tool_content .= "<div class='alert alert-success'><p>$greeting,</p><p>";
             $tool_content .=!empty($email) ? $langPersonalSettings : $langPersonalSettingsLess;
             $tool_content .= "</p></div>
                                                 <br /><br />
                                                 <p>$langPersonalSettingsMore</p>";
         } else {
-            $tool_content .= "<div class='success'>" .
+            $tool_content .= "<div class='alert alert-success'>" .
                     ($prof ? $langDearProf : $langDearUser) .
                     "!<br />$langMailVerificationSuccess: <strong>$email</strong></div>
                                                 <p>$langMailVerificationSuccess4.<br /><br />$click <a href='$urlServer' class='mainpage'>$langHere</a> $langBackPage</p>";
@@ -332,7 +330,7 @@ if ($is_valid) {
 
         // check if mail address is valid
         if (!empty($email) and !email_seems_valid($email)) {
-            $tool_content .= "<p class='caution'>$langEmailWrong</p>";
+            $tool_content .= "<div class='alert alert-danger'>$langEmailWrong</div>";
             user_info_form();
             draw($tool_content, 0, null, $head_content);
             exit();
@@ -358,13 +356,13 @@ if ($is_valid) {
         \n$langComments: $usercomment\n"
                     . "$langProfUname : $uname\n$langProfEmail : $email\n" . "$contactphone : $userphone\n\n\n$logo\n\n";
 
-            if (!send_mail('', $email, $gunet, $emailhelpdesk, $mailsubject, $MailMessage, $charset)) {
-                $tool_content .= "<p class='alert1'>$langMailErrorMessage &nbsp; <a href='mailto:$emailhelpdesk'>$emailhelpdesk</a></p>";
+            if (!send_mail($siteName, $emailAdministrator, $gunet, $emailhelpdesk, $mailsubject, $MailMessage, $charset, "Reply-To: $email")) {
+                $tool_content .= "<div class='alert alert-warning'>$langMailErrorMessage &nbsp; <a href='mailto:$emailhelpdesk'>$emailhelpdesk</a></div>";
                 draw($tool_content, 0);
                 exit();
             }
 
-            $tool_content .= "<p class='success'>$greeting,<br />$success<br /></p><p>$infoprof</p><br />
+            $tool_content .= "<div class='alert alert-success'>$greeting,<br />$success<br /></div><p>$infoprof</p><br />
                           <p>&laquo; <a href='$urlServer'>$langBack</a></p>";
         } else {
             // email needs verification -> mail user
@@ -372,21 +370,21 @@ if ($is_valid) {
             $emailhelpdesk = get_config('email_helpdesk');
             $subject = $langMailVerificationSubject;
             $MailMessage = sprintf($mailbody1 . $langMailVerificationBody1, $urlServer . 'modules/auth/mail_verify.php?ver=' . $hmac . '&rid=' . $request_id);
-            if (!send_mail('', $emailhelpdesk, '', $email, $subject, $MailMessage, $charset)) {
-                $mail_ver_error = sprintf("<p class='alert1'>" . $langMailVerificationError, $email, $urlServer . "modules/auth/registration.php", "<a href='mailto:$emailhelpdesk' class='mainpage'>$emailhelpdesk</a>.</p>");
+            if (!send_mail($siteName, $emailAdministrator, '', $email, $subject, $MailMessage, $charset, "Reply-To: $emailhelpdesk")) {
+                $mail_ver_error = sprintf("<div class='alert alert-warning'>" . $langMailVerificationError, $email, $urlServer . "modules/auth/registration.php", "<a href='mailto:$emailhelpdesk' class='mainpage'>$emailhelpdesk</a>.</div>");
                 $tool_content .= $mail_ver_error;
                 draw($tool_content, 0);
                 exit();
             }
             // User Message
-            $tool_content .= "<div class='success'>" .
+            $tool_content .= "<div class='alert alert-success'>" .
                     ($prof ? $langDearProf : $langDearUser) .
                     "!<br />$langMailVerificationSuccess: <strong>$email</strong></div>
                                         <p>$langMailVerificationSuccess4.<br /><br />$click <a href='$urlServer'
                                         class='mainpage'>$langHere</a> $langBackPage</p>";
         }
     } elseif (!empty($_SESSION['uname_app_exists'])) {
-        $tool_content .= "<p class='caution'>$langUserFree3<br /><br />$click <a href='$urlServer' class='mainpage'>$langHere</a> $langBackPage</p>";
+        $tool_content .= "<div class='alert alert-danger'>$langUserFree3<br><br>$click <a href='$urlServer' class='mainpage'>$langHere</a> $langBackPage</div>";
     }
 }
 draw($tool_content, 0);
@@ -513,7 +511,7 @@ function user_info_form() {
            </tr>
            <tr>
              <th class='left'>&nbsp;</th>
-             <td colspan='2'><input type='submit' name='submit' value='" . q($langRegistration) . "' />
+             <td colspan='2'><input class='btn btn-primary' type='submit' name='submit' value='" . q($langRegistration) . "' />
                  <input type='hidden' name='p' value='$prof'>";
     if (isset($_SESSION['shib_uname'])) {
         $tool_content .= "<input type='hidden' name='uname' value='" . q($_SESSION['shib_uname']) . "' />";
