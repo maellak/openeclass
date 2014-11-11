@@ -721,6 +721,52 @@ function new_assignment() {
                         </div>
                     </div>
                 </div>
+                <div class='form-group'>
+                    <label class='col-sm-2 control-label'>Auto-judge:</label>
+                    <div class='col-sm-10'>
+                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' checked='1' />
+                        <table>
+                            <thead>
+                                <tr>
+                                  <th>Input</th>
+                                  <th>Expected Output</th>
+                                  <th>Delete</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                  <td><input type='text' name='auto_judge_scenarios[0] [input]' /></td>
+                                  <td><input type='text' name='auto_judge_scenarios[0] [output]' /></td>
+                                  <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
+                                </tr>
+                                <tr>
+                                  <td> </td>
+                                  <td> </td>
+                                  <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <tr>
+                  <th>Programming Language:</th>
+                  <td>
+                    <select id='lang' name='lang'>
+                      <option value='C'>C</option>
+                      <option value='CPP'>C++</option>
+                      <option value='CPP11'>C++11</option>
+                      <option value='CLOJURE'>Clojure</option>
+                      <option value='CSHARP'>C#</option>
+                      <option value='JAVA'>Java</option>
+                      <option value='JAVASCRIPT'>Javascript</option>
+                      <option value='HASKELL'>Haskell</option>
+                      <option value='PERL'>Perl</option>
+                      <option value='PHP'>PHP</option>
+                      <option value='PYTHON'>Python</option>
+                      <option value='RUBY'>Ruby</option>
+                    </select>
+                  </td>
+                </tr>
                 <table id='assignees_tbl' class='table hide'>
                     <tr class='title1'>
                       <td id='assignees'>$langStudents</td>
