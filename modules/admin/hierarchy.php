@@ -40,8 +40,6 @@ require_once 'hierarchy_validations.php';
 $tree = new Hierarchy();
 $user = new User();
 
-load_js('jquery');
-load_js('jquery-ui');
 load_js('jstree');
 
 $nameTools = $langHierarchyActions;
@@ -69,11 +67,15 @@ if (!in_array($language, $session->active_ui_languages)) {
 
 // link to add a new node
 $tool_content .= "
-    <div id='operations_container'>
-     <ul id='opslist'>
-      <li><a href='$_SERVER[SCRIPT_NAME]?action=add'>" . $langAdd . "</a></li>
-     </ul>
-    </div>";
+    <div id='operations_container'>" .
+        action_bar(array(
+            array('title' => $langAdd,
+                'url' => "$_SERVER[SCRIPT_NAME]?action=add",
+                'icon' => 'fa-plus-circle',
+                'level' => 'primary-label',
+                'button-class' => 'btn-success'),
+        )) .
+        "</div>";
 
 // Display all available nodes
 if (!isset($_GET['action'])) {
@@ -182,7 +184,11 @@ hContent;
 
     // Close table correctly
     $tool_content .= "</table>\n";
-    $tool_content .= "<br /><p class='right'><a href=\"index.php\">" . $langBack . "</a></p>";
+    $tool_content .= action_bar(array(
+        array('title' => $langBack,
+            'url' => "index.php",
+            'icon' => 'fa-reply',
+            'level' => 'primary-label')));
 }
 // Add a new node
 elseif (isset($_GET['action']) && $_GET['action'] == 'add') {
@@ -204,18 +210,26 @@ elseif (isset($_GET['action']) && $_GET['action'] == 'add') {
         $order_priority = (isset($_POST['order_priority']) && !empty($_POST['order_priority'])) ? intval($_POST['order_priority']) : 'null';
         // Check for empty fields
         if (empty($names)) {
-            $tool_content .= "<p class='caution'>" . $langEmptyNodeName . "<br />";
-            $tool_content .= "<a href=\"" . $_SERVER['SCRIPT_NAME'] . "?a=1\">" . $langReturnToAddNode . "</a></p>";
+            $tool_content .= "<div class='alert alert-danger'>" . $langEmptyNodeName . "</div><br>";
+            $tool_content .= action_bar(array(
+                array('title' => $langReturnToAddNode,
+                    'url' => $_SERVER['SCRIPT_NAME'] . "?a=1",
+                    'icon' => 'fa-reply',
+                    'level' => 'primary-label')));
         }
         // Check for greek letters
         elseif (!empty($code) && !preg_match("/^[A-Z0-9a-z_-]+$/", $code)) {
-            $tool_content .= "<p class='caution'>" . $langGreekCode . "<br />";
-            $tool_content .= "<a href=\"" . $_SERVER['SCRIPT_NAME'] . "?a=1\">" . $langReturnToAddNode . "</a></p>";
+            $tool_content .= "<div class='alert alert-danger'>" . $langGreekCode . "</div><br>";
+            $tool_content .= action_bar(array(
+                array('title' => $langReturnToAddNode,
+                    'url' => $_SERVER['SCRIPT_NAME'] . "?a=1",
+                    'icon' => 'fa-reply',
+                    'level' => 'primary-label')));
         } else {
             // OK Create the new node
             validateParentLft(intval($_POST['nodelft']), isDepartmentAdmin());
             $tree->addNode($name, intval($_POST['nodelft']), $code, $allow_course, $allow_user, $order_priority);
-            $tool_content .= "<p class='success'>" . $langAddSuccess . "</p>";
+            $tool_content .= "<div class='alert alert-success'>" . $langAddSuccess . "</div>";
         }
     } else {
         // Display form for new node information
@@ -261,13 +275,17 @@ elseif (isset($_GET['action']) && $_GET['action'] == 'add') {
       </tr>
       <tr>
         <th>&nbsp;</th>
-        <td class='right'><input type='submit' name='add' value='" . $langAdd . "' /></td>
+        <td class='right'><input class='btn btn-primary' type='submit' name='add' value='" . $langAdd . "' /></td>
       </tr>
     </table>
     </fieldset>
     </form>";
     }
-    $tool_content .= "<p align='right'><a href='" . $_SERVER['SCRIPT_NAME'] . "'>" . $langBack . "</a></p>";
+    $tool_content .= action_bar(array(
+        array('title' => $langBack,
+            'url' => $_SERVER['SCRIPT_NAME'],
+            'icon' => 'fa-reply',
+            'level' => 'primary-label')));
 }
 // Delete node
 elseif (isset($_GET['action']) and $_GET['action'] == 'delete') {
@@ -296,11 +314,15 @@ elseif (isset($_GET['action']) and $_GET['action'] == 'delete') {
         } else {
             // The node can be deleted
             $tree->deleteNode($id);
-            $tool_content .= "<p class='success'>$langNodeErase</p>";
+            $tool_content .= "<div class='alert alert-success'>$langNodeErase</div>";
         }
     }
 
-    $tool_content .= "<p align='right'><a href='" . $_SERVER['SCRIPT_NAME'] . "'>" . $langBack . "</a></p>";
+    $tool_content .= action_bar(array(
+        array('title' => $langBack,
+            'url' => $_SERVER['SCRIPT_NAME'],
+            'icon' => 'fa-reply',
+            'level' => 'primary-label')));
 }
 // Edit a node
 elseif (isset($_GET['action']) and $_GET['action'] == 'edit') {
@@ -325,13 +347,17 @@ elseif (isset($_GET['action']) and $_GET['action'] == 'edit') {
         $allow_user = (isset($_POST['allow_user'])) ? 1 : 0;
         $order_priority = (isset($_POST['order_priority']) && !empty($_POST['order_priority'])) ? intval($_POST['order_priority']) : 'null';
         if (empty($name)) {
-            $tool_content .= "<p class='caution'>" . $langEmptyNodeName . "<br />";
-            $tool_content .= "<a href='" . $_SERVER['SCRIPT_NAME'] . "?action=edit&amp;id=$id'>$langReturnToEditNode</a></p>";
+            $tool_content .= "<div class='alert alert-danger'>" . $langEmptyNodeName . "<br>";
+            $tool_content .= action_bar(array(
+                array('title' => $langReturnToEditNode,
+                    'url' => $_SERVER['SCRIPT_NAME'] . "?action=edit&amp;id=$id",
+                    'icon' => 'fa-reply',
+                    'level' => 'primary-label')));
         } else {
             // OK Update the node
             validateParentLft(intval($_POST['nodelft']), isDepartmentAdmin());
             $tree->updateNode($id, $name, intval($_POST['nodelft']), intval($_POST['lft']), intval($_POST['rgt']), intval($_POST['parentLft']), $code, $allow_course, $allow_user, $order_priority);
-            $tool_content .= "<p class='success'>$langEditNodeSuccess</p><br />";
+            $tool_content .= "<div class='alert alert-success'>$langEditNodeSuccess</div><br />";
         }
     } else {
         // Get node information
@@ -400,14 +426,18 @@ elseif (isset($_GET['action']) and $_GET['action'] == 'edit') {
            <input type='hidden' name='parentLft' value='" . $parentLft->lft . "'/>
            <input type='hidden' name='lft' value='" . q($mynode->lft) . "'/>
            <input type='hidden' name='rgt' value='" . q($mynode->rgt) . "'/>
-           <input type='submit' name='edit' value='$langAcceptChanges' />
+           <input class='btn btn-primary' type='submit' name='edit' value='$langAcceptChanges' />
            </td>
        </tr>
        </table>
        </fieldset>
        </form>";
     }
-    $tool_content .= "<p align='right'><a href='" . $_SERVER['SCRIPT_NAME'] . "'>" . $langBack . "</a></p>";
+    $tool_content .= action_bar(array(
+        array('title' => $langBack,
+            'url' => $_SERVER['SCRIPT_NAME'],
+            'icon' => 'fa-reply',
+            'level' => 'primary-label')));
 }
 
 draw($tool_content, 3, null, $head_content);

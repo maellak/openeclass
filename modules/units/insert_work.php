@@ -43,7 +43,7 @@ function list_assignments() {
 
     $result = Database::get()->queryArray("SELECT * FROM assignment WHERE course_id = ?d ORDER BY active, title", $course_id);
     if (count($result) == 0) {
-        $tool_content .= "<p class='alert1'>$langNoAssign</p>";
+        $tool_content .= "<div class='alert alert-warning'>$langNoAssign</div>";
     } else {
         $tool_content .= "<form action='insert.php?course=$course_code' method='post'>" .
                 "<input type='hidden' name='id' value='$id' />" .
@@ -76,7 +76,7 @@ function list_assignments() {
         }
         $tool_content .= "<tr>" .
                 "<th colspan='4'><div align='right'>" .
-                "<input type='submit' name='submit_work' value='$langAddModulesButton' />" .
+                "<input class='btn btn-primary' type='submit' name='submit_work' value='$langAddModulesButton' />" .
                 "</div></th>" .
                 "</tr>" .
                 "</table>" .

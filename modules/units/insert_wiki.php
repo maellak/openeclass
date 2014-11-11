@@ -49,7 +49,7 @@ function list_wikis() {
             'description' => $row->description);
     }
     if (count($wikiinfo) == 0) {
-        $tool_content .= "<p class='alert1'>$langWikiNoWiki</p>";
+        $tool_content .= "<div class='alert alert-warning'>$langWikiNoWiki</div>";
     } else {
         $tool_content .= "<form action='insert.php?course=$course_code' method='post'>" .
                 "<input type='hidden' name='id' value='$id'>" .
@@ -74,7 +74,7 @@ function list_wikis() {
             $i++;
         }
         $tool_content .= "<tr><th colspan='3'><div align='right'>";
-        $tool_content .= "<input type='submit' name='submit_wiki' value='$langAddModulesButton'></div></th>";
+        $tool_content .= "<input class='btn btn-primary' type='submit' name='submit_wiki' value='$langAddModulesButton'></div></th>";
         $tool_content .= "</tr></table></form>";
     }
 }

@@ -89,6 +89,7 @@ $archive_conditions = array(
     'course_description' => $sql_course,
     'glossary' => $sql_course,
     'glossary_category' => $sql_course,
+    'video_category' => $sql_course,
     'video' => $sql_course,
     'videolink' => $sql_course,
     'dropbox_msg' => $sql_course,
@@ -166,11 +167,18 @@ if (!$result) {
     draw($tool_content, 2);
     exit;
 } else {
-    $tool_content .= "<br /><p class='success_small'>$langBackupSuccesfull</p><div align=\"left\"><a href='{$urlAppend}courses/archive/$course_code/$course_code-$backup_date_short.zip'>$langDownloadIt <img src='$themeimg/download.png' title='$langDownloadIt' alt=''></a></div>";
+    $tool_content.="<br /><div class='alert alert-success'>$langBackupSuccesfull</div>";
+    $tool_content .= action_bar(array(
+        array('title' => $langDownloadIt,
+            'url' => "{$urlAppend}courses/archive/$course_code/$course_code-$backup_date_short.zip",
+            'icon' => 'fa-download',
+            'button-class' => 'btn-success',
+            'level' => 'primary-label'),
+        array('title' => $langBack,
+            'url' => "index.php?course=$course_code",
+            'icon' => 'fa-reply',
+            'level' => 'primary-label')));
 }
-
-$tool_content .= "<p align='right'>
-        <a href='index.php?course=$course_code'>$langBack</a></p>";
 
 draw($tool_content, 2);
 
@@ -181,12 +189,12 @@ draw($tool_content, 2);
  * @param type $condition
  */
 function backup_table($basedir, $table, $condition) {
-    
+
     $q = Database::get()->queryArray("SELECT * FROM `$table` WHERE $condition");
-    $backup = array();    
+    $backup = array();
     foreach ($q as $data) {
         $backup[] = (array) $data;
-    }    
+    }
     file_put_contents("$basedir/$table", serialize($backup));
 }
 

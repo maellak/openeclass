@@ -35,7 +35,7 @@ require_once 'include/lib/user.class.php';
 require_once 'include/lib/hierarchy.class.php';
 require_once 'hierarchy_validations.php';
 
-if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
     $tree = new Hierarchy();
     $user = new User();
     // get the incoming values
@@ -66,9 +66,9 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
         }
     }
 
-    /***************
-     Criteria/Filters
-     ************** */
+    /*
+      Criteria/Filters
+     */
     $criteria = array();
     $terms = array();
     $params = array();
@@ -78,7 +78,8 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
         add_param('user_registered_at');
         // join the above with registered at search
         $criteria[] = 'registered_at ' . (($reg_flag === 1) ? '>=' : '<=') . ' ?s';
-        $terms[] = $user_registered_at;
+        $date_user_registered_at = DateTime::createFromFormat("d-m-Y H:i", $user_registered_at);
+        $terms[] = $date_user_registered_at->format("Y-m-d H:i:s");
     }
     // surname search
     if (!empty($lname)) {
@@ -100,8 +101,8 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
     }
     // mail verified
     if ($verified_mail === EMAIL_VERIFICATION_REQUIRED or
-        $verified_mail === EMAIL_VERIFIED or
-        $verified_mail === EMAIL_UNVERIFIED) {
+            $verified_mail === EMAIL_VERIFIED or
+            $verified_mail === EMAIL_UNVERIFIED) {
         $criteria[] = 'verified_mail = ?d';
         $terms[] = $verified_mail;
         add_param('verified_mail');
@@ -126,8 +127,8 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
         } elseif ($auth_type == 1) {
             $terms[] = $auth_ids;
             $criteria[] = 'password NOT IN (' .
-                implode(', ', array_fill(0, count($auth_ids), '?s')) .
-                ')';
+                    implode(', ', array_fill(0, count($auth_ids), '?s')) .
+                    ')';
         }
         add_param('auth_type');
     }
@@ -207,7 +208,7 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 
     // internal search
     if (!empty($_GET['sSearch'])) {
-        if (($qry_criteria) or ($c)) {
+        if (($qry_criteria) or ( $c)) {
             $qry .= ' AND (surname LIKE ?s OR givenname LIKE ?s OR username LIKE ?s OR email LIKE ?s)';
         } else {
             $qry .= ' WHERE (surname LIKE ?s OR givenname LIKE ?s OR username LIKE ?s OR email LIKE ?s)';
@@ -227,10 +228,10 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
             case '2': $qry .= ' ORDER BY username ';
                 break;
         }
-        $qry .= ($_GET['sSortDir_0'] == 'desc'? 'DESC': '');
+        $qry .= ($_GET['sSortDir_0'] == 'desc' ? 'DESC' : '');
     } else {
         $qry .= ' ORDER BY status, surname ' .
-            ($_GET['sSortDir_0'] == 'desc'? 'DESC': '');
+                ($_GET['sSortDir_0'] == 'desc' ? 'DESC' : '');
     }
     //pagination
     if ($limit > 0) {
@@ -241,20 +242,18 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
     $sql = Database::get()->queryArray($qry, $terms);
 
     $all_results = Database::get()->querySingle("SELECT COUNT(*) AS total $qry_base", $terms_base)->total;
-    if (($qry_criteria) or ($c)) {
+    if ($qry_criteria or $c) {
         $filtered_results = Database::get()->querySingle("SELECT COUNT(*) AS total $qry_base
                                                          AND (surname LIKE ?s
                                                              OR givenname LIKE ?s
                                                              OR username LIKE ?s
-                                                             OR email LIKE ?s)",
-                                                        $terms_base, $keywords)->total;
+                                                             OR email LIKE ?s)", $terms_base, $keywords)->total;
     } else {
         $filtered_results = Database::get()->querySingle("SELECT COUNT(*) AS total FROM user
                                                          WHERE (surname LIKE ?s
                                                                 OR givenname LIKE ?s
                                                                 OR username LIKE ?s
-                                                                OR email LIKE ?s)",
-                                                        $keywords)->total;
+                                                                OR email LIKE ?s)", $keywords)->total;
     }
     $data['iTotalRecords'] = $all_results;
     $data['iTotalDisplayRecords'] = $filtered_results;
@@ -265,15 +264,15 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
         if ($mail_ver_required) {
             switch ($logs->verified_mail) {
                 case EMAIL_VERIFICATION_REQUIRED:
-                    $icon = 'pending';
+                    $icon = 'fa-clock-o';
                     $tip = $langMailVerificationPendingU;
                     break;
                 case EMAIL_VERIFIED:
-                    $icon = 'tick_1';
+                    $icon = 'fa-check-square-o';
                     $tip = $langMailVerificationYesU;
                     break;
                 default:
-                    $icon = 'not_confirmed';
+                    $icon = 'fa-circle';
                     $tip = $langMailVerificationNoU;
                     break;
             }
@@ -283,15 +282,15 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 
         switch ($logs->status) {
             case USER_TEACHER:
-                $icon = 'teacher';
+                $icon = 'fa-university';
                 $tip = $langTeacher;
                 break;
             case USER_STUDENT:
-                $icon = 'student';
+                $icon = 'fa-graduation-cap';
                 $tip = $langStudent;
                 break;
             case USER_GUEST:
-                $icon = 'guest';
+                $icon = 'fa-male';
                 $tip = $langVisitor;
                 break;
             default:
@@ -305,34 +304,33 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
             $icon_content = "&mdash;&nbsp;";
         } else {
             $changetip = q("$langChangeUserAs $logs->username");
-            $icon_content = icon('edit', $langEdit, "edituser.php?u=$logs->id") . '&nbsp;' .
-                                icon('delete', $langDelete, "deluser.php?u=$logs->id") . '&nbsp;' .
-                                icon('platform_stats', $langStat, "userstats.php?u=$logs->id") . '&nbsp;' .
-                                icon('action_log', $langActions, "userlogs.php?u=$logs->id");
+            $icon_content = icon('fa-edit', $langEdit, "edituser.php?u=$logs->id") . '&nbsp;' .
+                    icon('fa-times', $langDelete, "deluser.php?u=$logs->id") . '&nbsp;' .
+                    icon('fa-pie-chart', $langStat, "userstats.php?u=$logs->id") . '&nbsp;' .
+                    icon('fa-list-alt', $langActions, "userlogs.php?u=$logs->id");
             if (!isDepartmentAdmin()) {
-                    $icon_content .= '&nbsp;' . icon('log_as', $changetip, 'change_user.php?username=' . urlencode($logs->username));
+                $icon_content .= '&nbsp;' . icon('fa-key', $changetip, 'change_user.php?username=' . urlencode($logs->username));
             }
         }
         $data['aaData'][] = array(
-                        '0' => $logs->surname,
-                        '1' => $logs->givenname,
-                        '2' => $logs->username,
-                        '3' => $email_icon,
-                        '4' => icon($icon, $tip),
-                        '5' => $icon_content
-                    );
+            '0' => $logs->surname,
+            '1' => $logs->givenname,
+            '2' => $logs->username,
+            '3' => $email_icon,
+            '4' => icon($icon, $tip),
+            '5' => $icon_content
+        );
     }
     echo json_encode($data);
     exit();
 }
 
 load_js('tools.js');
-load_js('jquery');
 load_js('datatables');
 load_js('datatables_filtering_delay');
 $head_content .= "<script type='text/javascript'>
         $(document).ready(function() {
-            $('#search_results_table').DataTable ({
+            $('#search_results_table').dataTable ({
                 'bProcessing': true,
                 'bServerSide': true,
                 'sAjaxSource': '$_SERVER[REQUEST_URI]',
@@ -352,12 +350,12 @@ $head_content .= "<script type='text/javascript'>
                 ],
                 'oLanguage': {
                    'sLengthMenu':   '$langDisplay _MENU_ $langResults2',
-                   'sZeroRecords':  '".$langNoResult."',
+                   'sZeroRecords':  '" . $langNoResult . "',
                    'sInfo':         '$langDisplayed _START_ $langTill _END_ $langFrom2 _TOTAL_ $langTotalResults',
                    'sInfoEmpty':    '$langDisplayed 0 $langTill 0 $langFrom2 0 $langResults2',
                    'sInfoFiltered': '',
                    'sInfoPostFix':  '',
-                   'sSearch':       '".$langSearch."',
+                   'sSearch':       '" . $langSearch . "',
                    'sUrl':          '',
                    'oPaginate': {
                        'sFirst':    '&laquo;',
@@ -376,14 +374,24 @@ $navigation[] = array('url' => 'search_user.php', 'name' => $langSearchUser);
 $nameTools = $langListUsersActions;
 
 // Display Actions Toolbar
-$tool_content .= "<div id='operations_container'><ul id='opslist'>";
-$tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]'>$langAllUsers</a></li>";
-if (isset($_GET['search']) and $_GET['search'] == 'inactive') {  // inactive users
-  $tool_content .= "<li><a href='updatetheinactive.php?activate=1'>" . $langAddSixMonths . "</a></li>";
-} else {
-  $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?search=inactive'>$langInactiveUsers</a></li>";
-}
-$tool_content .= "</ul></div>";
+$tool_content .= "<div id='operations_container'>" .
+        action_bar(array(
+            array('title' => $langAllUsers,
+                'url' => "$_SERVER[SCRIPT_NAME]",
+                'icon' => 'fa-search',
+                'level' => 'primary-label'),
+            array('title' => $langInactiveUsers,
+                'url' => "$_SERVER[SCRIPT_NAME]?search=inactive",
+                'icon' => 'fa-search',
+                'level' => 'primary-label',
+                'show' => !(isset($_GET['search']) and $_GET['search'] == 'inactive')),
+            array('title' => $langAddSixMonths,
+                'url' => "updatetheinactive.php?activate=1",
+                'icon' => 'fa-plus-circle',
+                'level' => 'primary',
+                'show' => (isset($_GET['search']) and $_GET['search'] == 'inactive')),
+        ))
+        . "</div>";
 
 // display search results
 $tool_content .= "<table id='search_results_table' class='display'>
@@ -394,7 +402,7 @@ $tool_content .= "<table id='search_results_table' class='display'>
               <th width='170' class='left'>$langUsername</th>
               <th>$langEmail</th>
               <th>$langProperty</th>
-              <th width='130' class='center'>$langActions</th>
+              <th width='130' class='centertext-center'>" . icon('fa-gears') . "</th>
             </tr></thead>";
 $tool_content .= "<tbody></tbody></table>";
 
@@ -406,9 +414,13 @@ foreach ($_REQUEST as $key => $value) {
     $tool_content .= "<input type='hidden' name='$key' value='$value' />";
 }
 
-$tool_content .= "<input type='submit' name='dellall_submit' value='$langDelList'></form></div>";
+$tool_content .= "<input class='btn btn-primary' type='submit' name='dellall_submit' value='$langDelList'></form></div>";
 //$tool_content .= "<p align='center'><a href='search_user.php?$pagination_link'>$langBack</a></p>";
-$tool_content .= "<p align='center'><a href='search_user.php'>$langBack</a></p>";
+$tool_content .= action_bar(array(
+    array('title' => $langBack,
+        'url' => "search_user.php",
+        'icon' => 'fa-reply',
+        'level' => 'primary-label')));
 
 draw($tool_content, 3, null, $head_content);
 

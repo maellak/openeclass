@@ -35,8 +35,6 @@ require_once 'restorehelper.class.php';
 $treeObj = new Hierarchy();
 $courseObj = new Course();
 
-load_js('jquery');
-load_js('jquery-ui');
 load_js('jstree');
 
 list($js, $html) = $treeObj->buildCourseNodePicker();
@@ -67,7 +65,7 @@ if (isset($_FILES['archiveZipped']) and $_FILES['archiveZipped']['size'] > 0) {
     $pathToArchive = $_POST['pathToArchive'];
     validateUploadedFile(basename($pathToArchive), 3);
     if (get_file_extension($pathToArchive) !== 'zip') {
-        $tool_content .= "<p class='caution'>" . $langErrorFileMustBeZip . "</p>";
+        $tool_content .= "<div class='alert alert-danger'>" . $langErrorFileMustBeZip . "</div>";
     } else if (file_exists($pathToArchive)) {
         $tool_content .= "<fieldset>
         <legend>" . $langFileUnzipping . "</legend>
@@ -75,7 +73,7 @@ if (isset($_FILES['archiveZipped']) and $_FILES['archiveZipped']['size'] > 0) {
         $tool_content .= "<tr><td>" . unpack_zip_show_files($pathToArchive) . "</td></tr>";
         $tool_content .= "</table></fieldset>";
     } else {
-        $tool_content .= "<p class='caution'>$langFileNotFound</p>";
+        $tool_content .= "<div class='alert alert-danger'>$langFileNotFound</div>";
     }
 } elseif (isset($_POST['create_restored_course'])) {
     register_posted_variables(array('restoreThis' => true,
@@ -105,7 +103,7 @@ if (isset($_FILES['archiveZipped']) and $_FILES['archiveZipped']['size'] > 0) {
         $r = $restoreThis . '/html';
         list($new_course_code, $course_id) = create_course($course_code, $course_lang, $course_title, $departments, $course_vis, $course_prof);
         if (!$new_course_code) {
-            $tool_content = "<p class='alert1'>" . $GLOBALS['langError'] . "</p>";
+            $tool_content = "<div class='alert alert-warning'>" . $GLOBALS['langError'] . "</div>";
             draw($tool_content, 3);
             exit;
         }
@@ -275,8 +273,17 @@ if (isset($_FILES['archiveZipped']) and $_FILES['archiveZipped']['size'] > 0) {
             'file_id' => $document_map), 'delete' => array('file'), 'return_mapping' => 'id'), $url_prefix_map, $backupData, $restoreHelper);
 
         // Video
-        $video_map = restore_table($restoreThis, 'video', array('set' => array('course_id' => $course_id), 'return_mapping' => 'id'), $url_prefix_map, $backupData, $restoreHelper);
-        $videolink_map = restore_table($restoreThis, 'videolink', array('set' => array('course_id' => $course_id), 'return_mapping' => 'id'), $url_prefix_map, $backupData, $restoreHelper);
+        $videocat_map = restore_table($restoreThis, 'video_category', array('set' => array('course_id' => $course_id), 'return_mapping' => 'id'), $url_prefix_map, $backupData, $restoreHelper);
+        $video_map = restore_table($restoreThis, 'video', array(
+            'map' => array('category' => $videocat_map),
+            'set' => array('course_id' => $course_id),
+            'return_mapping' => 'id'
+        ), $url_prefix_map, $backupData, $restoreHelper);
+        $videolink_map = restore_table($restoreThis, 'videolink', array(
+            'map' => array('category' => $videocat_map),
+            'set' => array('course_id' => $course_id),
+            'return_mapping' => 'id'
+        ), $url_prefix_map, $backupData, $restoreHelper);
 
         // Dropbox
         $dropbox_map = restore_table($restoreThis, 'dropbox_msg', array('set' => array('course_id' => $course_id),
@@ -311,11 +318,17 @@ if (isset($_FILES['archiveZipped']) and $_FILES['archiveZipped']['size'] > 0) {
             'learnPath_id' => $lp_learnPath_map)), $url_prefix_map, $backupData, $restoreHelper);
         foreach ($lp_learnPath_map as $old_id => $new_id) {
             // new and old id might overlap as the map contains multiple values!
-            rename("$coursedir/scormPackages/path_$old_id", "$coursedir/scormPackages/__during_restore__$new_id");
+            $old_dir = "$coursedir/scormPackages/path_$old_id";
+            if (file_exists($old_dir) && is_dir($old_dir)) {
+                rename($old_dir, "$coursedir/scormPackages/__during_restore__$new_id");
+            }
         }
         foreach ($lp_learnPath_map as $old_id => $new_id) {
             // better to use an intermediary rename step
-            rename("$coursedir/scormPackages/__during_restore__$new_id", "$coursedir/scormPackages/path_$new_id");
+            $tempLPDir = "$coursedir/scormPackages/__during_restore__$new_id";
+            if (file_exists($tempLPDir) && is_dir($tempLPDir)) {
+                rename($tempLPDir, "$coursedir/scormPackages/path_$new_id");
+            }
         }
 
         // Wiki
@@ -469,7 +482,7 @@ if (isset($_FILES['archiveZipped']) and $_FILES['archiveZipped']['size'] > 0) {
 } elseif (isset($_POST['do_restore'])) {
     $base = $_POST['restoreThis'];
     if (!file_exists($base . '/config_vars')) {
-        $tool_content .= "<p class='alert1'>$langInvalidArchive</p>";
+        $tool_content .= "<div class='alert alert-warning'>$langInvalidArchive</div>";
         draw($tool_content, 3);
         exit;
     }
@@ -523,7 +536,7 @@ if (isset($_FILES['archiveZipped']) and $_FILES['archiveZipped']['size'] > 0) {
           <br /><br />
           <form action='" . $_SERVER['SCRIPT_NAME'] . "' method='post' enctype='multipart/form-data'>
             <input type='file' name='archiveZipped' />
-            <input type='submit' name='send_archive' value='" . $langSend . "' />
+            <input class='btn btn-primary' type='submit' name='send_archive' value='" . $langSend . "' />
             </form>
             <div class='right smaller'>$langMaxFileSize " .
             ini_get('upload_max_filesize') . "</div>
@@ -540,7 +553,7 @@ if (isset($_FILES['archiveZipped']) and $_FILES['archiveZipped']['size'] > 0) {
           <br /><br />
           <form action='" . $_SERVER['SCRIPT_NAME'] . "' method='post'>
             <input type='text' name='pathToArchive' />
-            <input type='submit' name='send_path' value='" . $langSend . "' />
+            <input class='btn btn-primary' type='submit' name='send_path' value='" . $langSend . "' />
           </form>
           </td>
         </tr>

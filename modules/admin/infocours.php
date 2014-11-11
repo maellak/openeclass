@@ -45,8 +45,6 @@ $user = new User();
 $cId = course_code_to_id($_GET['c']);
 validateCourseNodes($cId, isDepartmentAdmin());
 
-load_js('jquery');
-load_js('jquery-ui');
 load_js('jstree');
 
 // Define $nameTools
@@ -81,7 +79,7 @@ if (isset($_POST['submit'])) {
 
     $course->refresh($cId, $departments);
 
-    $tool_content .= "<p class='success'>$langModifDone</p>
+    $tool_content .= "<div class='alert alert-success'>$langModifDone</div>
                 <p>&laquo; <a href='editcours.php?c=$_GET[c]'>$langBack</a></p>";
 }
 // Display edit form for course basic information
@@ -117,7 +115,7 @@ else {
 	</tr>
 	<tr>
 	  <th>&nbsp;</th>
-	  <td class='right'><input type='submit' name='submit' value='$langModify'></td>
+	  <td class='right'><input class='btn btn-primary' type='submit' name='submit' value='$langModify'></td>
 	</tr>
 	</tbody>
 	</table>

@@ -32,8 +32,8 @@ if (isset($_POST['delete'])) {
     Log::record(0, 0, LOG_DELETE_COURSE, array('id' => $course_id,
         'code' => $course_code,
         'title' => $title));
-    $tool_content .= "<p class='success_small'>$langTheCourse <b>(" . q($title) . " $course_code)</b> $langHasDel</p>
-                      <br /><p align='right'><a href='../../index.php'>$langBackHome $siteName</a></p>";
+    $tool_content .= "<div class='alert alert-success'>$langTheCourse <b>(" . q($title) . " $course_code)</b> $langHasDel</div>
+                      <br /><p align='pull-right'><a href='../../index.php'>$langBackHome $siteName</a></p>";
     unset($course_code);
     unset($_SESSION['dbname']);
     draw($tool_content, 1);
@@ -42,7 +42,7 @@ if (isset($_POST['delete'])) {
     $tool_content .= "
     <table class='tbl'>
     <tr>
-    <td class='caution_NoBorder' height='60' colspan='3'>
+    <td class='alert alert-danger' height='60' colspan='3'>
             <p>$langByDel_A <b>" . q($title) . " ($course_code) </b>&nbsp;?  </p>
     </td>
     </tr>
@@ -50,15 +50,14 @@ if (isset($_POST['delete'])) {
     <th rowspan='2' class='left' width='220'>$langConfirmDel:</th>
     <td width='52' align='center'>
     <form method='post' action='delete_course.php?course=$course_code'>
-    <input type='submit' name='delete' value='$langDelete' /></form></td>
+    <input class='btn btn-primary' type='submit' name='delete' value='$langDelete' /></form></td>
     <td><small>$langByDel</small></td>
     </tr>
-    <tr>
-    <td align='center'><form method='get' action='infocours.php'><input type='hidden' name='course' value='" . q($course_code) . "'/>
-                    <input type='submit' name='dont_delete' value='$langCancel' /></form></td>
-    <td>&nbsp;</td>
-    </tr>
     </table>";
-    $tool_content .= "<p align='right'><a href='index.php?course=" . q($course_code) . "'>$langBack</a></p>";
+    $tool_content .= action_bar(array(
+        array('title' => $langBack,
+            'url' => "index.php?course=" . q($course_code),
+            'icon' => 'fa-reply',
+            'level' => 'primary-label')));
 }
 draw($tool_content, 2);

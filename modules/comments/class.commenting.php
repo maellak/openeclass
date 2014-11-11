@@ -73,7 +73,9 @@ Class Commenting {
      */
     public function put($courseCode, $isEditor, $uid) {
         global $langComments, $langBlogPostUser, $langSubmit, $themeimg, $langModify, $langDelete,
-        $langCommentsDelConfirm, $langCommentsSaveConfirm, $urlServer;
+        $langCommentsDelConfirm, $langCommentsSaveConfirm, $urlServer, $head_content;
+        
+        $head_content .= '<link rel="stylesheet" type="text/css" href="'.$urlServer.'modules/comments/style.css">';
         
         $commentsNum = $this->getCommentsNum();
         
@@ -90,7 +92,7 @@ Class Commenting {
             $comments = $this->getCommentsDB();
             foreach ($comments as $comment) {
                 $out .= '<div class="comment" id="comment-'.$comment->getId().'">';
-                $out .= '<div class="smaller">'.nice_format($comment->getTime(), true).$langBlogPostUser.q(uid_to_name($comment->getAuthor())).':</div>';
+                $out .= '<div class="smaller">'.nice_format($comment->getTime(), true).$langBlogPostUser.display_user($comment->getAuthor(), false, false).':</div>';
                 $out .= '<div id="comment_content-'.$comment->getId().'">'.q($comment->getContent()).'</div>';
                 
                 if ($comment->permEdit($isEditor, $uid)) {
@@ -110,7 +112,7 @@ Class Commenting {
         if (Commenting::permCreate($isEditor, $uid, course_code_to_id($courseCode))) {
             $out .= '<form action="" onsubmit="xmlhttpPost(\''.$urlServer.'modules/comments/comments.php?course='.$courseCode.'\', \'new\','.$this->rid.', \''.$this->rtype.'\', \''.$langCommentsSaveConfirm.'\'); return false;">';
             $out .= '<textarea name="textarea" id="textarea-'.$this->rid.'" cols="40" rows="5"></textarea><br/>';
-            $out .= '<input name="send_button" type="submit" value="'.$langSubmit.'" />';
+            $out .= '<input class="btn btn-primary" name="send_button" type="submit" value="'.$langSubmit.'" />';
             $out .= '</form>';
         }
         

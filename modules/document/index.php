@@ -4,7 +4,7 @@
  * Open eClass 3.0
  * E-learning and Course Management System
  * ========================================================================
- * Copyright 2003-2012  Greek Universities Network - GUnet
+ * Copyright 2003-2014  Greek Universities Network - GUnet
  * A full copyright notice can be read in "/info/copyright.txt".
  * For a full list of contributors, see "credits.txt".
  *
@@ -62,7 +62,6 @@ if ($is_in_tinymce) {
     $_SESSION['embedonce'] = true; // necessary for baseTheme
     $docsfilter = (isset($_REQUEST['docsfilter'])) ? 'docsfilter=' . $_REQUEST['docsfilter'] . '&amp;' : '';
     $base_url .= 'embedtype=tinymce&amp;' . $docsfilter;
-    load_js('jquery');
     load_js('tinymce.popup.urlgrabber.min.js');
 }
 
@@ -91,12 +90,6 @@ if (isset($_GET['showQuota'])) {
     $tool_content .= showquota($diskQuotaDocument, $diskUsed);
     draw($tool_content, $menuTypeID);
     exit;
-}
-
-if ($subsystem == EBOOK) {
-    $nameTools = $langFileAdmin;
-    $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langEBook);
-    $navigation[] = array('url' => 'edit.php?course=' . $course_code . '&amp;id=' . $ebook_id, 'name' => $langEBookEdit);
 }
 
 // ---------------------------
@@ -141,8 +134,7 @@ if (isset($_GET['download'])) {
             $delete = false;
         } else {
             // External document - redirect to URL
-            header('Location: ' . $extra_path);
-            exit;
+            redirect($extra_path);
         }
     } else {
         $dload_filename = $basedir . $downloadDir;
@@ -153,31 +145,6 @@ if (isset($_GET['download'])) {
     exit;
 }
 
-/**
- * Used in documents path navigation bar
- * @global type $langRoot
- * @global type $base_url
- * @global type $group_sql
- * @param type $path
- * @return type
- */
-function make_clickable_path($path) {
-    global $langRoot, $base_url, $group_sql;
-
-    $cur = $out = '';
-    foreach (explode('/', $path) as $component) {
-        if (empty($component)) {
-            $out = "<a href='{$base_url}openDir=/'>$langRoot</a>";
-        } else {
-            $cur .= rawurlencode("/$component");
-            $row = Database::get()->querySingle("SELECT filename FROM document
-                                        WHERE path LIKE '%/$component' AND $group_sql");
-            $dirname = $row->filename;
-            $out .= " &raquo; <a href='{$base_url}openDir=$cur'>".q($dirname)."</a>";
-        }
-    }
-    return $out;
-}
 
 if ($can_upload) {
     $error = false;
@@ -197,14 +164,9 @@ if ($can_upload) {
         }
     }
 
-    /*     * *******************************************************************
+    /* ******************************************************************** *
       UPLOAD FILE
-
-      Ousiastika dhmiourgei ena safe_fileName xrhsimopoiwntas ta DATETIME
-      wste na mhn dhmiourgeitai provlhma sto filesystem apo to onoma tou
-      arxeiou. Parola afta to palio filename pernaei apo 'filtrarisma' wste
-      na apofefxthoun 'epikyndynoi' xarakthres.
-     * ********************************************************************* */
+     * ******************************************************************** */
 
     $didx = new DocumentIndexer();
 
@@ -216,21 +178,21 @@ if ($can_upload) {
         // check for disk quotas
         $diskUsed = dir_total_space($basedir);
         if ($diskUsed + @$_FILES['userFile']['size'] > $diskQuotaDocument) {
-            $action_message .= "<p class='caution'>$langNoSpace</p>";
+            $action_message .= "<div class='alert alert-danger'>$langNoSpace</div>";
         } else {
             if (unwanted_file($_FILES['userFile']['name'])) {
-                $action_message .= "<p class='caution'>$langUnwantedFiletype: " .
-                        q($_FILES['userFile']['name']) . "</p>";
+                $action_message .= "<div class='alert alert-danger'>$langUnwantedFiletype: " .
+                        q($_FILES['userFile']['name']) . "</div>";
             } elseif (isset($_POST['uncompress']) and $_POST['uncompress'] == 1 and preg_match('/\.zip$/i', $_FILES['userFile']['name'])) {
-                /*                 * * Unzipping stage ** */
+                /* ** Unzipping stage ** */
                 $zipFile = new pclZip($userFile);
                 validateUploadedZipFile($zipFile->listContent(), $menuTypeID);
                 $realFileSize = 0;
                 $zipFile->extract(PCLZIP_CB_PRE_EXTRACT, 'process_extracted_file');
                 if ($diskUsed + $realFileSize > $diskQuotaDocument) {
-                    $action_message .= "<p class='caution'>$langNoSpace</p>";
+                    $action_message .= "<div class='alert alert-danger'>$langNoSpace</div>";
                 } else {
-                    $action_message .= "<p class='success'>$langDownloadAndZipEnd</p><br />";
+                    $action_message .= "<div class='alert alert-success'>$langDownloadAndZipEnd</div><br />";
                 }
             } else {
                 $fileName = canonicalize_whitespace($_FILES['userFile']['name']);
@@ -240,15 +202,29 @@ if ($can_upload) {
     } elseif (isset($_POST['fileURL']) and ( $fileURL = trim($_POST['fileURL']))) {
         $extra_path = canonicalize_url($fileURL);
         if (preg_match('/^javascript/', $extra_path)) {
-            $action_message .= "<p class='caution'>$langUnwantedFiletype: " .
-                    q($extra_path) . "</p>";
+            $action_message .= "<div class='alert alert-danger'>$langUnwantedFiletype: " .
+                    q($extra_path) . "</div>";
         } else {
             $uploaded = true;
         }
         $components = explode('/', $extra_path);
         $fileName = end($components);
+    } elseif (isset($_POST['file_content'])) {
+        $extra_path = '';
+        $diskUsed = dir_total_space($basedir);
+        if ($diskUsed + strlen($_POST['file_content']) > $diskQuotaDocument) {
+            $action_message .= "<div class='alert alert-danger'>$langNoSpace</div>";
+        } else {
+            if (isset($_POST['file_name'])) {
+                $fileName = $_POST['file_name'];
+                if (!preg_match('/\.html?$/i', $fileName)) {
+                    $fileName .= '.html';
+                }
+            }
+            $uploaded = true;
+        }
     }
-    if ($uploaded) {
+    if ($uploaded and !isset($_POST['editPath'])) {
         // Check if file already exists
         $result = Database::get()->querySingle("SELECT path, visible FROM document WHERE
                                            $group_sql AND
@@ -269,9 +245,11 @@ if ($can_upload) {
         }
     }
     if ($error) {
-        $action_message .= "<p class='caution'>$error</p><br />";
+        $action_message .= "<div class='alert alert-danger'>$error</div><br>";
     } elseif ($uploaded) {
         // No errors, so proceed with upload
+        // File date is current date
+        $file_date = date("Y\-m\-d G\:i\:s");
         // Try to add an extension to files witout extension,
         // change extension of PHP files
         $fileName = php2phps(add_ext_on_mime($fileName));
@@ -282,11 +260,9 @@ if ($can_upload) {
         } else {
             $file_path = $uploadPath . '/' . $safe_fileName;
         }
-        $vis = 1;
-        $file_format = get_file_extension($fileName);
-        // File date is current date
-        $file_date = date("Y\-m\-d G\:i\:s");
-        if ($extra_path or ( isset($userFile) and @ copy($userFile, $basedir . $file_path))) {
+        if ($extra_path or (isset($userFile) and @copy($userFile, $basedir . $file_path))) {
+            $vis = 1;
+            $file_format = get_file_extension($fileName);
             $id = Database::get()->query("INSERT INTO document SET
                                         course_id = ?d,
                                         subsystem = ?d,
@@ -318,10 +294,76 @@ if ($can_upload) {
                 'filename' => $fileName,
                 'comment' => $_POST['file_comment'],
                 'title' => $_POST['file_title']));
-            $action_message .= "<p class='success'>$langDownloadEnd</p><br />";
-        } else {
-            // Moving uploaded file failed
-            $action_message .= "<p class='caution'>$error</p><br />";
+            Session::Messages($langDownloadEnd, 'alert-success');
+            redirect($redirect_base_url);
+        } elseif (isset($_POST['file_content'])) {
+            $q = false;
+            if (isset($_POST['editPath'])) {
+                $fileInfo = Database::get()->querySingle("SELECT * FROM document
+                    WHERE $group_sql AND path = ?s", $_POST['editPath']);
+                if ($fileInfo->editable) {
+                    $file_path = $fileInfo->path;
+                    $q = Database::get()->query("UPDATE document
+                            SET date_modified = NOW(), title = ?s
+                            WHERE $group_sql AND path = ?s",
+                            $_POST['file_title'], $_POST['editPath']);
+                    $id = $fileInfo->id;
+                    $fileName = $fileInfo->filename;
+                }
+            } else {
+                $safe_fileName = safe_filename(get_file_extension($fileName));
+                $file_path = $uploadPath . '/' . $safe_fileName;
+                $file_date = date("Y\-m\-d G\:i\:s");
+                $file_format = get_file_extension($fileName);
+                $file_creator = "$_SESSION[givenname] $_SESSION[surname]";
+                $q = Database::get()->query("INSERT INTO document SET
+                            course_id = ?d,
+                            subsystem = ?d,
+                            subsystem_id = ?d,
+                            path = ?s,
+                            extra_path = '',
+                            filename = ?s,
+                            visible = 1,
+                            comment = '',
+                            category = 0,
+                            title = ?s,
+                            creator = ?s,
+                            date = ?s,
+                            date_modified = ?s,
+                            subject = '',
+                            description = '',
+                            author = ?s,
+                            format = ?s,
+                            language = ?s,
+                            copyrighted = 0,
+                            editable = 1",
+                            $course_id, $subsystem, $subsystem_id, $file_path,
+                            $fileName, $_POST['file_title'], $file_creator,
+                            $file_date, $file_date, $file_creator, $file_format,
+                            $language);
+            }
+            if ($q) {
+                if (!isset($id)) {
+                    $id = $q->lastInsertID;
+                    $log_action = LOG_INSERT;
+                } else {
+                    $log_action = LOG_MODIFY;
+                }
+                Log::record($course_id, MODULE_ID_DOCS, $log_action,
+                        array('id' => $id,
+                              'filepath' => $file_path,
+                              'filename' => $fileName,
+                              'title' => $_POST['file_title']));
+                $action_message .= "<div class='alert alert-success'>$langDownloadEnd</div><br />";
+                $title = $_POST['file_title']? $_POST['file_title']: $fileName;
+                file_put_contents($basedir . $file_path,
+                    '<!DOCTYPE html><head><meta charset="utf-8">' .
+                    '<title>' . q($title) . '</title><body>' .
+                    purify($_POST['file_content']) .
+                    "</body></html>\n");
+                $didx->store($id);
+            }
+            $curDirPath = dirname($file_path);
         }
     }
 
@@ -350,9 +392,9 @@ if ($can_upload) {
             } else {
                 update_db_info('document', 'update', $source, $filename, $moveTo . '/' . my_basename($source));
             }
-            $action_message = "<p class='success'>$langDirMv</p><br />";
+            $action_message = "<div class='alert alert-success'>$langDirMv</div><br>";
         } else {
-            $action_message = "<p class='caution'>$langImpossible</p><br />";
+            $action_message = "<div class='alert alert-danger'>$langImpossible</div><br>";
             /*             * * return to step 1 ** */
             $move = $source;
             unset($moveTo);
@@ -373,11 +415,11 @@ if ($can_upload) {
     /*     * ************************************
       DELETE FILE OR DIRECTORY
      * ************************************ */
-    if (isset($_POST['delete']) or isset($_POST['delete_x'])) {
-        $delete = str_replace('..', '', $_POST['filePath']);
+    if (isset($_GET['delete']) and isset($_GET['filePath']) and $_SERVER['REQUEST_METHOD'] == 'POST') {
+        $filePath = $_GET['filePath'];
         // Check if file actually exists
         $r = Database::get()->querySingle("SELECT path, extra_path, format, filename FROM document
-                                        WHERE $group_sql AND path = ?s", $delete);
+                                        WHERE $group_sql AND path = ?s", $filePath);
         $delete_ok = true;
         if ($r) {
             // remove from index if relevant (except non-main sysbsystems and metadata)
@@ -386,23 +428,24 @@ if ($can_upload) {
                 function ($r2) use($didx) {
                     $didx->remove($r2->id);
                 },
-                $delete . '%');
+                $filePath . '%');
 
             if (empty($r->extra_path)) {
-                if ($delete_ok = my_delete($basedir . $delete) && $delete_ok) {
-                    if (hasMetaData($delete, $basedir, $group_sql)) {
-                        $delete_ok = my_delete($basedir . $delete . ".xml") && $delete_ok;
+                if ($delete_ok = my_delete($basedir . $filePath) && $delete_ok) {
+                    if (hasMetaData($filePath, $basedir, $group_sql)) {
+                        $delete_ok = my_delete($basedir . $filePath . ".xml") && $delete_ok;
                     }
-                    update_db_info('document', 'delete', $delete, $r->filename);
+                    update_db_info('document', 'delete', $filePath, $r->filename);
                 }
             } else {
-                update_db_info('document', 'delete', $delete, $r->filename);
+                update_db_info('document', 'delete', $filePath, $r->filename);
             }
             if ($delete_ok) {
-                $action_message = "<p class='success'>$langDocDeleted</p><br />";
+                Session::Messages($langDocDeleted, 'alert-success');
             } else {
-                $action_message = "<p class='caution'>$langGeneralError</p><br />";
+                Session::Messages($langGeneralError, 'alert-danger');
             }
+            redirect($redirect_base_url);
         }
     }
 
@@ -430,7 +473,7 @@ if ($can_upload) {
                 metaRenameDomDocument($basedir . $_POST['sourceFile'] . '.xml', $_POST['renameTo']);
             }
         }
-        $action_message = "<p class='success'>$langElRen</p><br />";
+        $action_message = "<div class='alert alert-success'>$langElRen</div><br>";
     }
 
     // Step 1: Show rename dialog box
@@ -448,7 +491,7 @@ if ($can_upload) {
                     <tr>
                       <td><b>" . q($fileName) . "</b> $langIn:
                         <input type='text' name='renameTo' value='" . q($fileName) . "' size='50' /></td>
-                      <td class='right'><input type='submit' value='$langRename' /></td>
+                      <td class='right'><input class='btn btn-primary' type='submit' value='$langRename' /></td>
                     </tr>
                   </table>
                 </fieldset>
@@ -463,11 +506,11 @@ if ($can_upload) {
             $newDirPath = make_path($_POST['newDirPath'], array($newDirName));
             // $path_already_exists: global variable set by make_path()
             if ($path_already_exists) {
-                $action_message = "<p class='caution'>$langFileExists</p>";
+                $action_message = "<div class='alert alert-danger'>$langFileExists</div>";
             } else {
                 $r = Database::get()->querySingle("SELECT id FROM document WHERE $group_sql AND path = ?s", $newDirPath);
                 $didx->store($r->id);
-                $action_message = "<p class='success'>$langDirCr</p>";
+                $action_message = "<div class='alert alert-success'>$langDirCr</div>";
             }
         }
     }
@@ -475,20 +518,22 @@ if ($can_upload) {
     // step 1: display a field to enter the new dir name
     if (isset($_GET['createDir'])) {
         $createDir = q($_GET['createDir']);
-        $dialogBox .= "<form action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post'>
-                $group_hidden_input
-                <fieldset>
-                        <input type='hidden' name='newDirPath' value='$createDir' />
-                        <table class='tbl' width='100%'>
-                        <tr>
-                                <th>$langNameDir</th>
-                                <td width='190'><input type='text' name='newDirName' /></td>
-                                <td><input type='submit' value='$langCreateDir' /></td>
-                        </tr>
-                        </table>
-                </fieldset>
-                </form>
-                <br />\n";
+        $dialogBox .= "
+        <div class='col-md-12'>
+        <h5 class='content-title'>$langCreateDir</h5>
+        <div class='panel padding-thin focused'>
+        <form action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post' class='form-inline' role='form'>
+            $group_hidden_input
+            <input type='hidden' name='newDirPath' value='$createDir' />
+            <div class='form-group'>
+                <input type='text' class='form-control' id='newDirName' name='newDirName' placeholder='$langNameDir'>
+            </div>
+            <button type='submit' class='btn-default-eclass color-green'>
+                <i class='fa fa-plus space-after-icon'></i>
+                $langCreateDir
+            </button>
+        </form>
+        </div></div>";
     }
 
     // add/update/remove comment
@@ -519,7 +564,7 @@ if ($can_upload) {
                 'filename' => $res->filename,
                 'comment' => $_POST['file_comment'],
                 'title' => $_POST['file_title']));
-            $action_message = "<p class='success'>$langComMod</p>";
+            $action_message = "<div class='alert alert-success'>$langComMod</div>";
         }
     }
 
@@ -561,7 +606,7 @@ if ($can_upload) {
                     , ($_SESSION['givenname'] . " " . $_SESSION['surname']), $xml_date, $xml_date, $file_format, $_POST['meta_language']);
         }
 
-        $action_message = "<p class='success'>$langMetadataMod</p>";
+        $action_message = "<div class='alert alert-success'>$langMetadataMod</div>";
     }
 
     if (isset($_POST['replacePath']) and
@@ -581,10 +626,10 @@ if ($can_upload) {
             // check for disk quota
             $diskUsed = dir_total_space($basedir);
             if ($diskUsed - filesize($basedir . $oldpath) + $_FILES['newFile']['size'] > $diskQuotaDocument) {
-                $action_message = "<p class='caution'>$langNoSpace</p>";
+                $action_message = "<div class='alert alert-danger'>$langNoSpace</div>";
             } elseif (unwanted_file($_FILES['newFile']['name'])) {
-                $action_message = "<p class='caution'>$langUnwantedFiletype: " .
-                        q($_FILES['newFile']['name']) . "</p>";
+                $action_message = "<div class='alert alert-danger'>$langUnwantedFiletype: " .
+                        q($_FILES['newFile']['name']) . "</div>";
             } else {
                 $newformat = get_file_extension($_FILES['newFile']['name']);
                 $newpath = preg_replace("/\\.$oldformat$/", '', $oldpath) .
@@ -594,7 +639,7 @@ if ($can_upload) {
                           WHERE $group_sql AND path = ?s"
                                 , $newpath, $newformat, ($_FILES['newFile']['name']), $oldpath)->affectedRows;
                 if (!copy($_FILES['newFile']['tmp_name'], $basedir . $newpath) or $affectedRows == 0) {
-                    $action_message = "<p class='caution'>$langGeneralError</p>";
+                    $action_message = "<div class='alert alert-danger'>$langGeneralError</div>";
                 } else {
                     if (hasMetaData($oldpath, $basedir, $group_sql)) {
                         rename($basedir . $oldpath . ".xml", $basedir . $newpath . ".xml");
@@ -605,7 +650,7 @@ if ($can_upload) {
                     Log::record($course_id, MODULE_ID_DOCS, LOG_MODIFY, array('oldpath' => $oldpath,
                         'newpath' => $newpath,
                         'filename' => $_FILES['newFile']['name']));
-                    $action_message = "<p class='success'>$langReplaceOK</p>";
+                    $action_message = "<div class='alert alert-success'>$langReplaceOK</div>";
                 }
             }
         }
@@ -697,7 +742,7 @@ if ($can_upload) {
                         </tr>
                         <tr>
                         <th>&nbsp;</th>
-                        <td class='right'><input type='submit' value='$langOkComment' /></td>
+                        <td class='right'><input class='btn btn-primary' type='submit' value='$langOkComment' /></td>
                         </tr>
                         <tr>
                         <th>&nbsp;</th>
@@ -711,7 +756,7 @@ if ($can_upload) {
                         </form>
                         \n\n";
         } else {
-            $action_message = "<p class='caution'>$langFileNotFound</p>";
+            $action_message = "<div class='alert alert-danger'>$langFileNotFound</div>";
         }
     }
 
@@ -733,7 +778,7 @@ if ($can_upload) {
                                         <tr>
                                                 <td>$replacemessage</td>
                                                 <td><input type='file' name='newFile' size='35' /></td>
-                                                <td><input type='submit' value='$langReplace' /></td>
+                                                <td><input class='btn btn-primary' type='submit' value='$langReplace' /></td>
                                         </tr>
                                         </table>
                                 </fieldset>
@@ -828,7 +873,7 @@ if ($can_upload) {
                         </tr>
                         <tr>
                         <th>&nbsp;</th>
-                        <td class='right'><input type='submit' value='$langOkComment' /></td>
+                        <td class='right'><input class='btn btn-primary' type='submit' value='$langOkComment' /></td>
                         </tr>
                         <tr>
                         <th>&nbsp;</th>
@@ -842,7 +887,7 @@ if ($can_upload) {
                         </form>
                         \n\n";
         } else {
-            $action_message = "<p class='caution'>$langFileNotFound</p>";
+            $action_message = "<div class='alert alert-danger'>$langFileNotFound</div>";
         }
     }
 
@@ -864,7 +909,7 @@ if ($can_upload) {
 
             $dialogBox .= metaCreateForm($metadata, $oldFilename, $real_filename);
         } else {
-            $action_message = "<p class='caution'>$langFileNotFound</p>";
+            $action_message = "<div class='alert alert-danger'>$langFileNotFound</div>";
         }
     }
 
@@ -882,7 +927,7 @@ if ($can_upload) {
                                                 path = ?s", $newVisibilityStatus, $visibilityPath);
         $r = Database::get()->querySingle("SELECT id FROM document WHERE $group_sql AND path = ?s", $visibilityPath);
         $didx->store($r->id);
-        $action_message = "<p class='success'>$langViMod</p>";
+        $action_message = "<div class='alert alert-success'>$langViMod</div>";
     }
 
     // Public accessibility commands
@@ -894,7 +939,7 @@ if ($can_upload) {
                                                 path = ?s", $new_public_status, $path);
         $r = Database::get()->querySingle("SELECT id FROM document WHERE $group_sql AND path = ?s", $path);
         $didx->store($r->id);
-        $action_message = "<p class='success'>$langViMod</p>";
+        $action_message = "<div class='alert alert-success'>$langViMod</div>";
     }
 } // teacher only
 // Common for teachers and students
@@ -918,7 +963,8 @@ function pathvar(&$var, $is_file = false) {
     return '';
 }
 
-$curDirPath = pathvar($_GET['openDir'], false) .
+if (!isset($curDirPath)) {
+    $curDirPath = pathvar($_GET['openDir'], false) .
         pathvar($_GET['createDir'], false) .
         pathvar($_POST['moveTo'], false) .
         pathvar($_POST['newDirPath'], false) .
@@ -937,6 +983,7 @@ $curDirPath = pathvar($_GET['openDir'], false) .
         pathvar($_POST['replacePath'], true) .
         pathvar($_POST['commentPath'], true) .
         pathvar($_POST['metadataPath'], true);
+}
 
 if ($curDirPath == '/' or $curDirPath == '\\') {
     $curDirPath = '';
@@ -982,6 +1029,10 @@ $fileinfo = array();
 foreach ($result as $row) {
     if ($real_path = common_doc_path($row->extra_path, true)) {
         // common docs
+        if (!$common_doc_visible and !$is_admin) {
+            // hide links to invisible common docs to non-admins
+            continue;
+        }
         $path = $real_path;
     } else {
         $path = $basedir . $row->path;
@@ -990,7 +1041,7 @@ foreach ($result as $row) {
         // external file
         $size = 0;
     } else {
-        $size = filesize($path);
+        $size = file_exists($path)? filesize($path): 0;
     }
     $fileinfo[] = array(
         'is_dir' => ($row->format == '.dir'),
@@ -1005,7 +1056,8 @@ foreach ($result as $row) {
         'comment' => $row->comment,
         'copyrighted' => $row->copyrighted,
         'date' => $row->date_modified,
-        'object' => MediaResourceFactory::initFromDocument($row));
+        'object' => MediaResourceFactory::initFromDocument($row),
+        'editable' => $row->editable);
 }
 // end of common to teachers and students
 // ----------------------------------------------
@@ -1023,18 +1075,28 @@ if ($can_upload) {
     // available actions
     if (!$is_in_tinymce) {
         $diskQuotaDocument = $diskQuotaDocument * 1024 / 1024;
-        $tool_content .= "<div id='operations_container'>
-                    <ul id='opslist'>
-                       <li><a href='upload.php?course=$course_code&amp;{$groupset}uploadPath=$curDirPath'>$langDownloadFile</a></li>
-                       <li><a href='{$base_url}createDir=$cmdCurDirPath'>$langCreateDir</a></li>
-                       <li><a href='upload.php?course=$course_code&amp;{$groupset}uploadPath=$curDirPath&amp;ext=true'>$langExternalFile</a></li>";
-        if (!defined('COMMON_DOCUMENTS') and get_config('enable_common_docs')) {
-            $tool_content .= "<li><a href='../units/insert.php?course=$course_code&amp;dir=$curDirPath&amp;type=doc&amp;id=-1'>$langCommonDocs</a>";
-        }
-        $tool_content .= "<li><a href='{$base_url}showQuota=true'>$langQuotaBar</a></li>
-            </ul></div>";
+        $tool_content .= action_bar(array(
+            array('title' => $langDownloadFile,
+                  'url' => "upload.php?course=$course_code&amp;{$groupset}uploadPath=$curDirPath",
+                  'icon' => 'fa-plus-circle',
+                  'level' => 'primary-label',
+                  'button-class' => 'btn-success'),
+            array('title' => $langCreateDir,
+                  'url' => "{$base_url}createDir=$cmdCurDirPath",
+                  'icon' => 'fa-folder',
+                  'level' => 'primary'),
+            array('title' => $langQuotaBar,
+                  'url' => "{$base_url}showQuota=true",
+                  'icon' => 'fa-pie-chart'),
+            array('title' => $langExternalFile,
+                  'url' => "upload.php?course=$course_code&amp;{$groupset}uploadPath=$curDirPath&amp;ext=true",
+                  'icon' => 'fa-external-link'),
+            array('title' => $langCommonDocs,
+                  'url' => "../units/insert.php?course=$course_code&amp;dir=$curDirPath&amp;type=doc&amp;id=-1",
+                  'icon' => 'fa-plus-circle',
+                  'show' => !defined('COMMON_DOCUMENTS') && get_config('enable_common_docs')),
+            ));
     }
-
     // Dialog Box
     if (!empty($dialogBox)) {
         $tool_content .= $dialogBox;
@@ -1045,11 +1107,14 @@ if ($can_upload) {
 $doc_count = Database::get()->querySingle("SELECT COUNT(*) as count FROM document WHERE $group_sql $filter" .
                 ($can_upload ? '' : " AND visible=1"))->count;
 if ($doc_count == 0) {
-    $tool_content .= "<p class='alert1'>$langNoDocuments</p>";
+    $tool_content .= "<div class='alert alert-warning'>$langNoDocuments</div>";
 } else {
     // Current Directory Line
-    $tool_content .= "<table width='100%' class='tbl'>";
-
+    $tool_content .= "
+    <div class='row'>
+        <div class='col-md-12'>
+            <div class='panel'>
+                <table width='100%' class='tbl'>";
     if ($can_upload) {
         $cols = 4;
     } else {
@@ -1063,52 +1128,41 @@ if ($doc_count == 0) {
             "&nbsp;$download_dir<br></div></td>
         <td><div align='right'>";
 
-    // Link for sortable table headings
-    function headlink($label, $this_sort) {
-        global $sort, $reverse, $curDirPath, $base_url, $themeimg, $langUp, $langDown;
-
-        if (empty($curDirPath)) {
-            $path = '/';
-        } else {
-            $path = $curDirPath;
-        }
-        if ($sort == $this_sort) {
-            $this_reverse = !$reverse;
-            $indicator = " <img src='$themeimg/arrow_" .
-                    ($reverse ? 'up' : 'down') . ".png' alt='" .
-                    ($reverse ? $langUp : $langDown) . "'>";
-        } else {
-            $this_reverse = $reverse;
-            $indicator = '';
-        }
-        return '<a href="' . $base_url . 'openDir=' . $path .
-                '&amp;sort=' . $this_sort . ($this_reverse ? '&amp;rev=1' : '') .
-                '">' . $label . $indicator . '</a>';
-    }
 
     /*     * * go to parent directory ** */
     if ($curDirName) { // if the $curDirName is empty, we're in the root point and we can't go to a parent dir
         $parentlink = $base_url . 'openDir=' . $cmdParentDir;
-        $tool_content .= "<a href='$parentlink'>$langUp</a> <a href='$parentlink'><img src='$themeimg/folder_up.png' height='16' width='16' alt='$langUp'/></a>";
+        $tool_content .= action_bar(array(
+                    array('title' => $langUp,
+                          'url' => "$parentlink",
+                          'icon' => 'fa-caret-up',
+                          'level' => 'primary-label',
+                          'button-class' => 'btn-success')));
     }
     $tool_content .= "</div></td>
-    </tr>
-    </table>
-    <table width='100%' class='tbl_alt'>
-    <tr>";
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class='row'>
+        <div class='col-md-12'>
+            <div class='panel'>
+                <table class='table-default'>
+                    <tr>";
     $tool_content .= "<th width='50' class='center'><b>" . headlink($langType, 'type') . '</b></th>' .
-            "<th><div align='left'>" . headlink($langName, 'name') . '</div></th>' .
-            "<th width='60' class='center'><b>$langSize</b></th>" .
-            "<th width='80' class='center'><b>" . headlink($langDate, 'date') . '</b></th>';
+                     "<th><div align='left'>" . headlink($langName, 'name') . '</div></th>' .
+                     "<th width='60' class='center'><b>$langSize</b></th>" .
+                     "<th width='80' class='center'><b>" . headlink($langDate, 'date') . '</b></th>';
     if (!$is_in_tinymce) {
-        $tool_content .= "<th width='50' class='center'><b>$langCommands</b></th>";
+        $tool_content .= "<th width='50' class='text-center'>".icon('fa-gears', $langCommands)."</th>";
     }
-    $tool_content .= "\n    </tr>";
+    $tool_content .= "</tr>";
 
     // -------------------------------------
     // Display directories first, then files
     // -------------------------------------
-    $counter = 0;
     foreach (array(true, false) as $is_dir) {
         foreach ($fileinfo as $entry) {
             $link_title_extra = '';
@@ -1116,17 +1170,13 @@ if ($doc_count == 0) {
                 continue;
             }
             $cmdDirName = $entry['path'];
-            if ($entry['visible']) {
-                if ($counter % 2 == 0) {
-                    $style = 'class="even"';
-                } else {
-                    $style = 'class="odd"';
-                }
+            if (!$entry['visible']) {
+                $style = ' class="not_visible"';
             } else {
-                $style = ' class="invisible"';
+                $style = '';
             }
             if ($is_dir) {
-                $img_href = icon('folder');
+                $img_href = icon('fa-folder-o');
                 $file_url = $base_url . "openDir=$cmdDirName";
                 $link_title = q($entry['filename']);
                 $dload_msg = $langDownloadDir;
@@ -1137,9 +1187,15 @@ if ($doc_count == 0) {
                 if ($entry['extra_path']) {
                     $cdpath = common_doc_path($entry['extra_path']);
                     if ($cdpath) {
-                        if ($is_editor) {
-                            $link_title_extra .= '&nbsp;' .
-                                    $common_doc_visible ? 'common' : 'common_invisible';
+                        if ($can_upload) {
+                            if ($common_doc_visible) {
+                                $link_title_extra .= '&nbsp;' .
+                                    icon('common', $langCommonDocLink);
+                            } else {
+                                $link_title_extra .= '&nbsp;' .
+                                    icon('common-invisible', $langCommonDocLinkInvisible);
+                                $style = ' class="invisible"';
+                            }
                         }
                     } else {
                         // External file URL
@@ -1149,10 +1205,16 @@ if ($doc_count == 0) {
                         }
                     }
                 }
+                if ($can_upload and $entry['editable']) {
+                    $edit_url = "new.php?course=$course_code&amp;editPath=$entry[path]" .
+                        ($groupset? "&amp;$groupset": '');
+                    $link_title_extra .= '&nbsp;' .
+                        icon('edit', $langEdit, $edit_url);
+                }
                 if ($copyid = $entry['copyrighted'] and
-                        $copyicon = $copyright_icons[$copyid]) {
+                    $copyicon = $copyright_icons[$copyid]) {
                     $link_title_extra .= "&nbsp;" .
-                            icon($copyicon, $copyright_titles[$copyid], $copyright_links[$copyid], null, 'png', 'target="_blank"');
+                        icon($copyicon, $copyright_titles[$copyid], $copyright_links[$copyid], null, 'png', 'target="_blank"');
                 }
                 $dload_msg = $langSave;
 
@@ -1171,94 +1233,90 @@ if ($doc_count == 0) {
                 // External document
                 $download_url = $entry['extra_path'];
             }
-            $download_icon = icon('save_s', $dload_msg, $download_url);
-            $tool_content .= "<tr $style>
-                                               <td class='center' valign='top'>$img_href</td>
-                                               <td>$link_href $link_title_extra";
-
-            /*             * * comments ** */
+            $tool_content .= "<tr $style><td class='text-center'>$img_href</td>
+                              <td>$link_href $link_title_extra";
+            // comments
             if (!empty($entry['comment'])) {
-                $tool_content .= "<br /><span class='comment'>" .
+                $tool_content .= "<br><span class='comment'>" .
                         nl2br(htmlspecialchars($entry['comment'])) .
                         "</span>";
             }
             $tool_content .= "</td>";
-            $padding = '&nbsp;';
-            $padding2 = '';
             $date = nice_format($entry['date'], true, true);
             $date_with_time = nice_format($entry['date'], true);
             if ($is_dir) {
-                $tool_content .= "\n<td>&nbsp;</td>\n<td class='center'>$date</td>";
-                $padding = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+                $tool_content .= "<td>&nbsp;</td><td class='center'>$date</td>";
             } else if ($entry['format'] == ".meta") {
                 $size = format_file_size($entry['size']);
-                $tool_content .= "\n<td class='center'>$size</td>\n<td class='center'>$date</td>";
-                $padding = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-                $padding2 = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+                $tool_content .= "<td class='center'>$size</td><td class='center'>$date</td>";
             } else {
                 $size = format_file_size($entry['size']);
-                $tool_content .= "\n<td class='center'>$size</td>\n<td class='center' title='$date_with_time'>$date</td>";
+                $tool_content .= "<td class='center'>$size</td><td class='center' title='$date_with_time'>$date</td>";
             }
             if (!$is_in_tinymce) {
                 if ($can_upload) {
-                    $tool_content .= "\n<td class='right toolbox' valign='top'><form action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post'>" . $group_hidden_input .
-                            "<input type='hidden' name='filePath' value='$cmdDirName' />" .
-                            $download_icon . $padding;
-                    if (!$is_dir && $entry['format'] != ".meta") {
-                        /*                         * * replace/overwrite command, only applies to files ** */
-                        $tool_content .= "<a href='{$base_url}replace=$cmdDirName'>" .
-                                "<img src='$themeimg/replace.png' " .
-                                "title='$langReplace' alt='$langReplace' /></a>&nbsp;";
-                    }
-                    /*                     * * delete command ** */
-                    $tool_content .= "<input type='image' src='$themeimg/delete.png' alt='$langDelete' title='$langDelete' name='delete' value='1' onClick=\"return confirmation('" . js_escape($langConfirmDelete . ' ' . $entry['filename']) . "');\" />&nbsp;" . $padding2;
-                    if ($entry['format'] != '.meta') {
-                        $tool_content .= icon('move', $langMove, "{$base_url}move=$cmdDirName") .
-                                "&nbsp;" . icon('rename', $langRename, "{$base_url}rename=$cmdDirName") .
-                                "&nbsp;" . icon('comment_edit', $langComment, "{$base_url}comment=$cmdDirName") .
-                                "&nbsp;";
-                    }
-                    /*                     * * metadata command ** */
-                    if (get_config("insert_xml_metadata")) {
-                        $xmlCmdDirName = ($entry['format'] == ".meta" && get_file_extension($cmdDirName) == "xml") ? substr($cmdDirName, 0, -4) : $cmdDirName;
-                        $tool_content .= icon('lom', $langMetadata, "{$base_url}metadata=$xmlCmdDirName") .
-                                "&nbsp;";
-                    }
-                    if ($entry['visible']) {
-                        $tool_content .= icon('visible', $langVisible, "{$base_url}mkInvisibl=$cmdDirName");
-                    } else {
-                        $tool_content .= icon('invisible', $langVisible, "{$base_url}mkVisibl=$cmdDirName");
-                    }
-                    $tool_content .= "&nbsp;";
-                    // For common docs, $course_id = -1 - disable public icon there
-                    if ($course_id > 0 and course_status($course_id) == COURSE_OPEN) {
-                        if ($entry['public']) {
-                            $tool_content .= icon('access_public', $langResourceAccess, "{$base_url}limited=$cmdDirName");
-                        } else {
-                            $tool_content .= icon('access_limited', $langResourceAccess, "{$base_url}public=$cmdDirName");
-                        }
-                        $tool_content .= "&nbsp;";
-                    }
-                    if ($subsystem == GROUP and isset($is_member) and ( $is_member)) {
-                        $tool_content .= "<a href='{$urlAppend}modules/work/group_work.php?course=$course_code" .
-                                "&amp;group_id=$group_id&amp;submit=$cmdDirName'>" .
-                                "<img src='$themeimg/book.png' " .
-                                "title='$langGroupSubmit' alt='$langGroupSubmit' /></a>";
-                    }
-                    $tool_content .= "</form></td>";
-                    $tool_content .= "</tr>\n";
-                } else { // only for students
-                    $tool_content .= "<td>$download_icon</td>";
+                    $tool_content .= "<td class='option-btn-cell'>";
+
+                    $xmlCmdDirName = ($entry['format'] == ".meta" && get_file_extension($cmdDirName) == "xml") ? substr($cmdDirName, 0, -4) : $cmdDirName;
+                    $tool_content .= action_button(array(
+                                    array('title' => $langGroupSubmit,
+                                          'url' => "{$urlAppend}modules/work/group_work.php?course=$course_code&amp;group_id=$group_id&amp;submit=$cmdDirName",
+                                          'icon' => 'fa-book',
+                                          'show' => $subsystem == GROUP and isset($is_member) and $is_member),
+                                    array('title' => $dload_msg,
+                                          'url' => $download_url,
+                                          'icon' => 'fa-save'),
+                                    array('title' => $langVisible,
+                                          'url' => "{$base_url}" . ($entry['visible']? "mkInvisibl=$cmdDirName" : "mkVisibl=$cmdDirName"),
+                                          'icon' => $entry['visible'] ? 'fa-eye' : 'fa-eye-slash'),
+                                    array('title' => $langResourceAccess,
+                                          'url' => "{$base_url}limited=$cmdDirName",
+                                          'icon' => 'fa-unlock',
+                                          'show' => $course_id > 0 and course_status($course_id) == COURSE_OPEN and $entry['public']),
+                                    array('title' => $langMove,
+                                          'url' => "{$base_url}move=$cmdDirName",
+                                          'icon' => 'fa-arrows',
+                                          'show' => $entry['format'] != '.meta'),
+                                    array('title' => $langRename,
+                                          'url' => "{$base_url}rename=$cmdDirName",
+                                          'icon' => 'fa-repeat',
+                                          'show' => $entry['format'] != '.meta'),
+                                    array('title' => $langComments,
+                                          'url' => "{$base_url}comment=$cmdDirName",
+                                          'icon' => 'fa-comment-o',
+                                          'show' => $entry['format'] != '.meta'),
+                                    array('title' => $langReplace,
+                                          'url' => "{$base_url}replace=$cmdDirName",
+                                          'icon' => 'fa-reply',
+                                          'show' => !$is_dir && $entry['format'] != '.meta'),
+                                    array('title' => $langMetadata,
+                                          'url' =>  "{$base_url}metadata=$xmlCmdDirName",
+                                          'icon' => 'fa-tags',
+                                          'show' => get_config("insert_xml_metadata")),
+                                    array('title' => $langResourceAccess,
+                                          'url' => "{$base_url}public=$cmdDirName",
+                                          'icon' => 'fa-lock',
+                                          'show' => $course_id > 0 and course_status($course_id) == COURSE_OPEN and !$entry['public']),
+                                    array('title' => $langDelete,
+                                          'url' => "{$base_url}filePath=$cmdDirName&amp;delete=1",
+                                          'icon' => 'fa-times',
+                                          'class' => 'delete',
+                                          'confirm' => "$langConfirmDelete $entry[filename]")));
+                    $tool_content .= "</td>";
+                } else { // student view
+                    $tool_content .= "<td class='text-center'>" . icon('fa-save', $dload_msg, $download_url) . "</td>";
                 }
+                $tool_content .= "</tr>";
             }
-            $counter++;
         }
     }
-    $tool_content .= "\n    </table>\n";
+    $tool_content .= "</table>
+            </div>
+        </div>
+    </div>";
     if ($can_upload && !$is_in_tinymce) {
-        $tool_content .= "\n    <br><div class='right smaller'>$langMaxFileSize " . ini_get('upload_max_filesize') . "</div>\n";
+        $tool_content .= "<br><div class='text-right'>$langMaxFileSize " . ini_get('upload_max_filesize') . "</div>";
     }
-    $tool_content .= "\n    <br />";
 }
 if (defined('SAVED_COURSE_CODE')) {
     $course_code = SAVED_COURSE_CODE;
@@ -1302,4 +1360,67 @@ function select_proper_filters($requestDocsFilter) {
     }
 
     return array($filter, $compatiblePlugin);
+}
+
+
+/**
+ * @brief Link for sortable table headings
+ * @global type $sort
+ * @global type $reverse
+ * @global type $curDirPath
+ * @global type $base_url
+ * @global type $themeimg
+ * @global type $langUp
+ * @global type $langDown
+ * @param type $label
+ * @param type $this_sort
+ * @return type
+ */
+function headlink($label, $this_sort) {
+    global $sort, $reverse, $curDirPath, $base_url, $themeimg, $langUp, $langDown;
+
+    if (empty($curDirPath)) {
+        $path = '/';
+    } else {
+        $path = $curDirPath;
+    }
+    if ($sort == $this_sort) {
+        $this_reverse = !$reverse;
+        $indicator = " <img src='$themeimg/arrow_" .
+                ($reverse ? 'up' : 'down') . ".png' alt='" .
+                ($reverse ? $langUp : $langDown) . "'>";
+    } else {
+        $this_reverse = $reverse;
+        $indicator = '';
+    }
+    return '<a href="' . $base_url . 'openDir=' . $path .
+            '&amp;sort=' . $this_sort . ($this_reverse ? '&amp;rev=1' : '') .
+            '">' . $label . $indicator . '</a>';
+}
+
+
+/**
+ * Used in documents path navigation bar
+ * @global type $langRoot
+ * @global type $base_url
+ * @global type $group_sql
+ * @param type $path
+ * @return type
+ */
+function make_clickable_path($path) {
+    global $langRoot, $base_url, $group_sql;
+
+    $cur = $out = '';
+    foreach (explode('/', $path) as $component) {
+        if (empty($component)) {
+            $out = "<a href='{$base_url}openDir=/'>$langRoot</a>";
+        } else {
+            $cur .= rawurlencode("/$component");
+            $row = Database::get()->querySingle("SELECT filename FROM document
+                                        WHERE path LIKE '%/$component' AND $group_sql");
+            $dirname = $row->filename;
+            $out .= " &raquo; <a href='{$base_url}openDir=$cur'>".q($dirname)."</a>";
+        }
+    }
+    return $out;
 }

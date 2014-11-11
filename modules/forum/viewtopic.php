@@ -75,7 +75,7 @@ if (isset($_GET['post_id'])) {//needed to find post page for anchors
 
 
 if (!$myrow) {
-    $tool_content .= "<p class='alert1'>$langErrorTopicSelect</p>";
+    $tool_content .= "<div class='alert alert-warning'>$langErrorTopicSelect</div>";
     draw($tool_content, 2);
     exit();
 }
@@ -96,7 +96,7 @@ if (isset($_GET['delete']) && isset($post_id) && $is_editor) {
 
     Database::get()->query("DELETE FROM forum_post WHERE id = ?d", $post_id);
     $fpdx->remove($post_id);
-    
+
     //orphan replies get -1 to parent_post_id
     Database::get()->query("UPDATE forum_post SET parent_post_id = -1 WHERE parent_post_id = ?d", $post_id);
 
@@ -108,7 +108,7 @@ if (isset($_GET['delete']) && isset($post_id) && $is_editor) {
     if ($forum_user_stats->c != 0) {
         Database::get()->query("INSERT INTO forum_user_stats (user_id, num_posts, course_id) VALUES (?d,?d,?d)", $this_post_author, $forum_user_stats->c, $course_id);
     }
-    
+
     if ($total == 1) { // if exists one post in topic
         Database::get()->query("DELETE FROM forum_topic WHERE id = ?d AND forum_id = ?d", $topic, $forum);
         $ftdx->remove($topic);
@@ -137,7 +137,7 @@ if (isset($_GET['delete']) && isset($post_id) && $is_editor) {
 			SET topic_time = '$topic_time_fixed'
 			WHERE id = $topic";
     }
-    $tool_content .= "<p class='success'>$langDeletedMessage</p>";
+    $tool_content .= "<div class='alert alert-success'>$langDeletedMessage</div>";
 }
 
 
@@ -164,13 +164,15 @@ if (isset($_SESSION['message'])) {
 }
 
 if ($topic_locked == 1) {
-    $tool_content .= "<p class='alert1'>$langErrorTopicLocked</p>";
+    $tool_content .= "<div class='alert alert-warning'>$langErrorTopicLocked</div>";
 } else {
-    $tool_content .= "<div id='operations_container'>
-    	<ul id='opslist'>
-    	<li><a href='reply.php?course=$course_code&amp;topic=$topic&amp;forum=$forum'>$langReply";
-    
-    $tool_content .= "</a></li></ul></div>";
+    $tool_content .= 
+            action_bar(array(
+                array('title' => $langReply,
+                    'url' => "reply.php?course=$course_code&amp;topic=$topic&amp;forum=$forum",
+                    'icon' => 'fa-plus-circle',
+                    'level' => 'primary-label',
+                    'button-class' => 'btn-success')));
 }
 
 if ($paging and $total > $posts_per_page) {
@@ -185,9 +187,9 @@ if ($paging and $total > $posts_per_page) {
     if (isset($post_id)) {
         $result = Database::get()->querySingle("SELECT COUNT(*) as c FROM forum_post WHERE topic_id = ?d AND post_time <= ?t", $topic, $myrow->post_time);
         $num = $result->c;
-        $_GET['start'] = (ceil($num/$posts_per_page)-1)*$posts_per_page;
+        $_GET['start'] = (ceil($num / $posts_per_page) - 1) * $posts_per_page;
     }
-    
+
     if (isset($_GET['start'])) {
         $start = intval($_GET['start']);
     } else {
@@ -246,7 +248,7 @@ $tool_content .= "<table width='100%' class='tbl_alt'>
       <th width='220'>$langAuthor</th>
       <th>$langMessage</th>";
 if ($is_editor) {
-    $tool_content .= "<th width='60'>$langActions</th>";
+    $tool_content .= "<th width='60' class='text-center'>" . icon('fa-gears') . "</th>";
 }
 $tool_content .= "</tr>";
 
@@ -273,16 +275,16 @@ foreach ($result as $myrow) {
     } else {
         $tool_content .= "<tr class='even'>";
     }
-    $nummessages = '';
     if (!isset($user_stats[$myrow->poster_id])) {
         $user_num_posts = Database::get()->querySingle("SELECT num_posts FROM forum_user_stats WHERE user_id = ?d AND course_id = ?d", $myrow->poster_id, $course_id);
-        if ($user_num_posts) {
-            $user_stats[$myrow->poster_id] = $user_num_posts->num_posts;
-            $nummessages = "<br/>".$user_stats[$myrow->poster_id]." $langMessages";
+        if ($user_num_posts->num_posts == 1) {
+            $user_stats[$myrow->poster_id] = "<br/>".$user_num_posts->num_posts." $langMessage";
+        } else {
+            $user_stats[$myrow->poster_id] = "<br/>".$user_num_posts->num_posts." $langMessages";
         }
     }
     
-    $tool_content .= "<td valign='top'>" . display_user($myrow->poster_id) . "$nummessages</td>";
+    $tool_content .= "<td valign='top'>" . display_user($myrow->poster_id) . $user_stats[$myrow->poster_id]."</td>";
     $message = $myrow->post_text;
     // support for math symbols
     $message = mathfilter($message, 12, "../../courses/mathimg/");
@@ -291,14 +293,14 @@ foreach ($result as $myrow) {
     } else {
         $postTitle = "";
     }
-    
+
     $rate_str = "";
     if (setting_get(SETTING_FORUM_RATING_ENABLE, $course_id)) {
         $rating = new Rating('thumbs_up', 'forum_post', $myrow->id);
-        $rate_str = $rating->put($is_editor, $uid, $course_code);
+        $rate_str = $rating->put($is_editor, $uid, $course_id);
     }
-    
-    $anchor_link = "<a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;topic=$topic&amp;forum=$forum&amp;post_id=$myrow->id#$myrow->id'>#$myrow->id</a><br/>"; 
+
+    $anchor_link = "<a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;topic=$topic&amp;forum=$forum&amp;post_id=$myrow->id#$myrow->id'>#$myrow->id</a><br/>";
     if ($myrow->parent_post_id == -1) {
         $parent_post_link = "<br/><br/>$langForumPostParentDel";
     } elseif ($myrow->parent_post_id != 0) {
@@ -306,23 +308,33 @@ foreach ($result as $myrow) {
     } else {
         $parent_post_link = "";
     }
-    
+
     $tool_content .= "<td>
 	  <div>
-	    <a name='".$myrow->id."'></a>$anchor_link
-	    <a href='reply.php?course=$course_code&amp;topic=$topic&amp;forum=$forum&amp;parent_post=$myrow->id'>$langForumPostReply</a><br/>
-	    <b>$langSent: </b>" . $myrow->post_time . "<br>$postTitle
-	  </div>
-	  <br />$message<br />".$rate_str.$parent_post_link."
-	</td>";
-    if ($is_editor) {
-        $tool_content .= "<td width='40' valign='top'>
-                    <a href='editpost.php?course=$course_code&amp;post_id=" . $myrow->id . "&amp;topic=$topic&amp;forum=$forum'>" .
-                "<img src='$themeimg/edit.png' title='$langModify' alt='$langModify' /></a>" .
-                "&nbsp;<a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;post_id=" . $myrow->id .
-                "&amp;topic=$topic&amp;forum=$forum&amp;delete=on' onClick=\"return confirmation('$langConfirmDelete');\">" .
-                "<img src='$themeimg/delete.png' title='$langDelete' alt='$langDelete'></a></td>";
+	    <a name='".$myrow->id."'></a>".$anchor_link;
+    if ($topic_locked != 1) {
+	    $tool_content .= "<a href='reply.php?course=$course_code&amp;topic=$topic&amp;forum=$forum&amp;parent_post=$myrow->id'>$langForumPostReply</a><br/>";
     }
+	$tool_content .= "<b>$langSent: </b>" . $myrow->post_time . "<br>$postTitle
+	  </div>
+	  <br />$message<br />" . $rate_str . $parent_post_link . "
+	</td>";
+
+    $dyntools = (!$is_editor) ? array() : array(
+        array('title' => $langModify,
+            'url' => "editpost.php?course=$course_code&amp;post_id=" . $myrow->id . "&amp;topic=$topic&amp;forum=$forum",
+            'icon' => 'fa-edit'
+        ),
+        array('title' => $langDelete,
+            'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;post_id=$myrow->id&amp;topic=$topic&amp;forum=$forum&amp;delete=on",
+            'icon' => 'fa-times',
+            'class' => 'delete',
+            'confirm' => $langConfirmDelete)
+    );
+    $dyntools[] = array('title' => $langForumPostReply,
+        'url' => "reply.php?course=$course_code&amp;topic=$topic&amp;forum=$forum&amp;parent_post=$myrow->id",
+        'icon' => 'fa-reply');
+    $tool_content .= "<td valign='center'>" . action_button($dyntools) . "</td>";
     $tool_content .= "</tr>";
     $count++;
 }

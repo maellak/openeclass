@@ -41,7 +41,6 @@ $user = new User();
 
 $nameTools = $langCourseCreate;
 
-load_js('jquery');
 load_js('jquery-ui');
 load_js('jstree');
 load_js('pwstrength.js');
@@ -216,8 +215,8 @@ foreach ($departments as $dep) {
 // Check if the teacher is allowed to create in the departments he chose
 if (!$deps_valid) {
     $nameTools = "";
-    $tool_content .= "<p class='caution'>$langCreateCourseNotAllowedNode</p>
-                    <p class='eclass_button'><a href='$_SERVER[PHP_SELF]'>$langBack</a></p>";
+    $tool_content .= "<div class='alert alert-danger'>$langCreateCourseNotAllowedNode</div>
+                    <p class='pull-right'><a class='btn btn-default' href='$_SERVER[PHP_SELF]'>$langBack</a></p>";
     draw($tool_content, 1, null, $head_content);
     exit();
 }
@@ -252,7 +251,7 @@ if (!isset($_POST['create_course'])) {
         <td>" . lang_select_options('localize') . "</td>
         </tr>";
         $tool_content .= "<tr><td colspan='2'>&nbsp;</td></tr>";
-                        @$tool_content .= "<tr><th colspan='2'>$langDescrInfo <span class='smaller'>$langUncompulsory</span>
+                        @$tool_content .= "<tr><th colspan='2'>$langDescrInfo <span class='smaller'>$langOptional</span>
                             <br /> ".  rich_text_editor('description', 4, 20, $description)."</th></tr>";
          $tool_content .= "<tr><td colspan='2'>&nbsp;</td></tr>";
 
@@ -301,7 +300,7 @@ if (!isset($_POST['create_course'])) {
             <td colspan='2'><input id='coursepassword' type='text' name='password' 'password' value='".@q($password)."' class='FormData_InputText' autocomplete='off' /></td>
         </tr>
         <tr>
-            <th width='170'><img src='$themeimg/lock_open.png' alt='$m[legopen]' title='$m[legopen]' width='16' height='16' />&nbsp;$m[legopen]:</th>
+            <th width='170'><img src='$themeimg/lock_open.png' alt='$langOpenCourse' title='$langOpenCourse' width='16' height='16' />&nbsp;$langOpenCourse:</th>
             <td width='1'><input id='courseopen' type='radio' name='formvisible' value='2'checked='checked' /></td>
             <td class='smaller'>$langPublic</td>
         </tr>
@@ -311,21 +310,21 @@ if (!isset($_POST['create_course'])) {
             <td class='smaller'>$langPrivOpen</td>
         </tr>
         <tr>
-            <th><img src='$themeimg/lock_closed.png' alt='$m[legclosed]' title='$m[legclosed]' width='16' height='16' />&nbsp;$m[legclosed]:</th>
+            <th><img src='$themeimg/lock_closed.png' alt='$langClosedCourse' title='$langClosedCourse' width='16' height='16' />&nbsp;$langClosedCourse:</th>
             <td><input id='courseclose' type='radio' name='formvisible' value='0' /></td>
-            <td class='smaller'>$langPrivate</td>
+            <td class='smaller'>$langClosedCourseShort</td>
         </tr>
          <tr>
-            <th><img src='$themeimg/lock_inactive.png' alt='$m[linactive]' title='$m[linactive]' width='16' height='16' />&nbsp;$m[linactive]:</th>
+            <th><img src='$themeimg/lock_inactive.png' alt='$langInactiveCourse' title='$langInactiveCourse' width='16' height='16' />&nbsp;$langInactiveCourse:</th>
             <td><input id='courseinactive' type='radio' name='formvisible' value='3' /></td>
-            <td class='smaller'>$langCourseInactive</td>
+            <td class='smaller'>$langCourseInactiveShort</td>
         </tr>
         </table>";
         $tool_content .= "</td>
         </tr>
         <tr>
           <td class='right'>&nbsp;
-            <input type='submit' name='create_course' value='".q($langCourseCreate)."' />
+            <input class='btn btn-primary' type='submit' name='create_course' value='".q($langCourseCreate)."' />
           </td>
         </tr>
         </table>";
@@ -519,9 +518,15 @@ if (!isset($_POST['create_course'])) {
 
     $_SESSION['courses'][$code] = USER_TEACHER;
 
-    $tool_content .= "<p class='success'><b>$langJustCreated:</b> " . q($title) . "<br>
-                        <span class='smaller'>$langEnterMetadata</span></p>
-                        <p class='eclass_button'><a href='../../courses/$code/index.php'>$langEnter</a></p>";
+    $tool_content .= "<div class='alert alert-success'><b>$langJustCreated:</b> " . q($title) . "<br>
+                        <span class='smaller'>$langEnterMetadata</span></div>";
+    $tool_content .= action_bar(array(
+                array('title' => $langEnter,
+                    'url' => "../../courses/$code/index.php",
+                    'icon' => 'fa-arrow-right',
+                    'level' => 'primary-label',
+                    'button-class' => 'btn-success')));
+    
     // logging
     Log::record(0, 0, LOG_CREATE_COURSE, array('id' => $new_course_id,
                                             'code' => $code,

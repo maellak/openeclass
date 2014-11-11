@@ -73,38 +73,48 @@ function checkrequired(which, entry) {
 </script>
 hContent;
 
-$tool_content .= "<div id='operations_container'><ul id='opslist'>";
-$tool_content .= "<li><a href='index.php?course=$course_code'>$langBack</a></li>";
-$tool_content .= "</ul></div>";
+$tool_content .= "<div id='operations_container'>".
+         action_bar(array(
+            array('title' => $langBack,
+                'url' => "index.php?course=$course_code",
+                'icon' => 'fa-reply',
+                'level' => 'primary-label'))) .
+"</div>";
         
 // forum go
 if (isset($_GET['forumgo'])) {
     $ctg = category_name($cat_id);
+    $nameTools = $langAddForCat;
     $tool_content .= "
-        <form action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;forumgoadd=yes&amp;cat_id=$cat_id' method='post' onsubmit=\"return checkrequired(this,'forum_name');\">
+        <div class='form-wrapper'>
+        <form class='form-horizontal' role='form' action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;forumgoadd=yes&amp;cat_id=$cat_id' method='post' onsubmit=\"return checkrequired(this,'forum_name');\">
         <fieldset>
-                <legend>$langAddForCat</legend>
-                <table class='tbl' width='100%'>
-                <tr>
-                <th>$langCat:</th>
-                <td>$ctg</td>
-                </tr>
-                <tr>
-                <th>$langForName:</th>
-                <td><input type='text' name='forum_name' size='40'></td>
-                </tr>
-                <tr>
-                <th valign='top'>$langDescription:</th>
-                <td><textarea name='forum_desc' cols='37' rows='3'></textarea></td>
-                </tr>
-                <tr>
-                <th>&nbsp;</th>
-                <td class='right'><input type='submit' value='$langAdd'></td>
-                </tr>
-                </table>
+            <div class='form-group'>
+                <label for='cat_title' class='col-sm-2 control-label'>$langCat:</label>
+                <div class='col-sm-10'>
+                    <input type='text' class='form-control' id='cat_title' value='$ctg' disabled>
+                </div>
+            </div>
+            <div class='form-group'>
+                <label for='forum_name' class='col-sm-2 control-label'>$langForName:</label>
+                <div class='col-sm-10'>
+                    <input type='text' class='form-control' name='forum_name' id='forum_name'>
+                </div>
+            </div>
+            <div class='form-group'>
+                <label for='forum_desc' class='col-sm-2 control-label'>$langDescription:</label>
+                <div class='col-sm-10'>
+                    <textarea name='forum_desc' id='forum_desc' cols='37' rows='3'></textarea>
+                </div>
+            </div>
+            <div class='form-group'>
+                <div class='col-sm-10 col-sm-offset-2'>
+                    <input class='btn btn-primary' type='submit' value='$langAdd'>
+                    <a href='index.php?course=$course_code' class='btn btn-default'>$langCancel</a>
+                </div>
+            </div>
         </fieldset>
-        </form>
-        <p>&laquo; <a href='index.php?course=$course_code'>$langBack</a></p>";
+        </form></div>";
 }
 // forum go edit
 elseif (isset($_GET['forumgoedit'])) {
@@ -116,29 +126,31 @@ elseif (isset($_GET['forumgoedit'])) {
     $forum_name = $result->name;
     $forum_desc = $result->desc;
     $cat_id_1 = $result->cat_id;
-
+    $nameTools = $langChangeForum;
     $tool_content .= "
-                <form action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;forumgosave=yes&amp;cat_id=$cat_id' method='post' onsubmit=\"return checkrequired(this,'forum_name');\">
+                <div class='form-wrapper'>
+                <form class='form-horizontal' role='form' action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;forumgosave=yes&amp;cat_id=$cat_id' method='post' onsubmit=\"return checkrequired(this,'forum_name');\">
                 <input type='hidden' name='forum_id' value='$forum_id'>
                 <fieldset>
-                <legend>$langChangeForum</legend>
-                <table class='tbl' width='100%'>
-                <tr>
-                <th>$langForName</th>
-                <td><input type='text' name='forum_name' size='50' value='" . q($forum_name) . "'></td>
-                </tr>
-                <tr>
-                <th valign='top'>$langDescription</th>
-                <td><textarea name='forum_desc' cols='47' rows='3'>" . q($forum_desc) . "</textarea></td>
-                </tr>";
-    
+                <div class='form-group'>
+                    <label for='forum_name' class='col-sm-2 control-label'>$langForName:</label>
+                    <div class='col-sm-10'>
+                        <input name='forum_name' type='text' class='form-control' id='forum_name' value='" . q($forum_name) . "'>
+                    </div>
+                </div>    
+                <div class='form-group'>
+                    <label for='forum_desc' class='col-sm-2 control-label'>$langDescription:</label>
+                    <div class='col-sm-10'>
+                        <textarea name='forum_desc' id='forum_desc' class='form-control' cols='47' rows='3'>" . q($forum_desc) . "</textarea>
+                    </div>
+                </div>                  
+                <div class='form-group'>";
     $result = Database::get()->querySingle("SELECT COUNT(*) as c FROM `group` WHERE `forum_id` = ?d", $forum_id);
     if ($result->c == 0) {//group forums cannot change category
         $tool_content .= "
-                    <tr>
-                    <th>$langChangeCat</th>
-                    <td>
-                    <select name='cat_id'>";
+                    <label for='cat_id' class='col-sm-2 control-label'>$langChangeCat:</label>
+                    <div class='col-sm-10'>    
+                    <select name='cat_id' id='cat_id' class='form-control'>";
         $result = Database::get()->queryArray("SELECT `id`, `cat_title` FROM `forum_category` WHERE `course_id` = ?d AND `cat_order` <> ?d", $course_id, -1);
         //cat_order <> -1: temp solution to exclude group categories and avoid triple join
         foreach ($result as $result_row) {
@@ -150,19 +162,23 @@ elseif (isset($_GET['forumgoedit'])) {
                 $tool_content .= "<option value='$cat_id'>$cat_title</option>";
             }
         }
-        $tool_content .= "</select></td></tr>";
+        $tool_content .= "</select></div>";
     }
     $tool_content .= "
-        <tr><th>&nbsp;</th>
-        <td class='right'><input type='submit' value='$langModify'></td>
-        </tr></table>
-        </fieldset>
-        </form>";
+       </div>
+        <div class='form-group'>
+            <div class='col-sm-10 col-sm-offset-2'>
+                <input class='btn btn-primary' type='submit' value='$langModify'>
+                <a class='btn btn-default' href='index.php?course=$course_code'>$langCancel</a>
+            </div>
+        </div>           
+        </fieldset>       
+        </form></div>";
 }
 
 // edit forum category
 elseif (isset($_GET['forumcatedit'])) {
-    $nameTools = $langCatForumAdmin;
+    $nameTools = $langModCatName;
     
     $result = Database::get()->querySingle("SELECT id, cat_title FROM forum_category
                                 WHERE id = ?d
@@ -170,32 +186,33 @@ elseif (isset($_GET['forumcatedit'])) {
     $cat_id = $result->id;
     $cat_title = $result->cat_title;
     $tool_content .= "
-        <form action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;forumcatsave=yes' method='post' onsubmit=\"return checkrequired(this,'cat_title');\">
-        <input type='hidden' name='cat_id' value='$cat_id'>
+        <div class='form-wrapper'>
+        <form class='form-horizontal' role='form' action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;forumcatsave=yes' method='post' onsubmit=\"return checkrequired(this,'cat_title');\">
+        <input type='hidden' name='cat_id' value='$cat_id'>           
         <fieldset>
-        <legend>$langModCatName</legend>
-        <table class='tbl' width='100%'>
-        <tr>
-        <th>$langCat</th>
-        <td><input type='text' name='cat_title' size='55' value='$cat_title' /></td>
-        </tr>
-        <tr>
-        <th>&nbsp;</th>
-        <td class='right'><input type='submit' value='$langModify'></td>
-        </tr>
-        </table>
+        <div class='form-group'>
+            <label for='cat_title' class='col-sm-2 control-label'>$langCat:</label>
+            <div class='col-sm-10'>
+                <input name='cat_title' type='text' class='form-control' id='cat_title' placeholder='$langCat' value='$cat_title'>
+            </div>
+        </div>
+        <div class='form-group'>
+            <div class='col-sm-10 col-sm-offset-2'>
+                <input class='btn btn-primary' type='submit' value='$langModify'>
+                <a class='btn btn-default' href='index.php?course=$course_code'>$langCancel</a>
+            </div>
+        </div>          
         </fieldset>
-        </form>";
+        </form></div>";
 }
 
 // Save forum category
 elseif (isset($_GET['forumcatsave'])) {
-    $nameTools = $langCatForumAdmin;
     
     Database::get()->query("UPDATE forum_category SET cat_title = ?s
                                         WHERE id = ?d AND course_id = ?d", $_POST['cat_title'], $cat_id, $course_id);
-    $tool_content .= "<p class='success'>$langNameCatMod</p>
-                                <p>&laquo; <a href='index.php?course=$course_code'>$langBack</a></p>";
+    Session::Messages($langNameCatMod, 'alert-success');
+    redirect_to_home_page("modules/forum/index.php?course=$course_code");
 }
 // Save forum
 elseif (isset($_GET['forumgosave'])) {
@@ -206,19 +223,17 @@ elseif (isset($_GET['forumgosave'])) {
                                 AND course_id = ?d"
             , $_POST['forum_name'], purify($_POST['forum_desc']), $cat_id, $forum_id, $course_id);
     $fidx->store($forum_id);
-    $tool_content .= "<p class='success'>$langForumDataChanged</p>
+    $tool_content .= "<div class='alert alert-success'>$langForumDataChanged</div>
                                 <p>&laquo; <a href='index.php?course=$course_code'>$langBack</a></p>";
 }
 
 // Add category to forums
-elseif (isset($_GET['forumcatadd'])) {
-    $nameTools = $langCatForumAdmin;
-    
+elseif (isset($_GET['forumcatadd'])) {    
     Database::get()->query("INSERT INTO forum_category
                         SET cat_title = ?s,
                         course_id = ?d", $_POST['categories'], $course_id);
-    $tool_content .= "<p class='success'>$langCatAdded</p>
-                                <p>&laquo; <a href='index.php?course=$course_code'>$langBack</a></p>";
+    Session::Messages($langCatAdded, 'alert-success');
+    redirect_to_home_page("modules/forum/index.php?course=$course_code");    
 }
 
 // forum go add
@@ -251,7 +266,7 @@ elseif (isset($_GET['forumgoadd'])) {
         }
     }
     // end of notification
-    $tool_content .= "<p class='success'>$langForumCategoryAdded</p>
+    $tool_content .= "<div class='alert alert-success'>$langForumCategoryAdded</div>
                                 <p>&laquo; <a href='index.php?course=$course_code'>$langBack</a></p>";
 }
 
@@ -288,7 +303,7 @@ elseif (isset($_GET['forumcatdel'])) {
     Database::get()->query("DELETE FROM forum WHERE cat_id = ?d AND course_id = ?d", $cat_id, $course_id);
     Database::get()->query("DELETE FROM forum_notify WHERE cat_id = ?d AND course_id = ?d", $cat_id, $course_id);
     Database::get()->query("DELETE FROM forum_category WHERE id = ?d AND course_id = ?d", $cat_id, $course_id);
-    $tool_content .= "<p class='success'>$langCatForumDelete</p>
+    $tool_content .= "<div class='alert alert-success'>$langCatForumDelete</div>
                                 <p>&laquo; <a href='index.php?course=$course_code'>$langBack</a></p>";
 }
 
@@ -326,7 +341,7 @@ elseif (isset($_GET['forumgodel'])) {
     Database::get()->query("UPDATE `group` SET forum_id = 0
                     WHERE forum_id = ?d
                     AND course_id = ?d", $forum_id, $course_id);    
-    $tool_content .= "<p class='success'>$langForumDelete</p>
+    $tool_content .= "<div class='alert alert-success'>$langForumDelete</div>
                                 <p>&laquo; <a href='index.php?course=$course_code'>$langBack</a></p>";
 } elseif (isset($_GET['forumtopicedit'])) {
    $topic_id = intval($_GET['topic_id']);
@@ -359,7 +374,7 @@ elseif (isset($_GET['forumgodel'])) {
        }
        $tool_content .= "</select></td></tr>
        <tr><th>&nbsp;</th>
-       <td class='right'><input type='submit' value='$langModify'></td>
+       <td class='right'><input class='btn btn-primary' type='submit' value='$langModify'></td>
        </tr></table>
        </fieldset>
        </form>";
@@ -396,14 +411,14 @@ elseif (isset($_GET['forumgodel'])) {
                     WHERE id = ?d",$num_replies+1,$last_post_id, $current_forum_id);
         }//if user selected the current forum do nothing
         
-       $tool_content .= "<p class='success'>$langTopicDataChanged</p>
+       $tool_content .= "<div class='alert alert-success'>$langTopicDataChanged</div>
                          <p>&laquo; <a href='viewforum.php?course=$course_code&amp;forum=$new_forum'>$langBack</a></p>";
     }
     
 } elseif (isset($_GET['settings'])) {
     if (isset($_POST['submitSettings'])) {
         setting_set(SETTING_FORUM_RATING_ENABLE, $_POST['r_radio'], $course_id);
-        $message = "<p class='success'>$langRegDone</p>";
+        $message = "<div class='alert alert-success'>$langRegDone</div>";
     }
     
     if (isset($message) && $message) {
@@ -433,20 +448,25 @@ elseif (isset($_GET['forumgodel'])) {
         </fieldset>
         </form>";
 } else {
-    $nameTools = $langCatForumAdmin;
+    $nameTools = $langAddCategory;
     
     $tool_content .= "
-        <form action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;forumcatadd=yes' method='post' onsubmit=\"return checkrequired(this,'categories');\">
+        <div class='form-wrapper'>
+        <form class='form-horizontal' role='form' action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;forumcatadd=yes' method='post' onsubmit=\"return checkrequired(this,'categories');\">            
         <fieldset>
-        <legend>$langAddCategory</legend>
-        <table class='tbl' width='100%'>
-        <tr><th>$langCat</th><td><input type=text name=categories size=50></td></tr>
-        <tr>
-        <th>&nbsp;</th>
-        <td class='right'><input type=submit value='$langAdd'></td>
-        </tr>
-        </table>
+        <div class='form-group'>
+            <label for='categories' class='col-sm-2 control-label'>$langCat:</label>
+            <div class='col-sm-10'>
+              <input name='categories' type='text' class='form-control' id='categories' placeholder='$langCat'>
+            </div>
+        </div>
+        <div class='form-group'>
+            <div class='col-sm-10 col-sm-offset-2'>
+                <input class='btn btn-primary' type='submit' value='$langAdd'>
+                <a class='btn btn-default' href='index.php?course=$course_code'>$langCancel</a>
+            </div>
+        </div>            
         </fieldset>
-        </form>";
+        </form></div>";
 }
 draw($tool_content, 2, null, $head_content);

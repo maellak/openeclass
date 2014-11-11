@@ -27,19 +27,23 @@ $navigation[] = array("url" => "index.php", "name" => $langAdmin);
 
 if (isset($_POST['submit'])) {
     foreach (array('temp' => 2, 'garbage' => 5, 'archive' => 1, 'tmpUnzipping' => 1) as $dir => $days) {
-        $tool_content .= sprintf("<p class='success'>$langCleaningUp</p>", "<b>$days</b>", ($days == 1) ? $langDaySing : $langDayPlur, $dir);
+        $tool_content .= sprintf("<div class='alert alert-success'>$langCleaningUp</div>", "<b>$days</b>", ($days == 1) ? $langDaySing : $langDayPlur, $dir);
         cleanup("$webDir/courses/$dir", $days);
     }
 } else {
     $tool_content .= "
-<div class='caution'>$langCleanupInfo</div>
+<div class='alert alert-danger'>$langCleanupInfo</div>
 <div class='center'>
 	     <form method='post' action='$_SERVER[SCRIPT_NAME]'>
-		 <input type='submit' name='submit' value='$langCleanup'>
+		 <input class='btn btn-primary' type='submit' name='submit' value='$langCleanup'>
 	     </form></div>";
 }
 
-$tool_content .= "<br /><p align=right><a href=\"index.php\">$langBackAdmin</a></p>";
+$tool_content .= action_bar(array(
+    array('title' => $langBackAdmin,
+        'url' => "index.php",
+        'icon' => 'fa-reply',
+        'level' => 'primary-label')));
 
 draw($tool_content, 3);
 

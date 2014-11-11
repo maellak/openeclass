@@ -93,7 +93,7 @@ if (isset($language)) {
 //Initializing Valitron (form validation library)
 require_once 'include/Valitron/Validator.php';
 use Valitron\Validator as V;
-V::langDir(__DIR__.'/valitron/lang'); // always set langDir before lang.
+V::langDir(__DIR__.'/Valitron/lang'); // always set langDir before lang.
 V::lang($language);
 
 //Managing Session Flash Data
@@ -178,12 +178,16 @@ if (isset($_SESSION['is_admin']) and $_SESSION['is_admin']) {
 
 if (!isset($_SESSION['theme'])) {
     $_SESSION['theme'] = get_config('theme');
-    if (empty($_SESSION['theme'])) {
-        $_SESSION['theme'] = 'classic';
-    }
+}
+if (empty($_SESSION['theme']) or !is_readable("template/$_SESSION[theme]/theme.html")) {
+    $_SESSION['theme'] = 'bootstrap';
 }
 $theme = $_SESSION['theme'];
 $themeimg = $urlAppend . 'template/' . $theme . '/img';
+if (file_exists("template/$theme/settings.php")) {
+    require_once "template/$theme/settings.php";
+}
+
 if (isset($require_login) and $require_login and ! $uid) {
     $toolContent_ErrorExists = $langSessionIsLost;
     $errorMessagePath = "../../";
@@ -429,6 +433,17 @@ if (isset($_SESSION['courses'])) {
     unset($status);
 }
 
+// Temporary student view
+if (isset($_SESSION['student_view'])) {
+    if (isset($course_code) and $_SESSION['student_view'] === $course_code) {
+        $_SESSION['courses'][$course_code] = $courses[$course_code] = USER_STUDENT;
+        $saved_is_editor = $is_editor;
+        $is_admin = $is_editor = $is_course_admin = false;
+    } else {
+        unset($_SESSION['student_view']);
+    }
+}
+
 $is_opencourses_reviewer = FALSE;
 if (get_config('opencourses_enable') && isset($currentCourse) && check_opencourses_reviewer()) {
     $is_opencourses_reviewer = TRUE;
@@ -448,21 +463,11 @@ if (isset($require_editor) and $require_editor) {
     }
 }
 
-// Temporary student view
-if (isset($_SESSION['saved_status'])) {
-    $status = 5;
-    $is_course_admin = false;
-    $is_editor = false;
-    if (isset($currentCourse)) {
-        $_SESSION['courses'][$currentCourse] = USER_STUDENT;
-    }
-}
-
 $module_id = current_module_id();
 // Security check:: Users that do not have Professor access for a course must not
 // be able to access inactive tools.
-if (isset($course_id) and ! $is_editor and ! defined('STATIC_MODULE')) {
-    if (isset($_SESSION['uid']) and $_SESSION['uid'] and ! check_guest()) {
+if (isset($course_id) and !$is_editor and $module_id and !defined('STATIC_MODULE')) {
+    if (isset($_SESSION['uid']) and $_SESSION['uid'] and !check_guest()) {
         $moduleIDs = Database::get()->queryArray("SELECT module_id FROM course_module
                                              WHERE visible = 1 AND
                                              course_id = ?d", $course_id);

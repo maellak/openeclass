@@ -91,14 +91,12 @@ if (isset($_POST['submit'])) {
     $navigation[] = array('url' => "viewforum.php?course=$course_code&amp;forum=$forum_id", 'name' => q($myrow->name));
     $navigation[] = array('url' => "viewtopic.php?course=$course_code&amp;topic=$topic_id&amp;forum=$forum_id", 'name' => q($myrow->title));
 
-    $tool_content .= "
-        <div id='operations_container'>
-            <ul id='opslist'>    
-              <li><a href='viewtopic.php?course=$course_code&topic=$topic_id&forum=$forum_id'>$langBack</li>
-            </ul>
-        </div>";
-    
-    
+    $tool_content .= action_bar(array(
+                array('title' => $langBack,
+                    'url' => "viewtopic.php?course=$course_code&topic=$topic_id&forum=$forum_id",
+                    'icon' => 'fa-reply',
+                    'level' => 'primary-label')));
+
     $myrow = Database::get()->querySingle("SELECT p.post_text, p.post_time, t.title
                         FROM forum_post p, forum_topic t
                         WHERE p.id = ?d
@@ -123,7 +121,7 @@ if (isset($_POST['submit'])) {
     $tool_content .= "<input type='hidden' name='post_id' value='$post_id'>";
     $tool_content .= "<input type='hidden' name='topic' value='$topic_id'>";
     $tool_content .= "<input type='hidden' name='forum' value='$forum_id'>";
-    $tool_content .= "<input class='Login' type='submit' name='submit' value='$langSubmit' />
+    $tool_content .= "<input class='btn btn-primary' type='submit' name='submit' value='$langSubmit' />
         </td></tr>
         </table>
         </fieldset></form>";

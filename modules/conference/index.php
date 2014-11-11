@@ -40,7 +40,7 @@ $nameTools = $langConference;
 
 // guest user not allowed
 if (check_guest()) {
-    $tool_content .= "<p class='caution'>$langNoGuest</p>";
+    $tool_content .= "<div class='alert alert-danger'>$langNoGuest</div>";
     draw($tool_content, 2, 'conference');
 }
 
@@ -54,23 +54,37 @@ function prepare_message() {
 </script>';
 
 if ($is_editor) {
-    $tool_content .= "
-        <div id='operations_container'>
-          <ul id='opslist'>
-            <li><a href='messageList.php?course=$course_code&amp;reset=true' target='messageList' class=small_tools>$langWash</a></li>
-            <li><a href='messageList.php?course=$course_code&amp;store=true' target='messageList' class=small_tools>$langSave</a></li>
-          </ul>
-        </div>";
+    $tool_content .= action_bar(array(
+        array('title' => $langSave,
+            'url' => "messageList.php?course=$course_code&amp;store=true",
+            'icon' => 'fa-plus-circle',
+            'level' => 'primary-label',
+            'button-class' => 'btn-success'
+        ),
+        array('title' => $langSave,
+            'url' => "messageList.php?course=$course_code&amp;reset=true",
+            'icon' => 'fa-university',
+            'level' => 'primary'
+            )
+    ));
 }
 
 $tool_content .= "
    <form name='chatForm' action='messageList.php' method='get' target='messageList' onSubmit='return prepare_message();'><input type='hidden' name='course' value='$course_code'/>
    <fieldset>
     <legend>$langTypeMessage</legend>
-      <input type='text' name='msg' size='80'>
-      <input type='hidden' name='chatLine'>
-      <input type='submit' value=' &raquo;  '><br /><br />
-      <iframe frameborder='0' src='messageList.php' width='100%' height='300' name='messageList' style='border: 1px solid #CAC3B5;'><a href='messageList.php?course=$course_code'>Message list</a></iframe>
+    <div class='col-xs-12'>
+        <div class='input-group'>
+          <input type='text' name='msg' size='80' class='form-control'>
+          <input type='hidden' name='chatLine'>
+          <span class='input-group-btn'>
+            <input class='btn btn-primary' type='submit' value='&raquo;'>
+          </span>
+        </div>
+        <div class='embed-responsive embed-responsive-4by3 margin-top-fat'>
+          <iframe class='embed-responsive-item' src='messageList.php' name='messageList' style='border: 1px solid #CAC3B5;'></iframe>
+        </div>       
+    </div>   
    </fieldset>
    </form>";
 

@@ -1,17 +1,15 @@
-syntax: regexp
-
-^\.htaccess$
-
-^courses/
-^video/
-^config/.*\.php
-^html/
-
-^nbproject/private/
-
-^\.buildpath$
-^\.project$
-^\.settings$
-^\.htaccess$
-syntax: glob
-include\main_lib.php.orig
+courses/
+video/
+config/*.php
+html/
+nbproject/private/
+.htaccess
+.buildpath
+.project
+.settings
+.orig/
+.orig
+.chg/
+.rej
+.conflict
+.map

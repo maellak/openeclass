@@ -381,7 +381,8 @@ function get_max_upload_size($maxFilledSpace, $baseWorkDir) {
   This scipt uses the 'gaugebar.php' class for the graphic gauge bar
   =============================================================== */
 
-require_once 'include/lib/gaugebar.php';
+//to be removed
+//require_once 'include/lib/gaugebar.php';
 
 function showquota($quota, $used) {
 
@@ -392,9 +393,9 @@ function showquota($quota, $used) {
 
     // diamorfwsh ths grafikhs mparas xrhsimopoioumenou kai eleftherou xwrou (me vash ta quotas)
     // kai ypologismos statistikwn stoixeiwn
-    $oGauge = new myGauge();
-    $oGauge->MaxVal = $quota; //maximum value
-    $oGauge->CurVal = $used; //current value
+//    $oGauge = new myGauge();
+//    $oGauge->MaxVal = $quota; //maximum value
+//    $oGauge->CurVal = $used; //current value
     // pososto xrhsimopoioumenou xorou se %
     $diskUsedPercentage = round(($used / $quota) * 100) . "%";
     // morfopoihsh tou synolikou diathesimou megethous tou quota
@@ -411,30 +412,40 @@ function showquota($quota, $used) {
     } else {
         $link = "$_SERVER[SCRIPT_NAME]?course=$course_code";
     }
-    $retstring .= "
-               <div id='operations_container'>
-                 <ul id='opslist'>
-                   <li><a href=$link>" . $langBack . "</a></li>
-                 </ul>
-               </div>";
-
-    $retstring .= "
-                <table class='tbl_border'>
-                <tr>
-                  <th>$langQuotaUsed:</th>
-              <td>$used</td>
-                </tr>
-                <tr>
-                  <th>$langQuotaPercentage:</th>
-              <td align='center'>";
-    $retstring .= $oGauge->display();
-    $retstring .= "$diskUsedPercentage</td>
-                </tr>
-                <tr>
-                  <th>$langQuotaTotal:</th>
-              <td>$quota</td>
-                </tr>
-                </table>";
+    $action_bar_options[] = array(
+        'title' => $langBack,
+        'url' => $link,
+        'icon' => 'fa-reply',
+        'level' => 'primary-label'
+    );     
+    $retstring .= action_bar($action_bar_options);
+$retstring .= "
+<div class='panel padding'>
+<form class='form-horizontal' role='form'>
+  <div class='form-group'>
+    <label class='col-sm-2'>$langQuotaUsed:</label>
+    <div class='col-sm-10'>
+      <input type='text' class='form-control' value='$used' disabled>
+    </div>
+  </div>
+  <div class='form-group'>
+    <label class='col-sm-2'>$langQuotaPercentage:</label>
+    <div class='col-sm-10'>
+        <div class='progress'>
+          <div class='progress-bar progress-bar-striped active' role='progressbar' aria-valuenow='".str_replace('%','',$diskUsedPercentage)."' aria-valuemin='0' aria-valuemax='100' style='width: $diskUsedPercentage;'>
+            $diskUsedPercentage
+          </div>
+        </div>
+    </div>
+  </div>
+  <div class='form-group'>
+    <label class='col-sm-2'>$langQuotaTotal:</label>
+    <div class='col-sm-10'>
+      <input type='text' class='form-control' value='$quota' disabled>
+    </div>
+  </div>  
+</form>
+</div>";
     $tmp_cwd = getcwd();
 
     return $retstring;
@@ -451,10 +462,7 @@ function unwanted_file($filename) {
 // Create database entries and set extracted file path to
 // a new safe filename
 function process_extracted_file($p_event, &$p_header) {
-
-    global $file_comment, $file_category, $file_creator, $file_date, $file_subject,
-    $file_title, $file_description, $file_author, $file_language,
-    $file_copyrighted, $uploadPath, $realFileSize, $basedir, $course_id,
+    global $uploadPath, $realFileSize, $basedir, $course_id,
     $subsystem, $subsystem_id, $uploadPath, $group_sql;
     $didx = new DocumentIndexer();
 
@@ -463,18 +471,14 @@ function process_extracted_file($p_event, &$p_header) {
     if (!isset($uploadPath)) {
         $uploadPath = '';
     }
-    if (empty($file_category)) {
-        $file_category = 0;
-    }
-    if (empty($file_author)) {
-        $file_author = '';
-    }
-    if (empty($file_language)) {
-        $file_language = '';
-    }
-    if (empty($file_copyrighted)) {
-        $file_copyrighted = '';
-    }
+    $file_category = isset($_POST['file_category'])? $_POST['file_category']: 0;
+    $file_creator = isset($_POST['file_creator'])? $_POST['file_creator']: '';
+    $file_author = isset($_POST['file_author'])? $_POST['file_author']: '';
+    $file_subject = isset($_POST['file_subject'])? $_POST['file_subject']: '';
+    $file_language = isset($_POST['file_language'])? $_POST['file_language']: '';
+    $file_copyrighted = isset($_POST['file_copyrighted'])? $_POST['file_copyrighted']: '';
+    $file_comment = isset($_POST['file_comment'])? $_POST['file_comment']: '';
+    $file_description = isset($_POST['file_description'])? $_POST['file_description']: '';
     $realFileSize += $p_header['size'];
     $stored_filename = $p_header['stored_filename'];
     if (invalid_utf8($stored_filename)) {
@@ -534,14 +538,14 @@ function process_extracted_file($p_event, &$p_header) {
         $path .= '/' . safe_filename($format);        
         $id = Database::get()->query("INSERT INTO document SET
                                  course_id = ?d,
-				 subsystem = ?d,
+                                 subsystem = ?d,
                                  subsystem_id = ?d,
                                  path = ?s,
                                  filename = ?s,
                                  visible = 1,
                                  comment = ?s,
                                  category = ?d,
-                                 title = ?s,
+                                 title = '',
                                  creator = ?s,
                                  date = ?t,
                                  date_modified = ?t,
@@ -552,15 +556,14 @@ function process_extracted_file($p_event, &$p_header) {
                                  language = ?s,
                                  copyrighted = ?d"
                 , $course_id, $subsystem, $subsystem_id, $path, $filename, $file_comment, $file_category
-                , $file_title, $file_creator, $file_date, $file_date, $file_subject, $file_description
+                , $file_creator, $file_date, $file_date, $file_subject, $file_description
                 , $file_author, $format, $file_language, $file_copyrighted)->lastInsertID;
         // Logging
         $didx->store($id);
         Log::record($course_id, MODULE_ID_DOCS, LOG_INSERT, array('id' => $id,
             'filepath' => $path,
             'filename' => $filename,
-            'comment' => $file_comment,
-            'title' => $file_title));
+            'comment' => $file_comment));
         // File will be extracted with new encoded filename
         $p_header['filename'] = $basedir . $path;
         return 1;
@@ -622,7 +625,7 @@ function validateUploadedFile($filename, $menuTypeID = 2) {
     global $tool_content, $head_content, $langBack, $langUploadedFileNotAllowed;
 
     if (!isWhitelistAllowed($filename)) {
-        $tool_content .= "<p class='caution'>$langUploadedFileNotAllowed<br/><a href='javascript:history.go(-1)'>$langBack</a></p><br/>";
+        $tool_content .= "<div class='alert alert-danger'>$langUploadedFileNotAllowed<br><a href='javascript:history.go(-1)'>$langBack</a></div><br>";
         draw($tool_content, $menuTypeID, null, $head_content);
         exit;
     }
@@ -638,7 +641,7 @@ function validateRenamedFile($filename, $menuTypeID = 2) {
     global $tool_content, $head_content, $langBack, $langRenamedFileNotAllowed;
 
     if (!isWhitelistAllowed($filename)) {
-        $tool_content .= "<p class='caution'>$langRenamedFileNotAllowed<br/><a href='javascript:history.go(-1)'>$langBack</a></p><br/>";
+        $tool_content .= "<div class='alert alert-danger'>$langRenamedFileNotAllowed<br><a href='javascript:history.go(-1)'>$langBack</a></div><br>";
         draw($tool_content, $menuTypeID, null, $head_content);
         exit;
     }
@@ -653,6 +656,9 @@ function validateRenamedFile($filename, $menuTypeID = 2) {
 function validateUploadedZipFile($listContent, $menuTypeID = 2) {
     global $tool_content, $head_content, $langBack, $langUploadedZipFileNotAllowed;
 
+    if (!is_array($listContent)) {
+        return false;
+    }
     foreach ($listContent as $key => $entry) {
         if ($entry['folder'] == 1)
             continue;
@@ -660,7 +666,7 @@ function validateUploadedZipFile($listContent, $menuTypeID = 2) {
         $filename = basename($entry['filename']);
 
         if (!isWhitelistAllowed($filename)) {
-            $tool_content .= "<p class='caution'>$langUploadedZipFileNotAllowed<br/><a href='javascript:history.go(-1)'>$langBack</a></p><br/>";
+            $tool_content .= "<div class='alert alert-danger'>$langUploadedZipFileNotAllowed<br><a href='javascript:history.go(-1)'>$langBack</a></div><br>";
             draw($tool_content, $menuTypeID, null, $head_content);
             exit;
         }

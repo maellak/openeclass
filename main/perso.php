@@ -70,14 +70,6 @@ if (count($lesson_ids) > 0) {
     $user_agenda = getUserAgenda($lesson_ids);
     // get user forum posts    
     $user_forumPosts = getUserForumPosts($lesson_ids);
-} else {
-    //show a "-" in all blocks if the user is not enrolled to any lessons
-    // (except of the lessons block which is handled before)
-    $user_assignments = "<p>-</p>";
-    $user_announcements = "<p>-</p>";
-    $user_documents = "<p>-</p>";
-    $user_agenda = "<p>-</p>";
-    $user_forumPosts = "<p>-</p>";
 }
 
 // create array with content
@@ -88,13 +80,13 @@ $month = $today['mon'];
 $year = $today['year'];
 Calendar_Events::get_calendar_settings();
 $user_personal_calendar = Calendar_Events::small_month_calendar($day, $month, $year);
+
 //END - Get personal calendar
 // ==  BEGIN create array with personalised content
 
 $perso_tool_content = array(
     'lessons_content' => $user_lesson_info,
     'assigns_content' => $user_assignments,
-    'announce_content' => $user_announcements,
     'docs_content' => $user_documents,
     'agenda_content' => $user_agenda,
     'forum_content' => $user_forumPosts,
@@ -105,8 +97,7 @@ $perso_tool_content = array(
  * @brief display user courses
  * @global type $session
  * @global array $lesson_ids
- * @global type $urlServer
- * @global type $themeimg
+ * @global type $urlServer 
  * @global type $langUnregCourse
  * @global type $langAdm
  * @global type $langNotEnrolledToLessons
@@ -117,7 +108,7 @@ $perso_tool_content = array(
  * @return string
  */
 function getUserLessonInfo($uid) {
-    global $session, $lesson_ids, $urlServer, $themeimg, $langUnregCourse, $langAdm;
+    global $session, $lesson_ids, $urlServer, $langUnregCourse, $langAdm;
     global $langNotEnrolledToLessons, $langWelcomeProfPerso, $langWelcomeStudPerso, $langWelcomeSelect;
 
     $lesson_content = '';
@@ -153,93 +144,88 @@ function getUserLessonInfo($uid) {
 
     //getting user's lesson info
     if ($myCourses) {
-        $lesson_content .= "<table width='100%' id='portfolio_lessons' class='tbl_lesson'>
-            <thead>
-                <tr>
-                   <th></th>
-                   <th></th>
-               </tr>           
-            </thead>";
+        $lesson_content .= "<table id='portfolio_lessons' class='table-default'>";
+        $lesson_content .= "<thead style='display:none'><tr><th></th><th></th></tr></thead>";
         foreach ($myCourses as $data) {
             array_push($lesson_ids, $data->course_id);
             $lesson_content .= "<tr>
-			  <td align='left'><ul class='custom_list'><li>
+			  <td class='text-left'>
 			  <b><a href='${urlServer}courses/$data->code/'>" . q($data->title) . "</a></b><span class='smaller'>&nbsp;(" . q($data->public_code) . ")</span>
-			  <div class='smaller'>" . q($data->professor) . "</div></li></ul></td>";
-            $lesson_content .= "<td align='center'>";
+			  <div class='smaller'>" . q($data->professor) . "</div></td>";
+            $lesson_content .= "<td class='text-center'>";
             if ($data->status == USER_STUDENT) {
-                $lesson_content .= "<a href='${urlServer}main/unregcours.php?cid=" . $data->course_id . "&amp;uid=" . $uid . "'>
-				   <img src='$themeimg/cunregister.png' title='$langUnregCourse' alt='$langUnregCourse'></a>";
+                $lesson_content .= icon('fa-sign-out', $langUnregCourse, "${urlServer}main/unregcours.php?cid=$data->course_id&amp;uid=$uid");
             } elseif ($data->status == USER_TEACHER) {
-                $lesson_content .= "<a href='${urlServer}modules/course_info/?from_home=true&amp;course=" . $data->code . "'>
-				    <img src='$themeimg/tools.png' title='$langAdm' alt='$langAdm'></a>";
+                $lesson_content .= icon('fa-wrench', $langAdm, "${urlServer}modules/course_info/?from_home=true&amp;course=" . $data->code);
             }
             $lesson_content .= "</td></tr>";
         }
-        $lesson_content .= "</table>";
+        $lesson_content .= "</tbody></table>";
     } else { // if we are not registered to courses
-        $lesson_content .= "<p class='alert1'>$langNotEnrolledToLessons !</p><p><u>$langWelcomeSelect</u>:</p>";
-        $lesson_content .= "<table width='100%'>";
-        $lesson_content .= "<tr>";
-        $lesson_content .= "<td align='left' width='10'><img src='$themeimg/arrow.png' alt='' /></td>";
+        $lesson_content .= "<div class='alert alert-warning'>$langNotEnrolledToLessons!</div>";
         if ($session->status == USER_TEACHER) {
-            $lesson_content .= "<td align='left'>$langWelcomeProfPerso</td>";
+            $lesson_content .= "<div class='alert alert-info'>$langWelcomeSelect $langWelcomeProfPerso</div>";
         } else {
-            $lesson_content .= "<td align='left'>$langWelcomeStudPerso</td>";
-        }
-        $lesson_content .= "</tr>";
-        $lesson_content .= "</table>";
+            $lesson_content .= "<div class='alert alert-info'>$langWelcomeSelect $langWelcomeStudPerso</div>";
+        }        
     }
     return $lesson_content;
 }
 
 /**
  * @brief get last month course announcements 
- * @global type $urlServer
+ * @global type $urlAppend
  * @global type $langMore
  * @global type $dateFormatLong
  * @global type $langNoAnnouncementsExist
  * @param type $param
  * @return string
- */
+ */ 
 function getUserAnnouncements($lesson_id) {
 
-    global $urlServer, $langMore, $dateFormatLong, $langNoAnnouncementsExist;
+    global $urlAppend, $dateFormatLong;
 
+    $ann_content = '';
     $last_month = strftime('%Y %m %d', strtotime('now -1 month'));
 
-    $found = false;
-    $ann_content = '<table width="100%">';
-    foreach ($lesson_id as $lid) {
-        $q = Database::get()->queryArray("SELECT title, content, `date`, announcement.id
-                        FROM announcement, course_module
-                        WHERE announcement.course_id = ?d
+    $course_id_sql = implode(', ', array_fill(0, count($lesson_id), '?d'));
+    $q = Database::get()->queryArray("SELECT announcement.title,
+                                             announcement.`date`,
+                                             announcement.id,
+                                             course.code,
+                                             course.title course_title
+                        FROM course, course_module, announcement
+                        WHERE course.id IN ($course_id_sql)
+                                AND course.id = course_module.course_id
+                                AND course.id = announcement.course_id
                                 AND announcement.visible = 1
-                                AND DATE_FORMAT(`date`,'%Y %m %d') >= ?s
-                                AND course_module.module_id = " . MODULE_ID_ANNOUNCE . "
+                                AND announcement.`date` >= ?s
+                                AND course_module.module_id = ?d
                                 AND course_module.visible = 1
-                                AND course_module.course_id = ?d
-                        ORDER BY announcement.`date` DESC", $lid, $last_month, $lid);
-        if ($q) { // if course has announcements
-            $found = true;
-            $ann_content .= "<tr><td class='sub_title1'>" . q(ellipsize(course_id_to_title($lid), 70)) . "</td></tr>";
-            foreach ($q as $data) {
-                $url = $urlServer . "modules/announcements/index.php?course=" . course_id_to_code($lid) . "&amp;an_id=";
-                $ann_content .= "<tr><td><ul class='custom_list'><li><a href='$url$data->id'>" .
-                        "<b>" . q($data->title) . "</b></a>
-                            <span class='smaller'><b><br />" .
-                        claro_format_locale_date($dateFormatLong, strtotime($data->date)) .
-                        "</b></span><div class='smaller'>" .
-                        standard_text_escape(ellipsize_html($data->content, 250, "<strong>&nbsp;...<a href='$url$data->id'>[$langMore]</a></strong>")) .
-                        "</div></li></ul></td></tr>";
-            }
+                        ORDER BY announcement.`date` DESC LIMIT 5", $lesson_id, $last_month, MODULE_ID_ANNOUNCE);
+    if ($q) { // if announcements exist
+        foreach ($q as $ann) {
+            $course_title = q(ellipsize($ann->course_title, 30));
+            $ann_url = $urlAppend . 'modules/announcements/?course=' . $ann->code . '&amp;an_id=' . $ann->id;
+            $ann_date = claro_format_locale_date($dateFormatLong, strtotime($ann->date));
+            $ann_content .= "
+            <li class='list-item'>
+                <span class='item-wholeline'>
+                    <a href='$ann_url'>
+                        <div class='text-title'>
+                            " . q(ellipsize($ann->title, 60)) ."
+                        </div>
+                    </a>
+                    
+                    <div class='text-grey'>$course_title</div>
+                    
+                    <div>$ann_date</div>
+                </span>
+            </li>";
         }
-    }
-    $ann_content .= "</table>";
-    if ($found) {
         return $ann_content;
     } else {
-        return "<p class='alert1'>$langNoAnnouncementsExist</p>";
+        return '';
     }
 }
 
@@ -279,7 +265,7 @@ function getUserAgenda($lesson_id) {
     }    
     $course_ids = implode(",", $course_ids);
     if (empty($course_ids)) {// in case there aren't any enabled agenda modules
-        return "<p class='alert1'>$langNoEventsExist</p>";
+        return "<div class='alert alert-warning'>$langNoEventsExist</div>";
     }
                
     $result = Database::get()->queryArray("SELECT agenda.title, agenda.content, agenda.start,
@@ -314,7 +300,7 @@ function getUserAgenda($lesson_id) {
     if ($found) {
         return $agenda_content;
     } else {
-        return "<p class='alert1'>$langNoEventsExist</p>";
+        return "<div class='alert alert-warning'>$langNoEventsExist</div>";
     }
 }
 
@@ -372,7 +358,7 @@ function getUserForumPosts($lesson_id) {
     if ($found) {
         return $forum_content;
     } else {
-        return "<p class='alert1'>$langNoPosts</p>";
+        return "<div class='alert alert-warning'>$langNoPosts</div>";
     }
 }
 
@@ -426,7 +412,7 @@ function getUserDocuments($lesson_id) {
     if ($found) {
         return $doc_content;
     } else {
-        return "<p class='alert1'>$langNoDocsExist</p>";
+        return "<div class='alert alert-warning'>$langNoDocsExist</div>";
     }
 }
 
@@ -483,7 +469,7 @@ function getUserAssignments($lesson_id) {
     if ($found) {
         return $assign_content;
     } else {
-        return "<p class='alert1'>$langNoAssignmentsExist</p>";
+        return "<div class='alert alert-warning'>$langNoAssignmentsExist</div>";
     }
 }
 

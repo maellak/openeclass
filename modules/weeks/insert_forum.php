@@ -46,7 +46,7 @@ function list_forums() {
             'topics' => $row->num_topics);
     }
     if (count($foruminfo) == 0) {
-        $tool_content .= "<p class='alert1'>$langNoForums</p>";
+        $tool_content .= "<div class='alert alert-warning'>$langNoForums</div>";
     } else {
         $tool_content .= "<form action='insert.php?course=$course_code' method='post'>" .
                 "<input type='hidden' name='id' value='$id' />" .
@@ -83,7 +83,7 @@ function list_forums() {
             }
         }
         $tool_content .= "<tr>" .
-                "<th colspan='3'><div align='right'><input type='submit' name='submit_forum' value='$langAddModulesButton' /></div></th>";
+                "<th colspan='3'><div align='right'><input class='btn btn-primary' type='submit' name='submit_forum' value='$langAddModulesButton' /></div></th>";
         $tool_content .= "</tr>" .
                 "</table>" .
                 "</form>";

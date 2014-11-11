@@ -91,13 +91,13 @@ function show_edit_form($id, $sid, $assign) {
                 </tr>
                 <tr>
                     <th class='left'>&nbsp;</th>
-                    <td><input type='submit' name='grade_comments' value='$langGradeOk'></td>
+                    <td><input class='btn btn-primary' type='submit' name='grade_comments' value='$langGradeOk'></td>
                 </tr>
                 </table>
                 </fieldset>
                 </form><br>";
     } else {
-        Session::Messages($m['WorkNoSubmission'], 'caution');
+        Session::Messages($m['WorkNoSubmission'], 'alert-danger');
         redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);
     }
 }

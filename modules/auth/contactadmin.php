@@ -57,9 +57,9 @@ if ($userid and isset($_GET['h']) and token_validate("userid=$userid", $_GET['h'
         $emailbody = "$langAccountActivateMessage\n\n$firstname $lastname\ne-mail: $email\n" .
                 "{$urlServer}modules/admin/edituser.php?u=$userid\n\n$m[comments]: $body\n";
         if (!send_mail('', '', '', $to, $emailsubject, $emailbody, $charset)) {
-            $tool_content .= "<div class='caution'>$langEmailNotSend " . q($to) . "!</div>";
+            $tool_content .= "<div class='alert alert-danger'>$langEmailNotSend " . q($to) . "!</div>";
         } else {
-            $tool_content .= "<div class='success'>$emailsuccess</div>";
+            $tool_content .= "<div class='alert alert-success'>$emailsuccess</div>";
         }
         $tool_content .= "</td></tr><tbody></table><br />";
     } else {
@@ -75,7 +75,7 @@ if ($userid and isset($_GET['h']) and token_validate("userid=$userid", $_GET['h'
                       <tr><td width='3%' nowrap valign='top'><b>$langComments:</b></td>
                           <td><textarea rows='6' cols='40' name='body'>$langActivateAccount</textarea></td></tr>
                       <tr><td width='3%' nowrap valign='top'>&nbsp;</td>
-                          <td><input type='submit' name='submit' value='$langSend'></td></tr>
+                          <td><input class='btn btn-primary' type='submit' name='submit' value='$langSend'></td></tr>
                     </tbody>
                   </table>
                 </fieldset>
