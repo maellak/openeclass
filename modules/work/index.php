@@ -346,7 +346,7 @@ function add_assignment() {
         }
         if (@mkdir("$workPath/$secret", 0777) && @mkdir("$workPath/admin_files/$secret", 0777, true)) {       
             $id = Database::get()->query("INSERT INTO assignment (course_id, title, description, deadline, late_submission, comments, submission_date, secret_directory, group_submissions, max_grade, assign_to_specific, auto_judge, auto_judge_scenarios, lang) "
-                    . "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
+                    . "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d, ?d, ?s, ?s)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
             $secret = work_secret($id);
             if ($id) {
                 $local_name = uid_to_name($uid);
@@ -748,9 +748,9 @@ function new_assignment() {
                         </table>
                     </div>
                 </div>
-                <tr>
-                  <th>Programming Language:</th>
-                  <td>
+                <div class='form-group'>
+                  <label class='col-sm-2 control-label'>Programming Language:</label>
+                  <div class='col-sm-10'>
                     <select id='lang' name='lang'>
                       <option value='C'>C</option>
                       <option value='CPP'>C++</option>
@@ -765,8 +765,8 @@ function new_assignment() {
                       <option value='PYTHON'>Python</option>
                       <option value='RUBY'>Ruby</option>
                     </select>
-                  </td>
-                </tr>
+                  </div>
+                </div>
                 <table id='assignees_tbl' class='table hide'>
                     <tr class='title1'>
                       <td id='assignees'>$langStudents</td>
