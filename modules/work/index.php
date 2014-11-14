@@ -559,13 +559,14 @@ function submit_work($id, $on_behalf_of = null) {
         // Auto-judge: Send file to hackearth
         if ($auto_judge && $ext === $langExt[$lang]) {
             global $hackerEarthKey;
+            if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
             $content = file_get_contents("$workPath/$filename");
             // Run each scenario and count how many passed
             $passed = 0;
             foreach($auto_judge_scenarios as $curScenario) {
                 //set POST variables
                 $url = 'http://api.hackerearth.com/code/run/';
-                $fields = array('client_secret' => $hackerEarthKey, 'input' => $curScenario['input'], 'source' => $content, 'lang' => $lang);
+                $fields = array('client_secret' => $hackerEarthKey, 'input' => $curScenario['input'], 'source' => urlencode($content), 'lang' => $lang);
                 //url-ify the data for the POST
                 foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
                 rtrim($fields_string, '&');
@@ -579,7 +580,6 @@ function submit_work($id, $on_behalf_of = null) {
                 //execute post
                 $result = curl_exec($ch);
                 $result = json_decode($result, true);
-                $result['run_status']['output'] = trim($result['run_status']['output']);
                 if(trim($result['run_status']['output']) == trim($curScenario['output'])) { $passed++; } // Increment counter if passed
             }
             // Add the output as a comment
@@ -749,8 +749,8 @@ function new_assignment() {
                             </thead>
                             <tbody>
                                 <tr>
-                                  <td><input type='text' name='auto_judge_scenarios[0] [input]' /></td>
-                                  <td><input type='text' name='auto_judge_scenarios[0] [output]' /></td>
+                                  <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
+                                  <td><input type='text' name='auto_judge_scenarios[0][output]' /></td>
                                   <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
                                 </tr>
                                 <tr>
