@@ -346,7 +346,7 @@ function add_assignment() {
         }
         if (@mkdir("$workPath/$secret", 0777) && @mkdir("$workPath/admin_files/$secret", 0777, true)) {       
             $id = Database::get()->query("INSERT INTO assignment (course_id, title, description, deadline, late_submission, comments, submission_date, secret_directory, group_submissions, max_grade, assign_to_specific, auto_judge, auto_judge_scenarios, lang) "
-                    . "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
+                    . "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d, ?d, ?s, ?s)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
             $secret = work_secret($id);
             if ($id) {
                 $local_name = uid_to_name($uid);
@@ -410,6 +410,20 @@ function submit_work($id, $on_behalf_of = null) {
     $langUploadSuccess, $langBack, $langUploadError,
     $langExerciseNotPermit, $langUnwantedFiletype, $course_code,
     $langOnBehalfOfUserComment, $langOnBehalfOfGroupComment, $course_id;
+    $langExt = array(
+        'C' => 'c',
+        'CPP' => 'cpp',
+        'CPP11' => 'cpp11',
+        'CLOJURE' => 'clojure',
+        'CSHARP' => 'c#',
+        'JAVA' => 'java',
+        'JAVASCRIPT' => 'js',
+        'HASKELL' => 'haskell',
+        'PERL' => 'pl',
+        'PHP' => 'php',
+        'PYTHON' => 'py',
+        'RUBY' => 'ruby',
+    );
 
     if (isset($on_behalf_of)) {
         $user_id = $on_behalf_of;
@@ -545,13 +559,14 @@ function submit_work($id, $on_behalf_of = null) {
         // Auto-judge: Send file to hackearth
         if ($auto_judge && $ext === $langExt[$lang]) {
             global $hackerEarthKey;
+            if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
             $content = file_get_contents("$workPath/$filename");
             // Run each scenario and count how many passed
             $passed = 0;
             foreach($auto_judge_scenarios as $curScenario) {
                 //set POST variables
                 $url = 'http://api.hackerearth.com/code/run/';
-                $fields = array('client_secret' => $hackerEarthKey, 'input' => $curScenario['input'], 'source' => $content, 'lang' => $lang);
+                $fields = array('client_secret' => $hackerEarthKey, 'input' => $curScenario['input'], 'source' => urlencode($content), 'lang' => $lang);
                 //url-ify the data for the POST
                 foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
                 rtrim($fields_string, '&');
@@ -565,7 +580,6 @@ function submit_work($id, $on_behalf_of = null) {
                 //execute post
                 $result = curl_exec($ch);
                 $result = json_decode($result, true);
-                $result['run_status']['output'] = trim($result['run_status']['output']);
                 if(trim($result['run_status']['output']) == trim($curScenario['output'])) { $passed++; } // Increment counter if passed
             }
             // Add the output as a comment
@@ -735,8 +749,8 @@ function new_assignment() {
                             </thead>
                             <tbody>
                                 <tr>
-                                  <td><input type='text' name='auto_judge_scenarios[0] [input]' /></td>
-                                  <td><input type='text' name='auto_judge_scenarios[0] [output]' /></td>
+                                  <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
+                                  <td><input type='text' name='auto_judge_scenarios[0][output]' /></td>
                                   <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
                                 </tr>
                                 <tr>
@@ -748,9 +762,9 @@ function new_assignment() {
                         </table>
                     </div>
                 </div>
-                <tr>
-                  <th>Programming Language:</th>
-                  <td>
+                <div class='form-group'>
+                  <label class='col-sm-2 control-label'>Programming Language:</label>
+                  <div class='col-sm-10'>
                     <select id='lang' name='lang'>
                       <option value='C'>C</option>
                       <option value='CPP'>C++</option>
@@ -765,8 +779,8 @@ function new_assignment() {
                       <option value='PYTHON'>Python</option>
                       <option value='RUBY'>Ruby</option>
                     </select>
-                  </td>
-                </tr>
+                  </div>
+                </div>
                 <table id='assignees_tbl' class='table hide'>
                     <tr class='title1'>
                       <td id='assignees'>$langStudents</td>
