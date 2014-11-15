@@ -563,9 +563,12 @@ function submit_work($id, $on_behalf_of = null) {
             $content = file_get_contents("$workPath/$filename");
             // Run each scenario and count how many passed
             $passed = 0;
+            $auto_judge_scenarios_output = array(array('student_output'=> '', 'passed'=> 0));
+            $i = 0;
             foreach($auto_judge_scenarios as $curScenario) {
                 //set POST variables
                 $url = 'http://api.hackerearth.com/code/run/';
+                $fields_string = null;
                 $fields = array('client_secret' => $hackerEarthKey, 'input' => $curScenario['input'], 'source' => urlencode($content), 'lang' => $lang);
                 //url-ify the data for the POST
                 foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
@@ -580,9 +583,22 @@ function submit_work($id, $on_behalf_of = null) {
                 //execute post
                 $result = curl_exec($ch);
                 $result = json_decode($result, true);
-                if(trim($result['run_status']['output']) == trim($curScenario['output'])) { $passed++; } // Increment counter if passed
+                $auto_judge_scenarios_output[$i]['student_output'] = trim($result['run_status']['output']);
+                $auto_judge_scenarios_output[$i]['passed'] = 0;
+                
+                if(trim($result['run_status']['output']) == trim($curScenario['output'])){ 
+                    $passed++; 
+                     $auto_judge_scenarios_output[$i]['passed'] = 1;
+                } // Increment counter if passed
+                else{
+                     $auto_judge_scenarios_output[$i]['passed'] = 0;
+                }
+                $i++;
             }
             // Add the output as a comment
+             Database::get()->query("UPDATE assignment SET auto_judge_scenarios_output = ?s
+             WHERE course_id = ?d AND id = ?d", serialize($auto_judge_scenarios_output), $course_id, $id);
+            
             $grade = round($passed/count($auto_judge_scenarios)*10);
             submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false);
         }
@@ -1686,6 +1702,7 @@ function show_assignment($id, $display_graph_results = false) {
                 }
                 //professor comments
                 $gradelink = "grade_edit.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
+                $reportlink = "work_result_rpt.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
                 if (trim($row->grade_comments)) {
                     $label = $m['gradecomments'] . ':';
                     $icon = 'edit.png';
@@ -1702,6 +1719,7 @@ function show_assignment($id, $display_graph_results = false) {
                 $tool_content .= "<div style='padding-top: .5em;'><a href='$gradelink'><b>$label</b></a>
 				  <a href='$gradelink'><img src='$themeimg/$icon'></a>
 				  $comments
+                  <a href='$reportlink'><b>Αναλυτικό report</b></a>
                                 </td>
                                 </tr>";
                 $i++;
