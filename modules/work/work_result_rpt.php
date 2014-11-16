@@ -24,7 +24,7 @@ require_once '../../include/baseTheme.php';
 require_once 'work_functions.php';
 require_once 'modules/group/group_functions.php';
 
-$nameTools = $m['grades'];
+$nameTools = 'Αυτόματος κριτής: Αναλυτική αναφορά ';
 
 if (isset($_GET['assignment']) && isset($_GET['submission'])) {
     $as_id = intval($_GET['assignment']);
@@ -45,39 +45,56 @@ function get_assignment_details($id) {
     return Database::get()->querySingle("SELECT * FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $id);
 }
 
+function get_assignment_submit_details($sid) {
+    return Database::get()->querySingle("SELECT * FROM assignment_submit WHERE id = ?d",$sid);
+}
+
 // $assign contains an array with the assignment's details
 function show_report_table($id, $sid, $assign) {
-        global $m, $langGradeOk, $tool_content, $course_code;
-    $sub = Database::get()->querySingle("SELECT * FROM assignment_submit WHERE id = ?d",$sid);
-    if (count($sub)>0) {
-    
-        $auto_judge_scenarios = unserialize($assign->auto_judge_scenarios);
-        $auto_judge_scenarios_output = unserialize($assign->auto_judge_scenarios_output);
-        $table_content = "";
-        $i=0;
-         global $themeimg;
-         //  print_r($auto_judge_scenarios_output[$i]['student_output']);
-        foreach($auto_judge_scenarios as $cur_senarios){
-             $icon = $auto_judge_scenarios_output[$i]['passed']==1?'tick.png': 'delete.png';
-             $table_content.="<tr><td>".$cur_senarios['input']."</td><td>".$auto_judge_scenarios_output[$i]['student_output']."              </td><td>".$cur_senarios['output']."</td><td><img src='".$themeimg."/" .$icon."'></td></tr>";
-             $i++;
-        }
-        $tool_content .= "
-                <table width='99%' class='table'>
-                <tr> <td> Αποτελέσματα για $assign->title </td> </tr>
-                <tr> <td> Βαθμός $sub->grade /$assign->max_grade </td>
-                     <td> Κατάταξη: - </td>
-                </tr>
-                  <tr> <td> Είσοδος </td>
-                       <td> Έξοδος </td>
-                       <td> Αναμενόμενη έξοδος </td>
-                       <td> Αποτέλεσμα </td>
-                </tr>
-                ".$table_content."
-                </table>
-             <br>";
-    } else {
-        Session::Messages($m['WorkNoSubmission'], 'alert-danger');
-        redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);
-    }
-}
+     global $m, $langGradeOk, $tool_content, $course_code;
+     $sub = get_assignment_submit_details($sid);
+         
+     if (count($sub)>0) {
+        if($assign->auto_judge){// ο αυτόματος κριτής είναι ενεργοποιημένος
+                $auto_judge_scenarios = unserialize($assign->auto_judge_scenarios);
+                $auto_judge_scenarios_output = unserialize($assign->auto_judge_scenarios_output);
+                $tool_content .= "
+                        <table width='99%' class='table-default'>
+                        <tr> <td> <b>Αποτελέσματα για</b>: $assign->title</td> </tr>
+                        <tr> <td> <b>Βαθμός</b>: $sub->grade /$assign->max_grade </td>
+                             <td><b> Κατάταξη</b>: - </td>
+                        </tr>
+                          <tr> <td> <b>Είσοδος</b> </td>
+                               <td> <b>Έξοδος</b> </td>
+                               <td> <b>Αναμενόμενη έξοδος</b> </td>
+                               <td> <b>Αποτέλεσμα</b> </td>
+                        </tr>
+                        ".get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output)."
+                        </table>
+                     <br>";
+          }
+          else{
+               Session::Messages(' Ο αυτόματος κριτής δεν είναι ενεργοποιημένος για την συγκεκριμένη εργασία. ',        'alert-danger');
+            }
+         
+     } else {
+            Session::Messages($m['WorkNoSubmission'], 'alert-danger');
+            redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);
+     }
+  }
+
+function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output) {
+    global $themeimg;
+    $table_content = "";
+    $i=0;
+    foreach($auto_judge_scenarios as $cur_senarios){
+                     $icon = ($auto_judge_scenarios_output[$i]['passed']==1) ? 'tick.png' : 'delete.png';
+                     $table_content.="
+                                      <tr><td>".$cur_senarios['input']."</td>
+                                      <td>".$auto_judge_scenarios_output[$i]['student_output'].
+                                      "</td><td>".$cur_senarios['output']."</td>
+                                      <td><img src='".$themeimg."/" .$icon."'></td></tr>";
+                     $i++;
+                }   
+    return $table_content;
+  }

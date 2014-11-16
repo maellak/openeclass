@@ -1719,7 +1719,7 @@ function show_assignment($id, $display_graph_results = false) {
                 $tool_content .= "<div style='padding-top: .5em;'><a href='$gradelink'><b>$label</b></a>
 				  <a href='$gradelink'><img src='$themeimg/$icon'></a>
 				  $comments
-                  <a href='$reportlink'><b>Αναλυτικό report</b></a>
+                  <a href='$reportlink'><b>Προβολή αναφοράς αποτελεσμάτων</b></a>
                                 </td>
                                 </tr>";
                 $i++;
