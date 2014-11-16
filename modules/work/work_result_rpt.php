@@ -60,7 +60,7 @@ function show_report_table($id, $sid, $assign) {
                 $auto_judge_scenarios_output = unserialize($assign->auto_judge_scenarios_output);
                 $tool_content .= "
                         <table width='99%' class='table-default'>
-                        <tr> <td> <b>Αποτελέσματα για</b>: $assign->title</td> </tr>
+                        <tr> <td> <b>Αποτελέσματα για</b>:".  q(uid_to_name($sub->uid))."</td> </tr>
                         <tr> <td> <b>Βαθμός</b>: $sub->grade /$assign->max_grade </td>
                              <td><b> Κατάταξη</b>: - </td>
                         </tr>
