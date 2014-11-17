@@ -558,11 +558,10 @@ function submit_work($id, $on_behalf_of = null) {
         
         // Auto-judge: Send file to hackearth
         if ($auto_judge && $ext === $langExt[$lang]) {
-            global $hackerEarthKey;
-            if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
-            $content = file_get_contents("$workPath/$filename");
-            // Run each scenario and count how many passed
-            
+                global $hackerEarthKey;
+                if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
+                $content = file_get_contents("$workPath/$filename");
+                // Run each scenario and count how many passed
                 $auto_judge_scenarios_output = array(array('student_output'=> '', 'passed'=> 0));
                 $passed = 0;
                 $i = 0;
@@ -595,13 +594,9 @@ function submit_work($id, $on_behalf_of = null) {
                     }
                     $i++;
                 }
-
-                 Database::get()->query("UPDATE assignment SET auto_judge_scenarios_output = ?s
-                 WHERE course_id = ?d AND id = ?d", serialize($auto_judge_scenarios_output), $course_id, $id);
-
                 $grade = round($passed/count($auto_judge_scenarios)*10);
                 // Add the output as a comment
-                submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false);
+                submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false, $auto_judge_scenarios_output);
 
         }
         // End Auto-judge
@@ -2008,7 +2003,7 @@ function show_assignments() {
 }
 
 // submit grade and comment for a student submission
-function submit_grade_comments($id, $sid, $grade, $comment, $email) {
+function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_scenarios_output) {
     global $tool_content, $langGrades, $langWorkWrongInput, $course_id;
 
     $grade_valid = filter_var($grade, FILTER_VALIDATE_FLOAT);
@@ -2016,8 +2011,8 @@ function submit_grade_comments($id, $sid, $grade, $comment, $email) {
         
     if (Database::get()->query("UPDATE assignment_submit 
                                 SET grade = ?d, grade_comments = ?s,
-                                grade_submission_date = NOW(), grade_submission_ip = ?s
-                                WHERE id = ?d", $grade, $comment, $_SERVER['REMOTE_ADDR'], $sid)->affectedRows>0) {
+                                grade_submission_date = NOW(), grade_submission_ip = ?s, auto_judge_scenarios_output = ?s
+                                WHERE id = ?d", $grade, $comment, $_SERVER['REMOTE_ADDR'],serialize($auto_judge_scenarios_output), $sid)->affectedRows>0) {
         $title = Database::get()->querySingle("SELECT title FROM assignment WHERE id = ?d", $id)->title;
         Log::record($course_id, MODULE_ID_ASSIGN, LOG_MODIFY, array('id' => $sid,
                 'title' => $title,

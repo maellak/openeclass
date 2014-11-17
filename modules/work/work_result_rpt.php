@@ -57,7 +57,7 @@ function show_report_table($id, $sid, $assign) {
      if (count($sub)>0) {
         if($assign->auto_judge){// ο αυτόματος κριτής είναι ενεργοποιημένος
                 $auto_judge_scenarios = unserialize($assign->auto_judge_scenarios);
-                $auto_judge_scenarios_output = unserialize($assign->auto_judge_scenarios_output);
+                $auto_judge_scenarios_output = unserialize($sub->auto_judge_scenarios_output);
                 $tool_content .= "
                         <table width='99%' class='table-default'>
                         <tr> <td> <b>Αποτελέσματα για</b>:".  q(uid_to_name($sub->uid))."</td> </tr>
