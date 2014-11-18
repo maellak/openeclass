@@ -818,6 +818,9 @@ $db->query("CREATE TABLE IF NOT EXISTS `assignment` (
                 `max_grade` FLOAT DEFAULT NULL,
                 `assign_to_specific` CHAR(1) DEFAULT '0' NOT NULL,
                 `file_path` VARCHAR(200) DEFAULT '' NOT NULL,
+				`auto_judge` TINYINT(1),
+				`auto_judge_scenarios` VARCHAR(2048),
+				`lang` VARCHAR(10),
                 `file_name` VARCHAR(200) DEFAULT '' NOT NULL) $charset_spec");
 
 $db->query("CREATE TABLE IF NOT EXISTS `assignment_submit` (
@@ -833,6 +836,7 @@ $db->query("CREATE TABLE IF NOT EXISTS `assignment_submit` (
                 `grade_comments` TEXT NOT NULL,
                 `grade_submission_date` DATE NOT NULL DEFAULT '1000-10-10',
                 `grade_submission_ip` VARCHAR(45) NOT NULL DEFAULT '',
+				`auto_judge_scenarios_output` VARCHAR(1024),
                 `group_id` INT( 11 ) DEFAULT NULL ) $charset_spec");
 
 
