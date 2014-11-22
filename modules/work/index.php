@@ -345,8 +345,7 @@ function add_assignment() {
             $assign_to_specific = 0;
         }
         if (@mkdir("$workPath/$secret", 0777) && @mkdir("$workPath/admin_files/$secret", 0777, true)) {       
-            $id = Database::get()->query("INSERT INTO assignment (course_id, title, description, deadline, late_submission, comments, submission_date, secret_directory, group_submissions, max_grade, assign_to_specific, auto_judge, auto_judge_scenarios, lang) "
-                    . "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d, ?d, ?s, ?s)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
+            $id = Database::get()->query("INSERT INTO assignment (course_id, title, description, deadline, late_submission, comments, submission_date, secret_directory, group_submissions, max_grade, assign_to_specific, auto_judge, auto_judge_scenarios, lang) ". "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d, ?d, ?s, ?s)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
             $secret = work_secret($id);
             if ($id) {
                 $local_name = uid_to_name($uid);
@@ -391,7 +390,8 @@ function add_assignment() {
                     'description' => $desc,
                     'deadline' => $deadline,
                     'secret' => $secret,
-                    'group' => $group_submissions));               
+                    'group' => $group_submissions));  
+                print_r('sefsdf');
                 Session::Messages($langNewAssignSuccess,'alert-success');
                 redirect_to_home_page("modules/work/index.php?course=$course_code");
             } else {
@@ -455,7 +455,7 @@ function submit_work($id, $on_behalf_of = null) {
     $title = q($row->title);
     $group_sub = $row->group_submissions;
     $auto_judge = $row->auto_judge;
-    $auto_judge_scenarios = $auto_judge == true ? unserialize($row->auto_judge_scenarios) : null;
+    $auto_judge_scenarios = ($auto_judge == true) ? unserialize($row->auto_judge_scenarios) : null;
     $lang = $row->lang;
     $nav[] = $works_url;
     $nav[] = array('url' => "$_SERVER[SCRIPT_NAME]?id=$id", 'name' => $title);
