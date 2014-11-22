@@ -99,7 +99,9 @@ if ($is_editor) {
             w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
             if(w != null) {
                 if(parseFloat(w) >= 1  && parseFloat(w) <= 10)  // 1->10 allowed
+                {
                     continue;
+                }
                 else{
                     alert('Not an acceptable weight!');
                     return false;
@@ -474,12 +476,13 @@ function submit_work($id, $on_behalf_of = null) {
         }
     } //checks for submission validity end here
     
-    $row = Database::get()->querySingle("SELECT title, group_submissions, auto_judge, auto_judge_scenarios, lang FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $id);
+    $row = Database::get()->querySingle("SELECT title, group_submissions, auto_judge, auto_judge_scenarios, lang, max_grade FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $id);
     $title = q($row->title);
     $group_sub = $row->group_submissions;
     $auto_judge = $row->auto_judge;
     $auto_judge_scenarios = $auto_judge == true ? unserialize($row->auto_judge_scenarios) : null;
     $lang = $row->lang;
+    $max_grade = $row->max_grade;
     $nav[] = $works_url;
     $nav[] = array('url' => "$_SERVER[SCRIPT_NAME]?id=$id", 'name' => $title);
 
@@ -634,7 +637,9 @@ function submit_work($id, $on_behalf_of = null) {
             }
             // Add the output as a comment
 
-            $grade = round($partial / $weight_sum * 10, 2);
+            //$grade = round($partial / $weight_sum * 10, 2);
+            $grade = round($partial / $weight_sum * $max_grade, 2);
+
             submit_grade_comments($id, $sid, $grade, 'Passed: '. $passed . '/'.
                                    count($auto_judge_scenarios), false);
         }
