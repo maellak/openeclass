@@ -25,8 +25,8 @@ require_once 'work_functions.php';
 require_once 'modules/group/group_functions.php';
 
 // Include the main TCPDF library 
-require_once('tcpdf/tcpdf_include.php');
-require_once('tcpdf/tcpdf.php');
+require_once('../../include/tcpdf/tcpdf_include.php');
+require_once('../../include/tcpdf/tcpdf.php');
 
 $nameTools = 'Αυτόματος κριτής: Αναλυτική αναφορά ';
 
