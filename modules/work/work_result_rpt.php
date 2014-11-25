@@ -21,12 +21,13 @@
 
 $require_current_course = true;
 require_once '../../include/baseTheme.php';
-require_once 'work_functions.php';
-require_once 'modules/group/group_functions.php';
 
 // Include the main TCPDF library 
-require_once('../../include/tcpdf/tcpdf_include.php');
-require_once('../../include/tcpdf/tcpdf.php');
+require_once __DIR__.'/../../include/tcpdf/tcpdf_include.php';
+require_once __DIR__.'/../../include/tcpdf/tcpdf.php';
+
+require_once 'work_functions.php';
+require_once 'modules/group/group_functions.php';
 
 $nameTools = 'Αυτόματος κριτής: Αναλυτική αναφορά ';
 
