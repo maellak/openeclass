@@ -595,8 +595,8 @@ function submit_work($id, $on_behalf_of = null) {
                 }
                 $grade = round($passed/count($auto_judge_scenarios)*10);
                 // Add the output as a comment
-                submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false, $auto_judge_scenarios_output);
-
+                submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false, $auto_judge_scenarios_output, true);
+          
         }
         // End Auto-judge
     } else { // not submit_ok
@@ -2001,8 +2001,8 @@ function show_assignments() {
     }
 }
 
-// submit grade and comment for a student submission
-function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_scenarios_output) {
+function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_scenarios_output, $preventUiAlterations = false){
+
     global $tool_content, $langGrades, $langWorkWrongInput, $course_id;
 
     $grade_valid = filter_var($grade, FILTER_VALIDATE_FLOAT);
@@ -2017,14 +2017,14 @@ function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_
                 'title' => $title,
                 'grade' => $grade,
                 'comments' => $comment));
-       Session::Messages($langGrades, 'alert-success'); 
+        if(!$preventUiAlterations) Session::Messages($langGrades, 'alert-success'); 
     } else {
-        Session::Messages($langGrades);
+        if(!$preventUiAlterations) Session::Messages($langGrades);
     }
     if ($email) {
         grade_email_notify($id, $sid, $grade, $comment);
-    }    
-    show_assignment($id);
+    }
+    if(!$preventUiAlterations) show_assignment($id);
 }
 
 // submit grades to students
@@ -2268,3 +2268,4 @@ function groups_with_no_submissions($id) {
     }
     return $groups;
 }
+
