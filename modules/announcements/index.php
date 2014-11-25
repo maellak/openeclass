@@ -402,6 +402,7 @@ if ($is_editor) {
         else {
             $message = "<div class='alert alert-success'>$langAnnAdd</div>";
         }
+
     } // end of if $submit
 
 
@@ -549,3 +550,4 @@ $head_content .= "<script type='text/javascript'>
     });
     </script>";
 draw($tool_content, 2, null, $head_content);
+

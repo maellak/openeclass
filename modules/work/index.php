@@ -345,8 +345,7 @@ function add_assignment() {
             $assign_to_specific = 0;
         }
         if (@mkdir("$workPath/$secret", 0777) && @mkdir("$workPath/admin_files/$secret", 0777, true)) {       
-            $id = Database::get()->query("INSERT INTO assignment (course_id, title, description, deadline, late_submission, comments, submission_date, secret_directory, group_submissions, max_grade, assign_to_specific, auto_judge, auto_judge_scenarios, lang) "
-                    . "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d, ?d, ?s, ?s)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
+            $id = Database::get()->query("INSERT INTO assignment (course_id, title, description, deadline, late_submission, comments, submission_date, secret_directory, group_submissions, max_grade, assign_to_specific, auto_judge, auto_judge_scenarios, lang) ". "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d, ?d, ?s, ?s)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
             $secret = work_secret($id);
             if ($id) {
                 $local_name = uid_to_name($uid);
@@ -391,7 +390,7 @@ function add_assignment() {
                     'description' => $desc,
                     'deadline' => $deadline,
                     'secret' => $secret,
-                    'group' => $group_submissions));               
+                    'group' => $group_submissions));  
                 Session::Messages($langNewAssignSuccess,'alert-success');
                 redirect_to_home_page("modules/work/index.php?course=$course_code");
             } else {
@@ -455,7 +454,7 @@ function submit_work($id, $on_behalf_of = null) {
     $title = q($row->title);
     $group_sub = $row->group_submissions;
     $auto_judge = $row->auto_judge;
-    $auto_judge_scenarios = $auto_judge == true ? unserialize($row->auto_judge_scenarios) : null;
+    $auto_judge_scenarios = ($auto_judge == true) ? unserialize($row->auto_judge_scenarios) : null;
     $lang = $row->lang;
     $nav[] = $works_url;
     $nav[] = array('url' => "$_SERVER[SCRIPT_NAME]?id=$id", 'name' => $title);
@@ -558,33 +557,46 @@ function submit_work($id, $on_behalf_of = null) {
         
         // Auto-judge: Send file to hackearth
         if ($auto_judge && $ext === $langExt[$lang]) {
-            global $hackerEarthKey;
-            if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
-            $content = file_get_contents("$workPath/$filename");
-            // Run each scenario and count how many passed
-            $passed = 0;
-            foreach($auto_judge_scenarios as $curScenario) {
-                //set POST variables
-                $url = 'http://api.hackerearth.com/code/run/';
-                $fields = array('client_secret' => $hackerEarthKey, 'input' => $curScenario['input'], 'source' => urlencode($content), 'lang' => $lang);
-                //url-ify the data for the POST
-                foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
-                rtrim($fields_string, '&');
-                //open connection
-                $ch = curl_init();
-                //set the url, number of POST vars, POST data
-                curl_setopt($ch,CURLOPT_URL, $url);
-                curl_setopt($ch,CURLOPT_POST, count($fields));
-                curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
-                curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
-                //execute post
-                $result = curl_exec($ch);
-                $result = json_decode($result, true);
-                if(trim($result['run_status']['output']) == trim($curScenario['output'])) { $passed++; } // Increment counter if passed
-            }
-            // Add the output as a comment
-            $grade = round($passed/count($auto_judge_scenarios)*10);
-            submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false, true);
+                global $hackerEarthKey;
+                if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
+                $content = file_get_contents("$workPath/$filename");
+                // Run each scenario and count how many passed
+                $auto_judge_scenarios_output = array(array('student_output'=> '', 'passed'=> 0));
+                $passed = 0;
+                $i = 0;
+                foreach($auto_judge_scenarios as $curScenario) {
+                    //set POST variables
+                    $url = 'http://api.hackerearth.com/code/run/';
+                    $fields_string = null;
+                    $fields = array('client_secret' => $hackerEarthKey, 'input' => $curScenario['input'], 'source' => urlencode($content), 'lang' => $lang);
+                    //url-ify the data for the POST
+                    foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
+                    rtrim($fields_string, '&');
+                    //open connection
+                    $ch = curl_init();
+                    //set the url, number of POST vars, POST data
+                    curl_setopt($ch,CURLOPT_URL, $url);
+                    curl_setopt($ch,CURLOPT_POST, count($fields));
+                    curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+                    curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
+                    //execute post
+                    $result = curl_exec($ch);
+                    $result = json_decode($result, true);
+                    $auto_judge_scenarios_output[$i]['student_output'] = trim($result['run_status']['output']);
+
+                    if(trim($result['run_status']['output']) == trim($curScenario['output'])){ 
+                        $passed++; 
+                        $auto_judge_scenarios_output[$i]['passed'] = 1;
+                    } 
+                    else{
+                         $auto_judge_scenarios_output[$i]['passed'] = 0;
+                    }
+                    $i++;
+                }
+                $grade = round($passed/count($auto_judge_scenarios)*10);
+                // Add the output as a comment
+                submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false, $auto_judge_scenarios_output, true);
+          
         }
         // End Auto-judge
     } else { // not submit_ok
@@ -1686,6 +1698,7 @@ function show_assignment($id, $display_graph_results = false) {
                 }
                 //professor comments
                 $gradelink = "grade_edit.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
+                $reportlink = "work_result_rpt.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
                 if (trim($row->grade_comments)) {
                     $label = $m['gradecomments'] . ':';
                     $icon = 'edit.png';
@@ -1702,6 +1715,7 @@ function show_assignment($id, $display_graph_results = false) {
                 $tool_content .= "<div style='padding-top: .5em;'><a href='$gradelink'><b>$label</b></a>
 				  <a href='$gradelink'><img src='$themeimg/$icon'></a>
 				  $comments
+                  <a href='$reportlink'><b>Προβολή αναφοράς αποτελεσμάτων</b></a>
                                 </td>
                                 </tr>";
                 $i++;
@@ -1987,8 +2001,8 @@ function show_assignments() {
     }
 }
 
-// submit grade and comment for a student submission
-function submit_grade_comments($id, $sid, $grade, $comment, $email, $preventUiAlterations = false) {
+function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_scenarios_output, $preventUiAlterations = false){
+
     global $tool_content, $langGrades, $langWorkWrongInput, $course_id;
 
     $grade_valid = filter_var($grade, FILTER_VALIDATE_FLOAT);
@@ -1996,21 +2010,21 @@ function submit_grade_comments($id, $sid, $grade, $comment, $email, $preventUiAl
         
     if (Database::get()->query("UPDATE assignment_submit 
                                 SET grade = ?d, grade_comments = ?s,
-                                grade_submission_date = NOW(), grade_submission_ip = ?s
-                                WHERE id = ?d", $grade, $comment, $_SERVER['REMOTE_ADDR'], $sid)->affectedRows>0) {
+                                grade_submission_date = NOW(), grade_submission_ip = ?s, auto_judge_scenarios_output = ?s
+                                WHERE id = ?d", $grade, $comment, $_SERVER['REMOTE_ADDR'],serialize($auto_judge_scenarios_output), $sid)->affectedRows>0) {
         $title = Database::get()->querySingle("SELECT title FROM assignment WHERE id = ?d", $id)->title;
         Log::record($course_id, MODULE_ID_ASSIGN, LOG_MODIFY, array('id' => $sid,
                 'title' => $title,
                 'grade' => $grade,
                 'comments' => $comment));
-        if(!$preventGuiAlterations) Session::Messages($langGrades, 'alert-success'); 
+        if(!$preventUiAlterations) Session::Messages($langGrades, 'alert-success'); 
     } else {
-        if(!$preventGuiAlterations) Session::Messages($langGrades);
+        if(!$preventUiAlterations) Session::Messages($langGrades);
     }
     if ($email) {
         grade_email_notify($id, $sid, $grade, $comment);
     }
-    if(!$preventGuiAlterations) show_assignment($id);
+    if(!$preventUiAlterations) show_assignment($id);
 }
 
 // submit grades to students
@@ -2254,3 +2268,4 @@ function groups_with_no_submissions($id) {
     }
     return $groups;
 }
+
