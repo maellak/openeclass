@@ -391,7 +391,6 @@ function add_assignment() {
                     'deadline' => $deadline,
                     'secret' => $secret,
                     'group' => $group_submissions));  
-                print_r('sefsdf');
                 Session::Messages($langNewAssignSuccess,'alert-success');
                 redirect_to_home_page("modules/work/index.php?course=$course_code");
             } else {
