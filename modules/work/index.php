@@ -178,7 +178,7 @@ if ($is_editor) {
         $work_title = Database::get()->querySingle("SELECT title FROM assignment WHERE id = ?d", intval($_POST['assignment']))->title;
         $nameTools = $work_title;
         $navigation[] = $works_url;
-        submit_grade_comments($_POST['assignment'], $_POST['submission'], $_POST['grade'], $_POST['comments'], $email_notify);
+        submit_grade_comments($_POST['assignment'], $_POST['submission'], $_POST['grade'], $_POST['comments'], $email_notify, null);
     } elseif (isset($_GET['add'])) {
         $nameTools = $langNewAssign;
         $navigation[] = $works_url;        
@@ -2007,11 +2007,15 @@ function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_
 
     $grade_valid = filter_var($grade, FILTER_VALIDATE_FLOAT);
     (isset($grade) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
-        
+    
+    if(isset($auto_judge_scenarios_output)){
+        Database::get()->query("UPDATE assignment_submit SET auto_judge_scenarios_output = ?s
+                                WHERE id = ?d",serialize($auto_judge_scenarios_output), $sid);
+    }
     if (Database::get()->query("UPDATE assignment_submit 
                                 SET grade = ?d, grade_comments = ?s,
-                                grade_submission_date = NOW(), grade_submission_ip = ?s, auto_judge_scenarios_output = ?s
-                                WHERE id = ?d", $grade, $comment, $_SERVER['REMOTE_ADDR'],serialize($auto_judge_scenarios_output), $sid)->affectedRows>0) {
+                                grade_submission_date = NOW(), grade_submission_ip = ?s
+                                WHERE id = ?d", $grade, $comment, $_SERVER['REMOTE_ADDR'], $sid)->affectedRows>0) {
         $title = Database::get()->querySingle("SELECT title FROM assignment WHERE id = ?d", $id)->title;
         Log::record($course_id, MODULE_ID_ASSIGN, LOG_MODIFY, array('id' => $sid,
                 'title' => $title,
