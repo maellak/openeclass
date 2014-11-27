@@ -90,20 +90,26 @@ if ($is_editor) {
     global $themeimg, $m;
     $head_content .= "
     <script type='text/javascript'>
-    function check_weights(){
+    function check_weights() {
         /* function to check whether the weights input fields are numbers */
         var weights = document.getElementsByClassName('auto_judge_weight');
+        var weight_sum = 0;
+        var max_grade = parseFloat(document.getElementById('max_grade').value);
+        max_grade = Math.round(max_grade * 1000) / 1000;
+
         for (i = 0; i < weights.length; i++) {
-            //if(parseFloat(weights[i].value)) {
             // match ints or floats
             w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
             if(w != null) {
-                if(parseFloat(w) >= 1  && parseFloat(w) <= 10)  // 1->10 allowed
+                w = parseFloat(w);
+                if(w >= 1  && w <= 10)  // 1->10 allowed
                 {
+                    /* allow 3 decimal digits */
+                    weight_sum += w;
                     continue;
                 }
                 else{
-                    alert('Not an acceptable weight!');
+                    alert('Weights must be between 1 and 10!');
                     return false;
                 }
             }
@@ -112,7 +118,15 @@ if ($is_editor) {
                 return false;
             }
         }
-        return true;
+        diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
+        if (diff >= 0 && diff <= 0.001) {
+            return true;
+        }
+        else {
+            alert('Weights do not sum up to ' + max_grade +
+                  '!\\n(Remember, 3 decimal digits precision)');
+            return false;
+        }
     }
 
     $(function() {        
@@ -638,7 +652,8 @@ function submit_work($id, $on_behalf_of = null) {
             // Add the output as a comment
 
             //$grade = round($partial / $weight_sum * 10, 2);
-            $grade = round($partial / $weight_sum * $max_grade, 2);
+            // 3 decimal digits
+            $grade = round($partial / $weight_sum * $max_grade, 3);
 
             submit_grade_comments($id, $sid, $grade, 'Passed: '. $passed . '/'.
                                    count($auto_judge_scenarios), false);
@@ -809,7 +824,7 @@ function new_assignment() {
                                 <tr>
                                   <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
                                   <td><input type='text' name='auto_judge_scenarios[0][output]' /></td>
-				                  <td><input type='text' name='auto_judge_scenarios[0][weight]' maxlength='4' size='4' class='auto_judge_weight'/></td>
+				                  <td><input type='text' name='auto_judge_scenarios[0][weight]' class='auto_judge_weight'/></td>
                                   <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
                                 </tr>
                                 <tr>
