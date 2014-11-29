@@ -38,15 +38,8 @@ require_once '../../include/baseTheme.php';
 $nameTools = $langMonthlyReport;
 $navigation[] = array('url' => 'index.php', 'name' => $langAdmin);
 
-$tool_content .= "
-  <div id='operations_container'>
-    <ul id='opslist'>
-      <li><a href='stateclass.php'>$langPlatformGenStats</a></li>
-      <li><a href='platformStats.php?first='>$langVisitsStats</a></li>
-      <li><a href='visitsCourseStats.php?first='>$langVisitsCourseStats</a></li>
-      <li><a href='oldStats.php' onClick='return confirmation(\"$langOldStatsExpireConfirm\");'>" . $langOldStats . "</a></li>
-    </ul>
-  </div>";
+require_once 'admin_statistics_tools_bar.php';
+admin_statistics_tools("monthlyReport");
 
 $months = "";
 for ($i = 0; $i < 12; $i++) {
@@ -58,7 +51,7 @@ for ($i = 0; $i < 12; $i++) {
 $tool_content .= '
 <form method="post">
 <div><select name="selectedMonth">' . $months . '</select>
-<input type="submit" name="btnUsage" value="' . $langSubmit . '">
+<input class="btn btn-primary" type="submit" name="btnUsage" value="' . $langSubmit . '">
 </div>
 </form>';
 
@@ -70,13 +63,12 @@ if (isset($_POST["selectedMonth"])) {
     $row = Database::get()->querySingle("SELECT profesNum, studNum, visitorsNum, coursNum, logins, details
                        FROM monthly_summary WHERE `month` = ?s", $month);
     if ($row) {
-        $row = (array) $row;
-        $profesNum = $row['profesNum'];
-        $studNum = $row['studNum'];
-        $visitorsNum = $row['visitorsNum'];
-        $coursNum = $row['coursNum'];
-        $logins = $row['logins'];
-        $details = $row['details'];
+        $profesNum = $row->profesNum;
+        $studNum = $row->studNum;
+        $visitorsNum = $row->visitorsNum;
+        $coursNum = $row->coursNum;
+        $logins = $row->logins;
+        $details = $row->details;
     }
 
     if (isset($localize) and $localize == 'greek') {
@@ -123,7 +115,7 @@ if (isset($_POST["selectedMonth"])) {
 		</tbody>
 		</table>';           // $details includes an html table with all details
     } else {
-        $tool_content .= '<div class="alert1">' . $langNoReport . ': ' . $msg_of_month . ' ' . $y . '</div>';
+        $tool_content .= '<div class="alert alert-warning">' . $langNoReport . ': ' . $msg_of_month . ' ' . $y . '</div>';
     }
 }
 load_js('tools.js');

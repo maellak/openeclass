@@ -45,10 +45,11 @@ Class Rating {
     private function rating_add_js() {
         global $head_content, $urlServer;
         
+        $head_content .= '<link rel="stylesheet" type="text/css" href="'.$urlServer.'modules/rating/style.css">';
+        
         if ($this->widget == 'up_down') {
             $head_content .= '<script src="'.$urlServer.'modules/rating/js/up_down/rating.js" type="text/javascript"></script>';
         } elseif ($this->widget == 'fivestar') {
-            load_js('jquery');
             load_js('jquery.rateit.min.js');
         } elseif ($this->widget == 'thumbs_up') {
             $head_content .= '<script src="'.$urlServer.'modules/rating/js/thumbs_up/rating.js" type="text/javascript"></script>';

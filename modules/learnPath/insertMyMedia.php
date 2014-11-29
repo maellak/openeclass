@@ -155,10 +155,12 @@ if (isset($dialogBox) && $dialogBox != "") {
 }
 
 $tool_content .= showmedia();
-
-$tool_content .= "
-    <br />
-    <p align=\"right\"><a href=\"learningPathAdmin.php?course=$course_code&amp;path_id=" . (int) $_SESSION['path_id'] . "\">$langBackToLPAdmin</a>";
+$tool_content .= 
+         action_bar(array(
+            array('title' => $langBack,
+                'url' => "learningPathAdmin.php?course=$course_code&amp;path_id=" . (int) $_SESSION['path_id'],
+                'icon' => 'fa-reply',
+                'level' => 'primary-label'))) ;
 draw($tool_content, 2, null, $head_content);
 
 function showmedia() {
@@ -206,7 +208,7 @@ function showmedia() {
                 <th colspan='3'>
                 <div align='right'>
                   <input type='hidden' name='maxMediaForm' value ='" . ($i + $j - 2) . "' />
-                  <input type='submit' name='submitInsertedMedia' value='$langAddModulesButton'/>
+                  <input class='btn btn-primary' type='submit' name='submitInsertedMedia' value='$langAddModulesButton'/>
                 </div></th>
                 </tr>
                 </tbody>

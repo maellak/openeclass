@@ -90,30 +90,39 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
             //checking visible status
             if ($myrow->visible == '0') {
                 $visible = 1;
-                $vis_icon = 'invisible';
+                $vis_icon = 'fa-eye-slash';
+                $vis_class = 'not_visible';
             } else {
                 $visible = 0;
-                $vis_icon = 'visible';
-            }
-            //checking ordering status and initializing appropriate arrows
-            $up_arrow = $down_arrow = '';
-            if ($iterator != 1 or $offset > 0)  {
-                $up_arrow = icon('up', $langMove, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;up=$myrow->id");
-            }
-            if ($offset + $iterator < $all_announc->total) {
-                $down_arrow = icon('down', $langMove, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;down=$myrow->id");
+                $vis_icon = 'fa-eye';
+                $vis_class = 'visible';
             }
             //setting datables column data
             $data['aaData'][] = array(
                 'DT_RowId' => $myrow->id,
-                'DT_RowClass' => $vis_icon,
-                '0' => date('d-m-Y', strtotime($myrow->date)),
-                '1' => '<a href="'.$_SERVER['SCRIPT_NAME'].'?course='.$course_code.'&an_id='.$myrow->id.'">'.$myrow->title.'</a>',
-                '2' => icon('edit', $langModify, "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;modify=$myrow->id")  .
-                       "&nbsp;" . icon('delete', $langDelete, "", "class=\"delete_btn\"") .
-                       "&nbsp;" . icon($vis_icon, $langVisible, "", "class=\"vis_btn\" data-vis=\"$visible\"") .
-                       "&nbsp;" . $down_arrow . $up_arrow
-                );
+                'DT_RowClass' => $vis_class,
+                '0' => '<a href="'.$_SERVER['SCRIPT_NAME'].'?course='.$course_code.'&an_id='.$myrow->id.'">'.$myrow->title.'</a>',
+                '1' => date('d-m-Y', strtotime($myrow->date)),
+                '2' => action_button(array(
+                    array('title' => $langModify,
+                          'icon' => 'fa-edit',
+                          'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;modify=$myrow->id"),
+                    array('title' => $langDelete,
+                          'class' => 'delete',
+                          'icon' => 'fa-times',
+                          'icon-class' => 'delete_btn'),
+                    array('title' => $langVisible,
+                          'icon' => $vis_icon,
+                          'icon-class' => 'vis_btn',
+                          'icon-extra' => "data-vis='$visible'"),
+                    array('title' => $langMove,
+                          'icon' => 'fa-arrow-up',
+                          'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;up=$myrow->id",
+                          'show' => $iterator != 1 || $offset > 0),
+                    array('title' => $langMove,
+                          'icon' => 'fa-arrow-down',
+                          'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;down=$myrow->id",
+                          'show' => $offset + $iterator < $all_announc->total))));
             $iterator++;
         }
     } else {
@@ -127,23 +136,28 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
     exit();
 }
 load_js('tools.js');
-load_js('jquery');
 //check if Datables code is needed
 if (!isset($_GET['addAnnounce']) && !isset($_GET['modify']) && !isset($_GET['an_id'])) {
 load_js('datatables');
+load_js('datatables_bootstrap');
 load_js('datatables_filtering_delay');
 $head_content .= "<script type='text/javascript'>
         $(document).ready(function() {
-           var oTable = $('#ann_table{$course_id}').DataTable ({
+           var oTable = $('#ann_table{$course_id}').dataTable ({
+                ".(($is_editor)?"'aoColumnDefs':[{'sClass':'option-btn-cell', 'aTargets':[-1]}],":"")."
                 'bStateSave': true,
                 'bProcessing': true,
                 'bServerSide': true,
-                'sDom': '<\"top\"pfl<\"clear\">>rt<\"bottom\"ip<\"clear\">>',
+                'sScrollX': true,
+                'responsive': true,
                 'sAjaxSource': '$_SERVER[REQUEST_URI]',
                 'aLengthMenu': [
                    [10, 15, 20 , -1],
                    [10, 15, 20, '$langAllOfThem'] // change per page values here
                ],
+                'fnDrawCallback': function( oSettings ) {
+                    animate_btn();
+},
                 'sPaginationType': 'full_numbers',
                 'bSort': false,
                 'oLanguage': {
@@ -165,9 +179,17 @@ $head_content .= "<script type='text/javascript'>
             }).fnSetFilteringDelay(1000);
             $(document).on( 'click','.delete_btn', function (e) {
                 e.preventDefault();
-                if (confirmation('$langSureToDelAnnounce')) {
-                    var row_id = $(this).closest('tr').attr('id');
-                    $.post('', { action: 'delete', value: row_id}, function() {
+                var row_id = $(this).closest('tr').attr('id');
+                bootbox.confirm('$langSureToDelAnnounce', function(result) {                       
+                    $.ajax({
+                      type: 'POST',
+                      url: '',
+                      datatype: 'json',
+                      data: {
+                         action: 'delete', 
+                         value: row_id
+                      },
+                      success: function(data){
                         var num_page_records = oTable.fnGetData().length;
                         var per_page = oTable.fnPagingInfo().iLength;
                         var page_number = oTable.fnPagingInfo().iPage;
@@ -176,21 +198,41 @@ $head_content .= "<script type='text/javascript'>
                                 page_number--;
                             }
                         }
-                        $('#tool_title').after('<p class=\"success\">$langAnnDel</p>');
-                        $('.success').delay(3000).fadeOut(1500);
+                        console.log(page_number);
                         oTable.fnPageChange(page_number);
-                    }, 'json');
-                 }
+                      },
+                      error: function(xhr, textStatus, error){
+                          console.log(xhr.statusText);
+                          console.log(textStatus);
+                          console.log(error);
+                      }
+                    });              
+                });                
             });
             $(document).on( 'click','.vis_btn', function (g) {
                 g.preventDefault();
                 var vis = $(this).data('vis');
                 var row_id = $(this).closest('tr').attr('id');
-                $.post('', { action: 'visible', value: row_id, visible: vis}, function() {
+                $.ajax({
+                  type: 'POST',
+                  url: '',
+                  datatype: 'json',
+                  data: {
+                        action: 'visible', 
+                        value: row_id, 
+                        visible: vis
+                  },
+                  success: function(data){
                     var page_number = oTable.fnPagingInfo().iPage;
-                    var per_page = oTable.fnPagingInfo().iLength;
+                    var per_page = oTable.fnPagingInfo().iLength
                     oTable.fnPageChange(page_number);
-                }, 'json');
+                  },
+                  error: function(xhr, textStatus, error){
+                      console.log(xhr.statusText);
+                      console.log(textStatus);
+                      console.log(error);
+                  }
+                });                
             });
             $('.success').delay(3000).fadeOut(1500);
             $('.dataTables_filter input').attr('placeholder', '$langTitle');
@@ -252,9 +294,17 @@ if ($is_editor) {
         if ($announce) {
             $AnnouncementToModify = $announce->id;
             $contentToModify = $announce->content;
-            $titleToModify = q($announce->title);
-            $showFrom = q($announce->start_display);
-            $showUntil = q($announce->stop_display);
+            $titleToModify = q($announce->title);            
+            if ($announce->start_display != '0000-00-00') {                
+                $startDate_obj = DateTime::createFromFormat('Y-m-d', $announce->start_display);
+                $startdate = $startDate_obj->format('d-m-Y');
+                $showFrom = q($startdate);
+            }
+            if ($announce->stop_display != '0000-00-00') {
+                $endDate_obj = DateTime::createFromFormat('Y-m-d', $announce->stop_display);
+                $enddate = $endDate_obj->format('d-m-Y');            
+                $showUntil = q($enddate);            
+            }
         }
     }
 
@@ -264,13 +314,23 @@ if ($is_editor) {
         $antitle = $_POST['antitle'];
         $newContent = purify($_POST['newContent']);
         $send_mail = isset($_POST['recipients']) && (count($_POST['recipients'])>0);
-        $start_display = (isset($_POST['startdate']) && !empty($_POST['startdate']))? $_POST['startdate']:"2014-01-01";
-        $stop_display = (isset($_POST['enddate']) && !empty($_POST['enddate']))? $_POST['enddate']:"2094-12-31";
+        if (isset($_POST['startdate']) && !empty($_POST['startdate'])) {
+            $startDate_obj = DateTime::createFromFormat('d-m-Y', $_POST['startdate']);
+            $start_display = $startDate_obj->format('Y-m-d');
+        } else {
+            $start_display = "0000-00-00";
+        }
+        if (isset($_POST['enddate']) && !empty($_POST['enddate'])) {
+            $endDate_obj = DateTime::createFromFormat('d-m-Y', $_POST['enddate']);
+            $stop_display = $endDate_obj->format('Y-m-d');            
+        } else {
+            $stop_display = "0000-00-00";
+        }
         if (!empty($_POST['id'])) {
             $id = intval($_POST['id']);
-            Database::get()->query("UPDATE announcement SET content = ?s, title = ?s, `date` = NOW(), start_display = ?t, stop_display = ?t  WHERE id = ?d", $newContent, $antitle, $start_display, $stop_display, $id);
+            Database::get()->query("UPDATE announcement SET content = ?s, title = ?s, `date` = " . DBHelper::timeAfter() . ", start_display = ?t, stop_display = ?t  WHERE id = ?d", $newContent, $antitle, $start_display, $stop_display, $id);
             $log_type = LOG_MODIFY;
-            $message = "<p class='success'>$langAnnModify</p>";
+            $message = "<div class='alert alert-success'>$langAnnModify</div>";
         } else { // add new announcement
             $orderMax = Database::get()->querySingle("SELECT MAX(`order`) AS maxorder FROM announcement
                                                    WHERE course_id = ?d", $course_id)->maxorder;
@@ -278,7 +338,7 @@ if ($is_editor) {
             // insert
             $id = Database::get()->query("INSERT INTO announcement
                                          SET content = ?s,
-                                             title = ?s, `date` = NOW(),
+                                             title = ?s, `date` = " . DBHelper::timeAfter() . ",
                                              course_id = ?d, `order` = ?d,
                                              visible = 1,
                                              start_display = ?t,
@@ -288,17 +348,17 @@ if ($is_editor) {
         $aidx->store($id);
         $txt_content = ellipsize_html(canonicalize_whitespace(strip_tags($_POST['newContent'])), 50, '+');
         Log::record($course_id, MODULE_ID_ANNOUNCE, $log_type, array('id' => $id,
-                                                               'email' => $send_mail,
-                                                               'title' => $_POST['antitle'],
-                                                               'content' => $txt_content));
+                                                                     'email' => $send_mail,
+                                                                     'title' => $_POST['antitle'],
+                                                                     'content' => $txt_content));
 
         // send email
-        if ($send_mail) {
+        if ($send_mail) {            
             $recipients_emaillist = "";
             foreach($_POST['recipients'] as $re){
                 $recipients_emaillist .= (empty($recipients_emaillist))? "'$re'":",'$re'";
-            }
-            $emailContent = "$professorMessage: " . q($_SESSION[givenname]) . " " . q($_SESSION[surname]) . "<br>\n<br>\n" .
+            }            
+            $emailContent = "$professorMessage: " . q($_SESSION['givenname']) . " " . q($_SESSION['surname']) . "<br>\n<br>\n" .
                     q($_POST['antitle']) .
                     "<br>\n<br>\n" .
                     q($_POST['newContent']);
@@ -311,10 +371,10 @@ if ($is_editor) {
             $linkhere = "&nbsp;<a href='${urlServer}main/profile/emailunsubscribe.php?cid=$course_id'>$langHere</a>.";
             $unsubscribe = "<br /><br />$langNote: " . sprintf($langLinkUnsubscribe, $title);
             $emailContent .= $unsubscribe . $linkhere;
-            $general_to = 'Members of course ' . $course_code;
+            $general_to = 'Members of course ' . $course_code;            
             Database::get()->queryFunc("SELECT course_user.user_id as id, user.email as email
                                                    FROM course_user, user
-                                                   WHERE course_id = ?d AND user.email IN ($recipients_emaillist) AND 
+                                                   WHERE course_id = ?d AND user.id IN ($recipients_emaillist) AND 
                                                          course_user.user_id = user.id", function ($person)
                     use (&$countEmail, &$recipients, &$invalid, $course_id, $general_to, $emailSubject, $emailBody, $emailContent, $charset) {
                 $countEmail++;
@@ -328,7 +388,7 @@ if ($is_editor) {
                     array_push($recipients, $emailTo);
                 }
                 // send mail message per 50 recipients
-                if (count($recipients) >= 50) {
+                if (count($recipients) >= 50) {                    
                     send_mail_multipart("$_SESSION[givenname] $_SESSION[surname]", $_SESSION['email'], $general_to, $recipients, $emailSubject, $emailBody, $emailContent, $charset);
                     $recipients = array();
                 }
@@ -337,11 +397,12 @@ if ($is_editor) {
                 send_mail_multipart("$_SESSION[givenname] $_SESSION[surname]", $_SESSION['email'], $general_to, $recipients, $emailSubject, $emailBody, $emailContent, $charset);
             }
             $messageInvalid = " $langOn $countEmail $langRegUser, $invalid $langInvalidMail";
-            $message = "<p class='success'>$langAnnAdd $langEmailSent<br />$messageInvalid</p>";
+            $message = "<div class='alert alert-success'>$langAnnAdd $langEmailSent<br />$messageInvalid</div>";
         } // if $emailOption==1
         else {
-            $message = "<p class='success'>$langAnnAdd</p>";
+            $message = "<div class='alert alert-success'>$langAnnAdd</div>";
         }
+
     } // end of if $submit
 
 
@@ -351,92 +412,105 @@ if ($is_editor) {
         $displayForm = false; //do not show form
     }
     /* display form */
-    if ($displayForm && (isset($_GET['addAnnounce']) || isset($_GET['modify']))) {
+    if ($displayForm && (isset($_GET['addAnnounce']) or isset($_GET['modify']))) {
         
-        $tool_content .= "<div id='operations_container'><ul id='opslist'>";
-        $tool_content .= "<li><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></li>";
-        $tool_content .= "</ul></div>";
-        
-        load_js('jquery-ui');
-        load_js('jquery-ui-timepicker-addon.min.js');
-        $head_content .= "<link rel='stylesheet' type='text/css' href='{$urlAppend}js/jquery-ui-timepicker-addon.min.css'>
-            <script type='text/javascript'>
-            $(function() {
-            $('input[name=startdate]').datepicker({
-                dateFormat: 'yy-mm-dd'
-                });
-            $('input[name=enddate]').datepicker({
-                dateFormat: 'yy-mm-dd'
-                });
-               });"
-        . "</script>";
-        $tool_content .= "
-        <form method='post' action='$_SERVER[SCRIPT_NAME]?course=".$course_code."' onsubmit=\"return checkrequired(this, 'antitle');\">
-        <fieldset>
-        <legend>$langAnnouncement</legend>
-  <table class='tbl' width='100%'>";
         if (isset($_GET['modify'])) {
             $langAdd = $nameTools = $langModifAnn;
         } else {
-      $nameTools = $langAddAnn;
+            $nameTools = $langAddAnn;
         }
-  $navigation[] = array("url" => "index.php?course=$course_code", "name" => $langAnnouncements);
+        $navigation[] = array("url" => "index.php?course=$course_code", "name" => $langAnnouncements);
+        
         if (!isset($AnnouncementToModify)) $AnnouncementToModify = "";
         if (!isset($contentToModify)) $contentToModify = "";
         if (!isset($titleToModify)) $titleToModify = "";
         if (!isset($showFrom)) $showFrom = "";
-        if (!isset($showUntil)) $showUntil = "";
-        $tool_content .= "
-        <tr>
-          <th>$langAnnTitle:</th>
-        </tr>
-        <tr>
-          <td><input type='text' name='antitle' value='$titleToModify' size='50' /></td>
-  </tr>
-  <tr>
-          <th>$langAnnBody:</th>
-        </tr>
-        <tr>
-          <td>".rich_text_editor('newContent', 4, 20, $contentToModify)."</td>
-        </tr>
-  <tr>
-          <th><img src='$themeimg/email.png' title='email' /> $langEmailOption:</th>
-        </tr>
-        <tr>
-          <td>
-            <select name='recipients[]' multiple='true' class='auth_input' id='select-recipients' style='min-width:400px;'>";
-            $course_users = Database::get()->queryArray("SELECT cu.user_id, CONCAT(u.surname, ' ', u.givenname) name, u.email FROM course_user cu JOIN user u ON cu.user_id=u.id WHERE cu.course_id = ?d AND u.email<>'' AND u.email IS NOT NULL ORDER BY u.surname, u.givenname", $course_id);
-            foreach($course_users as $cu){
-               $tool_content .= "<option value='{" . q($cu->email) . "}'>{" . q($cu->name) . "} (" . q($cu->email) . ")</option>"; 
-            } 
-            $tool_content .= "</select>
-          </td>
-  </tr>
-  <tr>
-          <th>$langAnnouncementActivePeriod:</th>
-        </tr>
-        <tr>
-          <td>$langFrom: <input type='text' name='startdate' value='$showFrom'>&nbsp;  $langUntil:<input type='text' name='enddate' value='$showUntil'></td>
-        </tr>
-        <tr>
-          <td class='right'><input type='submit' name='submitAnnouncement' value='".q($langAdd)."' /></td>
-  </tr>
-  </table>
-  <input type='hidden' name='id' value='$AnnouncementToModify' />
+        if (!isset($showUntil)) $showUntil = "";        
+        
+        load_js('bootstrap-datepicker');
+        $head_content .= "
+            <script type='text/javascript'>
+            $(function() {
+                $('#startdate').datepicker({
+                    format: 'dd-mm-yyyy',
+                    language: '$language',
+                    autoclose: true
+                });
+                $('#enddate').datepicker({
+                    format: 'dd-mm-yyyy',
+                    language: '$language',
+                    autoclose: true
+                });
+            });"
+        . "</script>";
+    $tool_content .= action_bar(array(
+                array('title' => $langBack,
+                      'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code",
+                      'icon' => 'fa-reply',
+                      'level' => 'primary')));
+    $tool_content .= "<div class='form-wrapper'>";
+    $tool_content .= "<form class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]?course=".$course_code."' onsubmit=\"return checkrequired(this, 'antitle');\">
+        <fieldset>
+        <div class='form-group'>
+            <label for='AnnTitle' class='col-sm-2 control-label'>$langAnnTitle:</label>
+            <div class='col-sm-10'>
+                <input type='text' name='antitle' value='$titleToModify' size='50' />
+            </div>
+        </div>
+        <div class='form-group'>
+          <label for='AnnBody' class='col-sm-2 control-label'>$langAnnBody:</label>
+            <div class='col-sm-10'>".rich_text_editor('newContent', 4, 20, $contentToModify)."</div>
+        </div>
+        <div class='form-group'><label for='Email' class='col-sm-offset-2 col-sm-12 control-panel'>$langEmailOption:</label></div>
+        <div class='form-group'>
+            <div class='col-sm-offset-2 col-sm-10'>
+                <select class='form-control' name='recipients[]' multiple class='form-control' id='select-recipients'>";
+                $course_users = Database::get()->queryArray("SELECT cu.user_id, CONCAT(u.surname, ' ', u.givenname) name, u.email FROM course_user cu JOIN user u ON cu.user_id=u.id WHERE cu.course_id = ?d AND u.email<>'' AND u.email IS NOT NULL ORDER BY u.surname, u.givenname", $course_id);
+                foreach($course_users as $cu){
+                   $tool_content .= "<option value='" . q($cu->user_id) . "'>" . q($cu->name) . " (" . q($cu->email) . ")</option>"; 
+                } 
+                $tool_content .= "</select>
+                <a href='#' id='selectAll'>$langJQCheckAll</a> | <a href='#' id='removeAll'>$langJQUncheckAll</a>
+            </div>
+        </div>
+        <div class='form-group'><label for='Email' class='col-sm-offset-2 col-sm-12 control-panel'>$langAnnouncementActivePeriod:</label></div>
+        
+        <div class='form-group'>
+            <label for='From' class='col-sm-2 control-label'>$langFrom:</label>
+            <div class='col-sm-10'><input type='text' name='startdate' id='startdate' value='$showFrom'></div>
+        </div>
+        <div class='form-group'>
+            <label for='From' class='col-sm-2 control-label'>$langUntil:</label>
+            <div class='col-sm-10'><input type='text' name='enddate' id='enddate' value='$showUntil'></div>
+        </div>
+        <div class='col-sm-offset-2 col-sm-10'>
+            <input class='btn btn-primary' type='submit' name='submitAnnouncement' value='".q($langAdd)."' />
+            <a href='$_SERVER[SCRIPT_NAME]?course=$course_code' class='btn btn-default'>$langCancel</a>
+        </div>  
+        <input type='hidden' name='id' value='$AnnouncementToModify'>
         </fieldset>
-  </form>";
+        </form>
+        </div>";
     } else {
-  /* display actions toolbar */
-  $tool_content .= "
-  <div id='operations_container'>
-    <ul id='opslist'>";
         if (isset($_GET['an_id'])) {
-            $tool_content .= "<li><a href='" . $_SERVER['SCRIPT_NAME'] . "?course=" .$course_code . "&amp;modify=$row->id'>" . $langModify . "</a></li>
-                              <li><a href='" . $_SERVER['SCRIPT_NAME'] . "?course=" .$course_code . "&amp;delete=$row->id' onClick=\"return confirmation('$langSureToDelAnnounce');\">" . $langDelete . "</a></li>";
+            $tool_content .= action_bar(array(
+                array('title' => $langModify,
+                      'url' => $_SERVER['SCRIPT_NAME'] . "?course=" . $course_code . "&amp;modify=$row->id",
+                      'icon' => 'fa-edit',
+                      'level' => 'primary-label'),
+                array('title' => $langDelete,
+                      'url' => $_SERVER['SCRIPT_NAME'] . "?course=" .$course_code . "&amp;delete=$row->id",
+                      'icon' => 'fa-times',
+                      'level' => 'primary',
+                      'confirm' => $langSureToDelAnnounce)));
         } else {
-            $tool_content .= "<li><a href='" . $_SERVER['SCRIPT_NAME'] . "?course=" .$course_code . "&amp;addAnnounce=1'>" . $langAddAnn . "</a></li>";
+            $tool_content .= action_bar(array(
+                array('title' => $langAddAnn,
+                      'url' => $_SERVER['SCRIPT_NAME'] . "?course=" .$course_code . "&amp;addAnnounce=1",
+                      'icon' => 'fa-plus-circle',
+                      'level' => 'primary-label',
+                      'button-class' => 'btn-success')));
         }
-        $tool_content .= "</ul></div>";
     }
 } // end: teacher only
 
@@ -447,24 +521,33 @@ if ($is_editor) {
         $tool_content .= $row->content;
     }
     if (!isset($_GET['addAnnounce']) && !isset($_GET['modify']) && !isset($_GET['an_id'])) {
-        $tool_content .= "<table id='ann_table{$course_id}' class='display'>";
+        $tool_content .= "<table id='ann_table{$course_id}' cellspacing='0' class='table table-bordered' width='100%'>";
         $tool_content .= "<thead>";
-        $tool_content .= "<tr><th width='100'>$langDate</th><th>$langAnnouncement</th>";
+        $tool_content .= "<tr><th>$langAnnouncement</th><th>$langDate</th>";
         if ($is_editor) {
-            $tool_content .= "<th width='100' class='center'>$langActions</th>";
+            $tool_content .= "<th class='text-center'><i class='fa fa-cogs'></i></th>";
         }
         $tool_content .= "</tr></thead><tbody></tbody></table>";
     }
 add_units_navigation(TRUE);
-load_js('jquery-ui');
-load_js('jquery.multiselect.min.js');
-$head_content .= "<script type='text/javascript'>$(document).ready(function () {
-        $('#select-recipients').multiselect({
-                selectedText: '$langJQSelectNum',
-                noneSelectedText: '$langJQNoneSelected',
-                checkAllText: '$langJQCheckAll',
-                uncheckAllText: '$langJQUncheckAll'
+load_js('select2');
+$head_content .= "<script type='text/javascript'>
+    $(document).ready(function () {
+        $('#select-recipients').select2();       
+        $('#selectAll').click(function(e) {
+            e.preventDefault();
+            var stringVal = [];
+            $('#select-recipients').find('option').each(function(){
+                stringVal.push($(this).val());
+            });
+            $('#select-recipients').val(stringVal).trigger('change');
         });
-});</script>
-<link href='../../js/jquery.multiselect.css' rel='stylesheet' type='text/css'>";
+        $('#removeAll').click(function(e) {
+            e.preventDefault();
+            var stringVal = [];
+            $('#select-recipients').val(stringVal).trigger('change');
+        });         
+    });
+    </script>";
 draw($tool_content, 2, null, $head_content);
+

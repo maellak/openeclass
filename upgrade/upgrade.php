@@ -72,7 +72,7 @@ $fromadmin = !isset($_POST['submit_upgrade']);
 
 if (!isset($_POST['submit2']) and ! $command_line) {
     if (!is_admin($_POST['login'], $_POST['password'])) {
-        $tool_content .= "<p class='alert1'>$langUpgAdminError</p>
+        $tool_content .= "<div class='alert alert-warning'>$langUpgAdminError</div>
             <center><a href='index.php'>$langBack</a></center>";
         draw($tool_content, 0);
         exit;
@@ -80,7 +80,7 @@ if (!isset($_POST['submit2']) and ! $command_line) {
 }
 
 if (!DBHelper::tableExists('config')) {
-    $tool_content .= "<p class='alert1'>$langUpgTooOld</p>";
+    $tool_content .= "<div class='alert alert-warning'>$langUpgTooOld</div>";
     draw($tool_content, 0);
     exit;
 }
@@ -100,9 +100,9 @@ if (!DBHelper::fieldExists('user', 'id')) {
                             expires_at = FROM_UNIXTIME(ts_expires_at)");
     Database::get()->query("ALTER TABLE user
                         CHANGE user_id id INT(11) NOT NULL AUTO_INCREMENT,
-                        CHANGE nom surname VARCHAR(60) NOT NULL DEFAULT '',
-                        CHANGE prenom givenname VARCHAR(60) NOT NULL DEFAULT '',
-                        CHANGE username username VARCHAR(50) NOT NULL UNIQUE KEY COLLATE utf8_bin,
+                        CHANGE nom surname VARCHAR(100) NOT NULL DEFAULT '',
+                        CHANGE prenom givenname VARCHAR(100) NOT NULL DEFAULT '',
+                        CHANGE username username VARCHAR(100) NOT NULL UNIQUE KEY COLLATE utf8_bin,
                         CHANGE password password VARCHAR(60) NOT NULL DEFAULT 'empty',
                         CHANGE email email VARCHAR(100) NOT NULL DEFAULT '',
                         CHANGE statut status TINYINT(4) NOT NULL DEFAULT " . USER_STUDENT . ",
@@ -148,48 +148,52 @@ $default_teacher_upload_whitelist = 'html, js, css, xml, xsl, cpp, c, java, m, h
 
 if (!isset($_POST['submit2']) and isset($_SESSION['is_admin']) and ( $_SESSION['is_admin'] == true) and ! $command_line) {
     if (ini_get('register_globals')) { // check if register globals is Off
-        $tool_content .= "<div class='caution'>$langWarningInstall1</div>";
+        $tool_content .= "<div class='alert alert-danger'>$langWarningInstall1</div>";
     }
     if (ini_get('short_open_tag')) { // check if short_open_tag is Off
-        $tool_content .= "<div class='caution'>$langWarningInstall2</div>";
-    }
+        $tool_content .= "<div class='alert alert-danger'>$langWarningInstall2</div>";
+    }    
+    $tool_content .= "<div class='alert alert-info'>$langConfigFound<br>$langConfigMod</div>";
     // get old contact values
-    $tool_content .= "<form action='$_SERVER[SCRIPT_NAME]' method='post'>" .
-            "<div class='info'>" .
-            "<p>$langConfigFound" .
-            "<br>$langConfigMod</p></div>" .
-            "<fieldset><legend>$langUpgContact</legend>" .
-            "<table width='100%' class='tbl'><tr><th width='220'>$langInstituteShortName:</th>" .
-            "<td><input class=auth_input_admin type='text' size='40' name='Institution' value='" . @$Institution . "'></td></tr>" .
-            "<tr><th>$langUpgAddress</th>" .
-            "<td><textarea rows='3' cols='40' class=auth_input_admin name='postaddress'>" . @$postaddress . "</textarea></td></tr>" .
-            "<tr><th>$langUpgTel</th>" .
-            "<td><input class=auth_input_admin type='text' name='telephone' value='" . @$telephone . "'></td></tr>" .
-            "<tr><th>Fax:</th>" .
-            "<td><input class=auth_input_admin type='text' name='fax' value='" . @$fax . "'></td></tr></table></fieldset>
-                <fieldset><legend>$langUploadWhitelist</legend>
-                <table class='tbl' width='100%'>
-                <tr>
-                <th class='left'>$langStudentUploadWhitelist</th>
-                <td><textarea rows='6' cols='60' name='student_upload_whitelist'>$default_student_upload_whitelist</textarea></td>
-                </tr>
-                <tr>
-                <th class='left'>$langTeacherUploadWhitelist</th>
-                <td><textarea rows='6' cols='60' name='teacher_upload_whitelist'>$default_teacher_upload_whitelist</textarea></td>
-                </tr>
-                </table>
-                </fieldset>
-                <div class='right'><input name='submit2' value='$langCont &raquo;' type='submit'></div>
-                </form>";
+    $tool_content .= "<div class='form-wrapper'>
+            <form class='form-horizontal' role='form' action='$_SERVER[SCRIPT_NAME]' method='post'>            
+            <fieldset>
+            <div class='form-group'><label class='col-sm-offset-4 col-sm-8'>$langUpgContact</label></div>
+            <div class='form-group'>
+                <label class='col-sm-2 control-label'>$langInstituteShortName:</label>
+                <div class='col-sm-10'>
+                    <input class=auth_input_admin type='text' size='40' name='Institution' value='" . @$Institution . "'>
+                </div>
+            </div>
+            <div class='form-group'>
+                <label class='col-sm-2 control-label'>$langUpgAddress</label>
+                <div class='col-sm-10'>
+                    <textarea rows='3' cols='40' class=auth_input_admin name='postaddress'>" . @$postaddress . "</textarea>
+                </div>
+            </div>
+            <div class='form-group'>
+                <label class='col-sm-2 control-label'>$langUpgTel</label>
+                <div class='col-sm-10'>
+                    <input class=auth_input_admin type='text' name='telephone' value='" . @$telephone . "'>
+                </div>
+            </div>
+            <div class='form-group'>
+                <label class='col-sm-2 control-label'>Fax:</label>
+                <div class='col-sm-10'>
+                    <input class=auth_input_admin type='text' name='fax' value='" . @$fax . "'>
+                </div>
+            </div>        
+            </fieldset>
+            <p class='pull-right'><input class='btn btn-primary' name='submit2' value='$langCont &raquo;' type='submit'></p>
+            </form>
+            </div>";
 } else {
     // Main part of upgrade starts here
     if ($command_line) {
         $_POST['Institution'] = @$Institution;
         $_POST['postaddress'] = @$postaddress;
         $_POST['telephone'] = @$telephone;
-        $_POST['fax'] = @$fax;
-        $_POST['student_upload_whitelist'] = $default_student_upload_whitelist;
-        $_POST['teacher_upload_whitelist'] = $default_teacher_upload_whitelist;
+        $_POST['fax'] = @$fax;        
     } else {
 
         // Main part of upgrade starts here
@@ -304,7 +308,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                     ('restrict_teacher_owndep', '0')");
 
                 if (version_compare($oldversion, '2.1.3', '<') or (!isset($oldversion))) {                    
-                    echo "<hr><p class='alert1'>$langUpgTooOld</p>
+                    echo "<hr><div class='alert alert-warning'>$langUpgTooOld</div>
                         <p class='right'><a href='$urlServer?logout=yes'>$langBack</a></p>";
                     echo '</div></body></html>';
                     exit;
@@ -487,9 +491,9 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                         Database::get()->query("RENAME TABLE prof_request TO user_request");
                         Database::get()->query("ALTER TABLE user_request
                                     CHANGE rid id INT(11) NOT NULL auto_increment,
-                                    CHANGE profname name VARCHAR(255) NOT NULL DEFAULT '',
-                                    CHANGE profsurname surname VARCHAR(255) NOT NULL DEFAULT '',
-                                    CHANGE profuname uname VARCHAR(255) NOT NULL DEFAULT '',
+                                    CHANGE profname name VARCHAR(100) NOT NULL DEFAULT '',
+                                    CHANGE profsurname surname VARCHAR(100) NOT NULL DEFAULT '',
+                                    CHANGE profuname uname VARCHAR(100) NOT NULL DEFAULT '',
                                     CHANGE profpassword password VARCHAR(255) NOT NULL DEFAULT '',
                                     CHANGE profemail email varchar(255) NOT NULL DEFAULT '',
                                     CHANGE proftmima faculty_id INT(11) NOT NULL DEFAULT 0,
@@ -594,7 +598,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                     }
                     Database::get()->query("INSERT IGNORE INTO `config` (`key`, `value`) VALUES
                             ('student_upload_whitelist', ?s),
-                            ('teacher_upload_whitelist', ?s)", $_POST['student_upload_whitelist'], $_POST['teacher_upload_whitelist']);
+                            ('teacher_upload_whitelist', ?s)", $default_student_upload_whitelist, $teacher_upload_whitelist);
                     if (!DBHelper::fieldExists('user', 'last_passreminder')) {
                         Database::get()->query("ALTER TABLE `user` ADD `last_passreminder` DATETIME DEFAULT NULL AFTER `whitelist`");
                     }
@@ -889,9 +893,9 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
 
                     if (!DBHelper::fieldExists('user_request', 'state')) {
                         Database::get()->query("ALTER TABLE `user_request`
-                    CHANGE `name` `givenname` VARCHAR(60) NOT NULL DEFAULT '',
-                    CHANGE `surname` `surname` VARCHAR(60) NOT NULL DEFAULT '',
-                    CHANGE `uname` `username` VARCHAR(50) NOT NULL DEFAULT '',
+                    CHANGE `name` `givenname` VARCHAR(100) NOT NULL DEFAULT '',
+                    CHANGE `surname` `surname` VARCHAR(100) NOT NULL DEFAULT '',
+                    CHANGE `uname` `username` VARCHAR(100) NOT NULL DEFAULT '',
                     CHANGE `email` `email` VARCHAR(100) NOT NULL DEFAULT '',
                     CHANGE `status` `state` INT(11) NOT NULL DEFAULT 0,
                     CHANGE `statut` `status` TINYINT(4) NOT NULL DEFAULT 1");
@@ -1421,16 +1425,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                             `public` TINYINT(4) NOT NULL DEFAULT 1,
                             `results` TINYINT(1) NOT NULL DEFAULT 1,
                             `score` TINYINT(1) NOT NULL DEFAULT 1)
-                            $charset_spec");
-                    Database::get()->query("CREATE TABLE IF NOT EXISTS `exercise_question` (
-                            `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                            `course_id` INT(11) NOT NULL,
-                            `question` TEXT,
-                            `description` TEXT,
-                            `weight` FLOAT(11,2) DEFAULT NULL,
-                            `q_position` INT(11) DEFAULT 1,
-                            `type` INT(11) DEFAULT 1) 
-                            $charset_spec");
+                            $charset_spec");                    
                     Database::get()->query("CREATE TABLE IF NOT EXISTS `exercise_user_record` (
                             `eurid` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                             `eid` INT(11) NOT NULL DEFAULT '0',
@@ -1459,7 +1454,8 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                             `description` TEXT,
                             `weight` FLOAT(11,2) DEFAULT NULL,
                             `q_position` INT(11) DEFAULT 1,
-                            `type` INT(11) DEFAULT 1 )
+                            `type` INT(11) DEFAULT 1,
+                            `difficulty` INT(1) DEFAULT 0)
                             $charset_spec");
                     Database::get()->query("CREATE TABLE IF NOT EXISTS `exercise_answer` (
                             `id` INT(11) NOT NULL DEFAULT '0',
@@ -2099,8 +2095,6 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                 Database::get()->query('CREATE INDEX `ear_index1` ON exercise_answer_record (eurid)');
         DBHelper::indexExists('exercise_answer_record', 'ear_index2') or
                 Database::get()->query('CREATE INDEX `ear_index2` ON exercise_answer_record (question_id)');
-        DBHelper::indexExists('exercise_with_questions', 'ewq_index') or
-                Database::get()->query('CREATE INDEX `ewq_index` ON exercise_with_questions (question_id, exercise_id)');
         DBHelper::indexExists('exercise_question', 'eq_index') or
                 Database::get()->query('CREATE INDEX `eq_index` ON exercise_question (course_id)');
         DBHelper::indexExists('exercise_answer', 'ea_index') or
@@ -2127,8 +2121,6 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                 Database::get()->query("CREATE INDEX `grade_book_index` ON gradebook_book(gradebook_activity_id)");
         DBHelper::indexExists('group', 'group_index') or
                 Database::get()->query("CREATE INDEX `group_index` ON `group`(course_id)");
-        DBHelper::indexExists('group_members', 'gr_mem_index') or
-                Database::get()->query("CREATE INDEX `gr_mem_index` ON group_members(group_id,user_id)");
         DBHelper::indexExists('group_properties', 'gr_prop_index') or
                 Database::get()->query("CREATE INDEX `gr_prop_index` ON group_properties(course_id)");
         DBHelper::indexExists('hierarchy', 'hier_index') or
@@ -2185,8 +2177,95 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                 Database::get()->query("CREATE INDEX `wik_prop_id` ON  wiki_properties(course_id)");
         DBHelper::indexExists('idx_queue', 'idx_queue_cid') or
                 Database::get()->query("CREATE INDEX `idx_queue_cid` ON `idx_queue` (course_id)");
-                                                              
-        // **********************************************
+        
+        DBHelper::indexExists('attendance_users', 'attendance_users_aid') or
+            $db->query('CREATE INDEX `attendance_users_aid` ON `attendance_users` (attendance_id)');
+        DBHelper::indexExists('gradebook_users', 'gradebook_users_gid') or
+            $db->query('CREATE INDEX `gradebook_users_gid` ON `gradebook_users` (gradebook_id)');
+
+        DBHelper::indexExists('actions_daily', 'actions_daily_mcd') or
+            $db->query('CREATE INDEX `actions_daily_mcd` ON `actions_daily` (module_id, course_id, day)');
+        DBHelper::indexExists('actions_daily', 'actions_daily_hdi') or
+            $db->query('CREATE INDEX `actions_daily_hdi` ON `actions_daily` (hits, duration, id)');
+        DBHelper::indexExists('loginout', 'loginout_ia') or
+            $db->query('CREATE INDEX `loginout_ia` ON `loginout` (id_user, action)');
+        DBHelper::indexExists('announcement', 'announcement_cvo') or
+            $db->query('CREATE INDEX `announcement_cvo` ON `announcement` (course_id, visible, order)');
+
+        DBHelper::indexExists('actions_summary', 'actions_summary_module_id') or
+            $db->query("CREATE INDEX `actions_summary_module_id` ON actions_summary(module_id)");
+        DBHelper::indexExists('actions_summary', 'actions_summary_course_id') or
+            $db->query("CREATE INDEX `actions_summary_course_id` ON actions_summary(course_id)");
+
+        DBHelper::indexExists('document', 'doc_course_id') or
+            $db->query('CREATE INDEX `doc_course_id` ON document (course_id)');
+        DBHelper::indexExists('document', 'doc_subsystem') or
+            $db->query('CREATE INDEX `doc_subsystem` ON document (subsystem)');
+        DBHelper::indexExists('document', 'doc_path') or
+            $db->query('CREATE INDEX `doc_path` ON document (path)');
+
+        DBHelper::indexExists('dropbox_index', 'drop_index_recipient_id') or
+            $db->query("CREATE INDEX `drop_index_recipient_id` ON dropbox_index(recipient_id)");
+        DBHelper::indexExists('dropbox_index', 'drop_index_recipient_id') or
+            $db->query("CREATE INDEX `drop_index_is_read` ON dropbox_index(is_read)");
+
+        DBHelper::indexExists('dropbox_msg', 'drop_msg_index_course_id') or
+            $db->query("CREATE INDEX `drop_msg_index_course_id` ON dropbox_msg(course_id)");
+        DBHelper::indexExists('dropbox_msg', 'drop_msg_index_author_id') or
+            $db->query("CREATE INDEX `drop_msg_index_author_id` ON dropbox_msg(author_id)");
+
+        DBHelper::indexExists('exercise_with_questions', 'ewq_index_question_id') or
+            $db->query('CREATE INDEX `ewq_index_question_id` ON exercise_with_questions (question_id)');
+        DBHelper::indexExists('exercise_with_questions', 'ewq_index_exercise_id') or
+            $db->query('CREATE INDEX `ewq_index_exercise_id` ON exercise_with_questions (exercise_id)');
+
+        DBHelper::indexExists('group_members', 'gr_mem_user_id') or
+            $db->query("CREATE INDEX `gr_mem_user_id` ON group_members(user_id)");
+        DBHelper::indexExists('group_members', 'gr_mem_group_id') or
+            $db->query("CREATE INDEX `gr_mem_group_id` ON group_members(group_id)");
+
+        DBHelper::indexExists('log', 'log_course_id') or
+            $db->query("CREATE INDEX `log_course_id` ON log (course_id)");
+        DBHelper::indexExists('log', 'log_module_id') or
+            $db->query("CREATE INDEX `log_module_id` ON log (module_id)");
+
+        DBHelper::indexExists('logins', 'logins_id_user_id') or
+            $db->query("CREATE INDEX `logins_id_user_id` ON logins(user_id)");
+        DBHelper::indexExists('logins', 'logins_id_course_id') or
+            $db->query("CREATE INDEX `logins_id_course_id` ON logins(course_id)");
+
+        DBHelper::indexExists('lp_rel_learnPath_module', 'lp_rel_learnPath_id') or
+            $db->query("CREATE INDEX `lp_rel_learnPath_id` ON lp_rel_learnPath_module(learnPath_id)");
+        DBHelper::indexExists('lp_rel_learnPath_module', 'lp_rel_learnPath_id') or
+            $db->query("CREATE INDEX `lp_rel_module_id` ON lp_rel_learnPath_module(module_id)");
+
+        DBHelper::indexExists('lp_user_module_progress', 'lp_learnPath_module_id') or
+            $db->query("CREATE INDEX `lp_learnPath_module_id` ON lp_user_module_progress (learnPath_module_id)");
+        DBHelper::indexExists('lp_user_module_progress', 'lp_user_id') or
+            $db->query("CREATE INDEX `lp_user_id` ON lp_user_module_progress (user_id)");
+
+        DBHelper::indexExists('poll_answer_record', 'poll_ans_id_user_id') or
+            $db->query("CREATE INDEX `poll_ans_id_user_id` ON poll_answer_record(user_id)");
+        DBHelper::indexExists('poll_answer_record', 'poll_ans_id_user_id') or
+            $db->query("CREATE INDEX `poll_ans_id_pid` ON poll_answer_record(pid)");
+
+        DBHelper::indexExists('unit_resources', 'unit_res_unit_id') or
+            $db->query("CREATE INDEX `unit_res_unit_id` ON unit_resources (unit_id)");
+        DBHelper::indexExists('unit_resources', 'unit_res_visible') or
+            $db->query("CREATE INDEX `unit_res_visible` ON unit_resources (visible)");
+        DBHelper::indexExists('unit_resources', 'unit_res_res_id') or
+            $db->query("CREATE INDEX `unit_res_res_id` ON unit_resources (res_id)");
+
+        DBHelper::indexExists('personal_calendar', 'pcal_start') or
+            $db->query('CREATE INDEX `pcal_start` ON personal_calendar (start)');
+
+        DBHelper::indexExists('agenda', 'agenda_start') or
+            $db->query('CREATE INDEX `agenda_start` ON agenda (start)');
+
+        DBHelper::indexExists('assignment', 'assignment_deadline') or
+            $db->query('CREATE INDEX `assignment_deadline` ON assignment (deadline)');
+
+    // **********************************************
         // upgrade courses databases
         // **********************************************
         $res = Database::get()->queryArray("SELECT id, code, lang FROM course ORDER BY code");
@@ -2268,7 +2347,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                 if ($n > 100) {
                     set_config('enable_search', 0);
                     set_config('enable_indexing', 0);
-                    echo "<hr><p class='info'>$langUpgIndexingNotice</p>";
+                    echo "<hr><p class='alert alert-info'>$langUpgIndexingNotice</p>";
                 } else {
                     set_config('enable_indexing', 1);
                     require_once 'modules/search/indexer.class.php';
@@ -2291,10 +2370,10 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
         // update eclass version
         Database::get()->query("UPDATE config SET `value` = '" . ECLASS_VERSION . "' WHERE `key`='version'");
 
-        echo "<hr><p class='success'>$langUpgradeSuccess
-        <br><b>$langUpgReady</b></p>
-        <p class='info'>$langUpgSucNotice</p>
-        <p class='right'><a href='$urlServer?logout=yes'>$langBack</a></p>";
+        echo "<hr><div class='alert alert-success'>$langUpgradeSuccess
+        <br><b>$langUpgReady</b></div>
+        <div class='alert alert-info'>$langUpgSucNotice</div>
+        <p class='pull-right'><a href='$urlServer?logout=yes'>$langBack</a></p>";
 
 
         echo '</div></body></html>';

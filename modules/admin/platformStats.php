@@ -22,9 +22,8 @@
 /**
  * @file platformStats.php
  * @description:  Shows statistics conserning the number of visits on the platform in a time period.
-                  Statistics can be shown for a specific user or for all users.
+  Statistics can be shown for a specific user or for all users.
  */
-
 $require_admin = TRUE;
 
 require_once '../../include/baseTheme.php';
@@ -33,36 +32,21 @@ $navigation[] = array("url" => "index.php", "name" => $langAdmin);
 $page_title = $langPlatformStats . ": " . $langVisitsStats;
 
 load_js('tools.js');
-load_js('jquery');
-load_js('jquery-ui');
-load_js('jquery-ui-timepicker-addon.min.js');
+load_js('bootstrap-datetimepicker');
 
-$head_content .= "<link rel='stylesheet' type='text/css' href='{$urlAppend}js/jquery-ui-timepicker-addon.min.css'>
-<script type='text/javascript'>
-$(function() {
-$('input[name=u_date_start]').datetimepicker({
-    dateFormat: 'yy-mm-dd', 
-    timeFormat: 'hh:mm'
-    });
-});
+$head_content .= "<script type='text/javascript'>
+        $(function() {
+            $('#u_date_start, #u_date_end').datetimepicker({
+                format: 'dd-mm-yyyy hh:ii',
+                pickerPosition: 'bottom-left',
+                language: '" . $language . "',
+                autoclose: true    
+            });            
+        });
+    </script>";
 
-$(function() {
-$('input[name=u_date_end]').datetimepicker({
-    dateFormat: 'yy-mm-dd', 
-    timeFormat: 'hh:mm'
-    });
-});
-</script>";
-
-$tool_content .= "
-  <div id='operations_container'>
-    <ul id='opslist'>
-      <li><a href='stateclass.php'>" . $langPlatformGenStats . "</a></li>
-      <li><a href='visitsCourseStats.php?first='>" . $langVisitsCourseStats . "</a></li>
-      <li><a href='oldStats.php' onClick='return confirmation(\"$langOldStatsExpireConfirm\");'>" . $langOldStats . "</a></li>
-      <li><a href='monthlyReport.php'>" . $langMonthlyReport . "</a></li>
-    </ul>
-  </div>";
+require_once 'admin_statistics_tools_bar.php';
+admin_statistics_tools("platformStats");
 
 //show chart with statistics
 require_once "modules/admin/statsResults.php";

@@ -51,7 +51,6 @@ require_once 'include/lib/multimediahelper.class.php';
 ModalBoxHelper::loadModalBox();
 
 load_js('tools.js');
-load_js('jquery');
 
 
 if (isset($_GET['eurId'])) {
@@ -84,7 +83,7 @@ $head_content .= "<script type='text/javascript'>
                         var questionId = parseInt(element_name.substring(14,element_name.length - 1));
                         var questionMaxGrade = parseInt($(elem).next().val());
                         if (grade > questionMaxGrade) {
-                            alert('$langGradeTooBig');
+                            bootbox.alert('$langGradeTooBig');
                             return false;
                         } else if (isNaN(grade)){
                             $(elem).css({'border-color':'red'});
@@ -109,7 +108,10 @@ $head_content .= "<script type='text/javascript'>
                             save_grade(this);
                             var countnotgraded = $('input.questionGradeBox').not(':disabled').length;
                             if (countnotgraded == 0) {
-                                $('a#submitButton').parent().hide();
+                                $('a#submitButton').hide();
+                                $('a#all').hide();
+                                $('a#ungraded').hide();
+                                $('table.graded').show('slow');
                             }                        
                         }
                     });
@@ -125,10 +127,14 @@ $head_content .= "<script type='text/javascript'>
                     });                    
                     $('a#ungraded').click(function(e){
                         e.preventDefault();
+                        $('a#all').removeClass('btn-primary').addClass('btn-default');
+                        $(this).removeClass('btn-default').addClass('btn-primary');
                         $('table.graded').hide('slow');
                     });
                     $('a#all').click(function(e){
                         e.preventDefault();
+                        $('a#ungraded').removeClass('btn-primary').addClass('btn-default');
+                        $(this).removeClass('btn-default').addClass('btn-primary');
                         $('table.graded').show('slow');
                     });        
                 });
@@ -141,16 +147,23 @@ $exerciseDescription_temp = mathfilter($exerciseDescription_temp, 12, "../../cou
 $displayResults = $objExercise->selectResults();
 $displayScore = $objExercise->selectScore();
 
-$tool_content .= "
-  <table class='tbl_border' width='99%'>
-  <tr class='odd'>
-    <td colspan='2'>".(($is_editor && $exercise_user_record->attempt_status == ATTEMPT_PENDING) ? "<div style='float:right;'><a href='#' id='all'>Όλες οι ερωτήσεις</a> / <a href='#' id='ungraded'>Ερωτήσεις προς Βαθμολόγηση</a></div>" : "")."<b>" . q(stripslashes($exerciseTitle)) . "</b>
-    <br/>" . standard_text_escape(stripslashes($exerciseDescription_temp)) . "
-    </td>  
-  </tr>
-  </table>";
-$tool_content .= "<div class='filtering'></div>";
 
+$tool_content .= "<div class='panel panel-primary'>
+  <div class='panel-heading'>
+    <h3 class='panel-title'>$exerciseTitle</h3>
+  </div>";
+if (!empty($exerciseDescription_temp)) {
+    $tool_content .= "<div class='panel-body'>
+        $exerciseDescription_temp
+      </div>";
+}
+$tool_content .= "</div>";
+$tool_content .= "
+  <div class='row margin-bottom-fat'>
+    <div class='col-md-5 col-md-offset-7'>
+        ".(($is_editor && $exercise_user_record->attempt_status == ATTEMPT_PENDING) ? "<div class='btn-group btn-group-sm' style='float:right;'><a class='btn btn-primary' id='all'>Όλες οι ερωτήσεις</a><a class='btn btn-default' id='ungraded'>Ερωτήσεις προς Βαθμολόγηση</a></div>" : "")."
+    </div>    
+  </div>";
 $i = 0;
 
 // for each question
@@ -184,12 +197,12 @@ if (count($exercise_question_ids)>0){
         }
         $iplus = $i + 1;
         $tool_content .= "
-            <table width='100%' class='tbl_alt ".(($question_graded)? 'graded' : 'ungraded')."'>
-            <tr class='odd'>
+            <table class='table-default ".(($question_graded)? 'graded' : 'ungraded')."'>
+            <tr class='active'>
               <td colspan='${colspan}'><b><u>$langQuestion</u>: $iplus</b></td>
             </tr>
             <tr>
-              <td class='even' colspan='${colspan}'>
+              <td colspan='${colspan}'>
                 <b>" . q($questionName) . "</b>
                 <br />" .
                 standard_text_escape($questionDescription_temp)
@@ -199,7 +212,7 @@ if (count($exercise_question_ids)>0){
         if (file_exists($picturePath . '/quiz-' . $row->question_id)) {
             $tool_content .= "here
                       <tr class='even'>
-                        <td class='center' colspan='${colspan}'><img src='../../" . ${'picturePath'} . "/quiz-" . ${'questionId'} . "'></td>
+                        <td class='text-center' colspan='${colspan}'><img src='../../" . ${'picturePath'} . "/quiz-" . ${'questionId'} . "'></td>
                       </tr>";
         }
         $questionScore = 0;
@@ -215,8 +228,8 @@ if (count($exercise_question_ids)>0){
                             </tr>";
             } elseif ($answerType == FILL_IN_BLANKS || $answerType == FREE_TEXT) {
                 $tool_content .= "
-                            <tr>
-                              <td class='even'><b>$langAnswer</b></td>
+                            <tr class='active'>
+                              <td><b>$langAnswer</b></td>
                             </tr>";       
             } else {
                 $tool_content .= "
@@ -331,33 +344,24 @@ if (count($exercise_question_ids)>0){
                             $tool_content .= "
                                                 <tr class='even'>
                                                   <td>
-                                                  <div align='center'><img src='$themeimg/";
-                            if ($answerType == UNIQUE_ANSWER || $answerType == TRUE_FALSE) {
-                                $tool_content .= "radio";
-                            } else {
-                                $tool_content .= "checkbox";
-                            }
+                                                  <div align='center'>";
+
                             if ($studentChoice) {
-                                $tool_content .= "_on";
+                                $icon_choice= "fa-check-square-o";
                             } else {
-                                $tool_content .= "_off";
+                                $icon_choice = "fa-square-o";
                             }
 
-                            $tool_content .= ".png' /></div>
+                            $tool_content .= icon($icon_choice)."</div>
                                                 </td>
                                                 <td><div align='center'>";
 
-                            if ($answerType == UNIQUE_ANSWER || $answerType == TRUE_FALSE) {
-                                $tool_content .= "<img src='$themeimg/radio";
-                            } else {
-                                $tool_content .= "<img src='$themeimg/checkbox";
-                            }
                             if ($answerCorrect) {
-                                $tool_content .= "_on";
+                                $icon_choice= "fa-check-square-o";
                             } else {
-                                $tool_content .= "_off";
+                                $icon_choice = "fa-square-o";
                             }
-                            $tool_content .= ".png' /></div>";
+                            $tool_content .= icon($icon_choice)."</div>";
                             $tool_content .= "
                                                 </td>
                                                 <td>" . standard_text_escape($answer) . "</td>
@@ -388,13 +392,13 @@ if (count($exercise_question_ids)>0){
                                  <td>" . purify($choice) . "</td>
                               </tr>";
         }
-        $tool_content .= "<tr class='even'>
-                            <th colspan='$colspan' class='odd'>";        
+        $tool_content .= "<tr class='active'>
+                            <th colspan='$colspan'>";        
         if ($answerType == FREE_TEXT) {
             $choice = purify($choice);
             if (!empty($choice)) {
                 if (!$question_graded) {
-                    $tool_content .= "<span style='color:red;'>$langAnswerUngraded</span>";   
+                    $tool_content .= "<span class='text-danger'>$langAnswerUngraded</span>";   
                 } else {
                     $questionScore = $question_weight;
                 }
@@ -410,7 +414,7 @@ if (count($exercise_question_ids)>0){
             if ($answerType == FREE_TEXT && $is_editor && isset($question_graded) && !$question_graded) {
              //show input field
              $tool_content .= "<span style='float:right;'>
-                               $langQuestionScore: <input type='text' class='questionGradeBox' maxlength='3' size='3' name='questionScore[$row->question_id]'>
+                               $langQuestionScore: <input style='display:inline-block;width:auto;' type='text' class='questionGradeBox' maxlength='3' size='3' name='questionScore[$row->question_id]'>
                                <input type='hidden' name='questionMaxGrade' value='$questionWeighting'>    
                                <b>/$questionWeighting</b></span>";               
             } else {
@@ -440,8 +444,8 @@ if ($displayScore == 1 || $is_editor) {
 $tool_content .= "
   <br/>
   <div align='center'>".(($is_editor && $exercise_user_record->attempt_status == ATTEMPT_PENDING) ?
-  "<span class='eclass_button'><a href='index.php' id='submitButton'>$langSubmit</a></span>" : '')."
-  <span class='eclass_button'><a href='index.php?course=$course_code'>$langReturn</a></span>   
+  "<a class='btn btn-primary' href='index.php' id='submitButton'>$langSubmit</a>" : '')."
+  <a class='btn btn-default' href='index.php?course=$course_code'>$langReturn</a>   
   </div>";
 
 draw($tool_content, 2, null, $head_content);

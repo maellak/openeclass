@@ -573,43 +573,34 @@ class Hierarchy {
 
 var countnd = $offset;
 
-$(function() {
+$(document).ready(function() {
 
     $( "#ndAdd" ).click(function() {
-        $( "#dialog-form" ).dialog( "open" );
+        $( "#treeModal" ).modal( "show" );
     });
+                
+    $( ".treeModalClose" ).click(function() {
+        $( "#treeModal" ).modal( "hide" );
+    });
+                
+    $( "#treeModalSelect" ).click(function() {
+        var newnode = $( "#js-tree" ).jstree("get_selected");
+        
+        if (!newnode.length) {
+            alert("$langEmptyNodeSelect");
+        } else {
+            countnd += 1;
+            $( "#nodCnt" ).append( '<p id="nd_' + countnd + '">'
+                                 + '<input type="hidden" $params value="' + newnode.attr("id").substring(2) + '" />'
+                                 + newnode.children("a").text()
+                                 + '&nbsp;<a href="#nodCnt" onclick="$( \'#nd_' + countnd + '\').remove(); $(\'#dialog-set-key\').val(null); $(\'#dialog-set-value\').val(null);"><img src="$themeimg/delete.png" title="$langNodeDel" alt="$langNodeDel"/><\/a>'
+                                 + '<\/p>');
 
-    $( "#dialog-form" ).dialog({
-        autoOpen: false,
-        height: 600,
-        width: 600,
-        modal: true,
-        buttons: {
-            "$langSelect": function() {
+            $( "#dialog-set-value" ).val( newnode.children("a").text() );
+            $( "#dialog-set-key" ).val(newnode.attr("id").substring(2));
+            document.getElementById('dialog-set-key').onchange();
 
-                var newnode = $( "#js-tree" ).jstree("get_selected");
-
-                if (!newnode.length)
-                    alert("$langEmptyNodeSelect");
-                else
-                {
-                    countnd += 1;
-                    $( "#nodCnt" ).append( '<p id="nd_' + countnd + '">'
-                                         + '<input type="hidden" $params value="' + newnode.attr("id").substring(2) + '" />'
-                                         + newnode.children("a").text()
-                                         + '&nbsp;<a href="#nodCnt" onclick="$( \'#nd_' + countnd + '\').remove(); $(\'#dialog-set-key\').val(null); $(\'#dialog-set-value\').val(null);"><img src="$themeimg/delete.png" title="$langNodeDel" alt="$langNodeDel"/><\/a>'
-                                         + '<\/p>');
-
-                    $( "#dialog-set-value" ).val( newnode.children("a").text() );
-                    $( "#dialog-set-key" ).val(newnode.attr("id").substring(2));
-                    document.getElementById('dialog-set-key').onchange();
-
-                    $( this ).dialog( "close" );
-                }
-            },
-            "$langCancel": function() {
-                $( this ).dialog( "close" );
-            }
+            $( "#treeModal" ).modal( "hide" );
         }
     });
 
@@ -671,9 +662,9 @@ function validateNodePickerForm() {
     var inputKey = $( "#dialog-set-key" ).val();
     var inputVal = $( "#dialog-set-value" ).val();
 
-    if (nodeContainer.length > 0 || (inputKey.length > 0 && inputVal.length > 0) )
+    if (nodeContainer.length > 0 || (inputKey.length > 0 && inputVal.length > 0) ) {
         return true;
-    else {
+    } else {
         alert('$langEmptyAddNode');
         return false;
     }
@@ -706,7 +697,7 @@ jContent;
      * @return string  $html - The returned HTML code
      */
     private function buildHtmlNodePicker($options) {
-        global $themeimg, $langNodeAdd, $langNodeDel;
+        global $themeimg, $langNodeAdd, $langNodeDel, $langCancel, $langSelect;
 
         $params = (array_key_exists('params', $options)) ? $options['params'] : '';
         $defaults = (array_key_exists('defaults', $options)) ? $options['defaults'] : '';
@@ -762,14 +753,29 @@ jContent;
 
             $html .= '<input id="dialog-set-key" type="hidden" ' . $params . ' value="' . $defs[0] . '" />';
             $onclick = (!empty($defs[0])) ? '$( \'#js-tree\' ).jstree(\'select_node\', \'#' . $defs[0] . '\', true, null);' : '';
-            $html .= '<input id="dialog-set-value" type="text" onclick="' . $onclick . ' $( \'#dialog-form\' ).dialog( \'open\' );" onfocus="' . $onclick . ' $( \'#dialog-form\' ).dialog( \'open\' );" value="' . $def . '" />&nbsp;';
+            $html .= '<input id="dialog-set-value" type="text" onclick="' . $onclick . ' $( \'#treeModal\' ).modal(\'show\');" onfocus="' . $onclick . ' $(\'#treeModal\').modal(\'show\');" value="' . $def . '" />&nbsp;';
         }
 
-        $html .= '<div id="dialog-form" title="' . $langNodeAdd . '"><fieldset><div id="js-tree">';
+        $html .= '<div class="modal fade" id="treeModal" tabindex="-1" role="dialog" aria-labelledby="treeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close treeModalClose"><span aria-hidden="true">&times;</span><span class="sr-only">' . $langCancel . '</span></button>
+                    <h4 class="modal-title" id="treeModalLabel">' . $langNodeAdd . '</h4>
+                </div>
+                <div class="modal-body">
+                    <div id="js-tree">';
         if (!$xmlout) {
             $html .= $this->buildTreeDataSource($options);
         }
-        $html .= '</div></fieldset></div>';
+        $html .= '</div></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default treeModalClose">' . $langCancel . '</button>
+                        <button type="button" class="btn btn-primary" id="treeModalSelect">' . $langSelect . '</button>
+                    </div>
+                </div>
+            </div>
+        </div>';
 
         return $html;
     }
@@ -1039,7 +1045,7 @@ jContent;
                          WHERE node.id IN (" . implode(', ', $nodes) . ")");
 
         if (count($res) > 0) {
-            $ret .= "<table width='100%' class='tbl_border'>";
+            $ret .= "<table class='table table-striped table-bordered table-hover'>";
             $nodenames = array();
             $nodecodes = array();
 
@@ -1071,8 +1077,7 @@ jContent;
 
                 $ret .= "&nbsp;&nbsp;-&nbsp;&nbsp;" . intval($count) . "&nbsp;" . ($count == 1 ? $langAvCours : $langAvCourses) . "</small></td></tr>";
             }
-
-            $ret .= "</table><br />";
+            $ret .= "</table>";
         }
 
         return $ret;
@@ -1133,7 +1138,7 @@ jContent;
             }
             asort($nodenames);
 
-            $ret .= "<select $params>";
+            $ret .= "<select class='form-control' $params>";
             foreach ($nodenames as $id => $name) {
                 $selected = ($id == $parentId) ? "selected=''" : '';
                 $ret .= "<option value='" . intval($id) . "' $selected>" . q($name) . "</option>";
@@ -1153,12 +1158,11 @@ jContent;
     public function buildRootsSelectForm($currentNode) {
         global $langSelectFac;
 
-        $ret = "<form name='depform' action='$_SERVER[SCRIPT_NAME]' method='get'>
-                 <div id='operations_container'><ul id='opslist'>
-                 <li>$langSelectFac:&nbsp;";
+        $ret = "<div class='form-wrapper'><form class='form-horizontal' role='form' name='depform' action='$_SERVER[SCRIPT_NAME]' method='get'>";
+        $ret .= "<div class='form-group'>";
+        $ret .= "<label>$langSelectFac:</label>";
         $ret .= $this->buildRootsSelection($currentNode, "name='fc' onChange='document.depform.submit();'");
-        $ret .= "</li></ul></div></form>";
-
+        $ret .= "</div></form></div>";
         return $ret;
     }
 

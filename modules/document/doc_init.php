@@ -30,9 +30,6 @@ if (defined('GROUP_DOCUMENTS')) {
     initialize_group_id();
     initialize_group_info($group_id);
     $subsystem_id = $group_id;
-    $nameTools = $langGroupDocumentsLink;
-    $navigation[] = array('url' => $urlAppend . 'modules/group/index.php?course=' . $course_code, 'name' => $langGroups);
-    $navigation[] = array('url' => $urlAppend . 'modules/group/group_space.php?course=' . $course_code . '&amp;group_id=' . $group_id, 'name' => q($group_name));
     $groupset = "group_id=$group_id&amp;";
     $base_url = $_SERVER['SCRIPT_NAME'] . '?course=' . $course_code . '&amp;' . $groupset;
     $upload_target_url = 'document.php?course=' . $course_code;
@@ -40,6 +37,9 @@ if (defined('GROUP_DOCUMENTS')) {
     $group_hidden_input = "<input type='hidden' name='group_id' value='$group_id' />";
     $basedir = $webDir . '/courses/' . $course_code . '/group/' . $secret_directory;
     $can_upload = $can_upload || $is_member;
+    $nameTools = $langGroupDocumentsLink;
+    $navigation[] = array('url' => $urlAppend . 'modules/group/group.php?course=' . $course_code, 'name' => $langGroups);
+    $navigation[] = array('url' => $urlAppend . 'modules/group/group_space.php?course=' . $course_code . '&amp;group_id=' . $group_id, 'name' => q($group_name));
 } elseif (defined('EBOOK_DOCUMENTS')) {
     if (isset($_REQUEST['ebook_id'])) {
         $ebook_id = intval($_REQUEST['ebook_id']);
@@ -47,17 +47,22 @@ if (defined('GROUP_DOCUMENTS')) {
     $subsystem = EBOOK;
     $subsystem_id = $ebook_id;
     $groupset = "ebook_id=$ebook_id&amp;";
+    $group_id = '';
     $base_url = $_SERVER['SCRIPT_NAME'] . '?course=' . $course_code . '&amp;' . $groupset;
     $upload_target_url = 'document.php?course=' . $course_code;
     $group_sql = "course_id = $course_id AND subsystem = $subsystem AND subsystem_id = $subsystem_id";
     $group_hidden_input = "<input type='hidden' name='ebook_id' value='$ebook_id' />";
     $basedir = $webDir . '/courses/' . $course_code . '/ebook/' . $ebook_id;
+    $nameTools = $langFileAdmin;
+    $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langEBook);
+    $navigation[] = array('url' => 'edit.php?course=' . $course_code.'&amp;id=' . $ebook_id, 'name' => $langEBookEdit);
 } elseif (defined('COMMON_DOCUMENTS')) {
     $subsystem = COMMON;
-    $base_url = $_SERVER['SCRIPT_NAME'] . '?';
-    $upload_target_url = 'commondocs.php';
     $subsystem_id = 'NULL';
     $groupset = '';
+    $base_url = $_SERVER['SCRIPT_NAME'] . '?';
+    $upload_target_url = 'commondocs.php';
+    $group_id = '';
     $group_sql = "course_id = -1 AND subsystem = $subsystem";
     $group_hidden_input = '';
     $basedir = $webDir . '/courses/commondocs';
@@ -80,9 +85,11 @@ if (defined('GROUP_DOCUMENTS')) {
     $base_url = $_SERVER['SCRIPT_NAME'] . '?course=' . $course_code . '&amp;';
     $upload_target_url = 'index.php?course=' . $course_code;
     $subsystem_id = 'NULL';
+    $group_id = '';
     $groupset = '';
     $group_sql = "course_id = $course_id AND subsystem = $subsystem";
     $group_hidden_input = '';
     $basedir = $webDir . '/courses/' . $course_code . '/document';
     $nameTools = $langDoc;
 }
+$redirect_base_url = preg_replace('/&$/', '', str_replace('&amp;', '&', $base_url));

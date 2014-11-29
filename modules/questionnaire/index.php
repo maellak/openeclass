@@ -55,11 +55,11 @@ if ($is_editor) {
             switch ($_GET['visibility']) {
                 case 'activate':
                     Database::get()->query("UPDATE poll SET active = 1 WHERE course_id = ?d AND pid = ?d", $course_id, $pid);
-                    Session::Messages($langPollActivated, 'success');
+                    Session::Messages($langPollActivated, 'alert-success');
                     break;
                 case 'deactivate':
                     Database::get()->query("UPDATE poll SET active = 0 WHERE course_id = ?d AND pid = ?d", $course_id, $pid);
-                    Session::Messages($langPollDeactivated, 'success');
+                    Session::Messages($langPollDeactivated, 'alert-success');
                     break;
             }
             redirect_to_home_page('modules/questionnaire/index.php?course='.$course_code);
@@ -72,22 +72,22 @@ if ($is_editor) {
             Database::get()->query("DELETE FROM poll WHERE course_id = ?d AND pid = ?d", $course_id, $pid);
             Database::get()->query("DELETE FROM poll_question WHERE pid = ?d", $pid);
             Database::get()->query("DELETE FROM poll_answer_record WHERE pid = ?d", $pid);
-            Session::Messages($langPollDeleted, 'success');
+            Session::Messages($langPollDeleted, 'alert-success');
             redirect_to_home_page('modules/questionnaire/index.php?course='.$course_code);       
         // delete poll results
         } elseif (isset($_GET['delete_results']) && $_GET['delete_results'] == 'yes') {
             Database::get()->query("DELETE FROM poll_answer_record WHERE pid = ?d", $pid);
-            Session::Messages($langPollResultsDeleted, 'success');
+            Session::Messages($langPollResultsDeleted, 'alert-success');
             redirect_to_home_page('modules/questionnaire/index.php?course='.$course_code);
         //clone poll
         } elseif (isset($_GET['clone']) and $_GET['clone'] == 'yes') {
             $poll = Database::get()->querySingle("SELECT * FROM poll WHERE pid = ?d", $pid);
-            $questions = Database::get()->queryArray("SELECT * FROM poll_question WHERE pid = ?d", $pid);
+            $questions = Database::get()->queryArray("SELECT * FROM poll_question WHERE pid = ?d ORDER BY q_position", $pid);
 
             $poll->name .= " ($langCopy2)";
             $poll_data = array(
                 $poll->creator_id, 
-                $poll->course_id, 
+                $course_id, 
                 $poll->name, 
                 $poll->creation_date, 
                 $poll->start_date, 
@@ -112,23 +112,25 @@ if ($is_editor) {
                 $new_pqid = Database::get()->query("INSERT INTO poll_question
                                            SET pid = ?d,
                                                question_text = ?s,
-                                               qtype = ?d", $new_pid, $question->question_text, $question->qtype);
-                $answers = Database::get()->queryArray("SELECT * FROM poll_question_answer WHERE pqid = ?d", $question->pqid);
+                                               qtype = ?d", $new_pid, $question->question_text, $question->qtype)->lastInsertID;
+                $answers = Database::get()->queryArray("SELECT * FROM poll_question_answer WHERE pqid = ?d ORDER BY pqaid", $question->pqid);
                 foreach ($answers as $answer) {
                     Database::get()->query("INSERT INTO poll_question_answer
                                             SET pqid = ?d,
-                                                answer_text = ?s",$new_pqid, $answer->answer_text);
+                                                answer_text = ?s", $new_pqid, $answer->answer_text);
                 }
             }
             redirect_to_home_page('modules/questionnaire/index.php?course='.$course_code);
         }        
     }
-    $tool_content .= "
-        <div id=\"operations_container\">
-	  <ul id=\"opslist\">
-	    <li><a href='admin.php?course=$course_code&amp;newPoll=yes'>$langCreatePoll</a></li>
-	  </ul>
-	</div>";
+    $tool_content .= action_bar(array(
+            array('title' => $langCreatePoll,
+                  'url' => "admin.php?course=$course_code&amp;newPoll=yes",
+                  'icon' => 'fa-plus-circle',
+                  'level' => 'primary-label',
+                  'button-class' => 'btn-success')
+            ));    
+
 }
 
 printPolls();
@@ -144,7 +146,7 @@ function printPolls() {
     global $tool_content, $course_id, $course_code, $langCreatePoll,
     $langPollsActive, $langTitle, $langPollCreator, $langPollCreation,
     $langPollStart, $langPollEnd, $langPollNone, $is_editor, $langAnswers,
-    $themeimg, $langEdit, $langDelete, $langActions,
+    $themeimg, $langEdit, $langDelete, $langActions, $langSurveyNotStarted,
     $langDeactivate, $langPollsInactive, $langPollHasEnded, $langActivate,
     $langParticipate, $langVisible, $user_id, $langHasParticipated, $langSee,
     $langHasNotParticipated, $uid, $langConfirmDelete, $langPurgeExercises,
@@ -156,21 +158,22 @@ function printPolls() {
     if ($num_rows > 0)
         ++$poll_check;
     if (!$poll_check) {
-        $tool_content .= "\n    <p class='alert1'>" . $langPollNone . "</p><br>";
+        $tool_content .= "\n    <div class='alert alert-warning'>" . $langPollNone . "</div><br>";
     } else {
         // Print active polls
         $tool_content .= "
-		      <table align='left' width='100%' class='tbl_alt'>
+                    <div class='table-repsonsive'>
+		      <table class='table-default'>
 		      <tr>
-			<th colspan='2'><div align='left'>&nbsp;$langTitle</div></th>
-			<th class='center'>$langPollStart</th>
-			<th class='center'>$langPollEnd</th>";
+			<th><div align='left'>&nbsp;$langTitle</div></th>
+			<th class='text-center'>$langPollStart</th>
+			<th class='text-center'>$langPollEnd</th>";
 
         if ($is_editor) {
-            $tool_content .= "<th class='center' width='16'>$langAnswers</th>"
-                           . "<th class='center'>$langActions</th>";
+            $tool_content .= "<th class='text-center' width='16'>$langAnswers</th>"
+                           . "<th class='text-center'>".icon('fa-cogs')."</th>";
         } else {
-            $tool_content .= "<th class='center'>$langParticipate</th>";
+            $tool_content .= "<th class='text-center'>$langParticipate</th>";
         }
         $tool_content .= "</tr>";
         $index_aa = 1;
@@ -180,27 +183,20 @@ function printPolls() {
 
             if (($visibility) or ($is_editor)) {
                 if ($visibility) {
-                    if ($k % 2 == 0) {
-                        $visibility_css = " class=\"even\"";
-                    } else {
-                        $visibility_css = " class=\"odd\"";
-                    }
-                    $visibility_gif = "visible";
+                    $visibility_css = "";
+                    $visibility_gif = "fa-eye";
                     $visibility_func = "deactivate";
                     $arrow_png = "arrow";
                     $k++;
                 } else {
-                    $visibility_css = " class=\"invisible\"";
-                    $visibility_gif = "invisible";
+                    $visibility_css = " class=\"not_visible\"";
+                    $visibility_gif = "fa-eye-slash";
                     $visibility_func = "activate";
                     $arrow_png = "arrow";
                     $k++;
                 }
-                if ($k % 2 == 0) {
-                    $tool_content .= "<tr $visibility_css>";
-                } else {
-                    $tool_content .= "<tr $visibility_css>";
-                }
+                $tool_content .= "<tr $visibility_css>";
+
                 $temp_CurrentDate = date("Y-m-d H:i");
                 $temp_StartDate = $thepoll->start_date;
                 $temp_EndDate = $thepoll->end_date;
@@ -214,19 +210,20 @@ function printPolls() {
                 // check if user has participated
                 $has_participated = Database::get()->querySingle("SELECT COUNT(*) as counter FROM poll_answer_record
                                         WHERE user_id = ?d AND pid = ?d", $uid, $pid)->counter;
-                // check if poll has ended
-                if (($temp_CurrentDate >= $temp_StartDate) && ($temp_CurrentDate < $temp_EndDate)) {
-                    $poll_ended = 0;
-                } else {
+                // check if poll has ended OR not strarted yet
+                $poll_ended = 0;
+                $poll_not_started = 0;
+                if($temp_CurrentDate < $temp_StartDate) {
+                    $poll_not_started = 1;
+                } else if ($temp_CurrentDate >= $temp_EndDate) {
                     $poll_ended = 1;
                 }
+                
                 if ($is_editor) {
                     $tool_content .= "
-                        <td width='16'><img src='$themeimg/$arrow_png.png' title='bullet' /></td>
                         <td><a href='pollresults.php?course=$course_code&amp;pid=$pid'>".q($thepoll->name)."</a>";
                 } else {
                     $tool_content .= "
-                        <td><img style='border:0px; padding-top:3px;' src='$themeimg/arrow.png' title='bullet' /></td>
                         <td>";
                     if (($has_participated == 0) and $poll_ended == 0) {
                         $tool_content .= "<a href='pollparticipate.php?course=$course_code&amp;UseCase=1&pid=$pid'>".q($thepoll->name)."</a>";
@@ -235,38 +232,56 @@ function printPolls() {
                     }
                 }
                 $tool_content .= "                       
-                        <td class='center'>" . nice_format(date("Y-m-d H:i", strtotime($thepoll->start_date)), true) . "</td>
-                        <td class='center'>" . nice_format(date("Y-m-d H:i", strtotime($thepoll->end_date)), true) . "</td>";
+                        <td class='text-center'>" . nice_format(date("Y-m-d H:i", strtotime($thepoll->start_date)), true) . "</td>
+                        <td class='text-center'>" . nice_format(date("Y-m-d H:i", strtotime($thepoll->end_date)), true) . "</td>";
                 if ($is_editor) {
                     $tool_content .= "
-                        <td class='center'>$countAnswers</td>
-                        <td class='center'>" .
-                            icon('search', $langSee, "pollparticipate.php?course=$course_code&amp;UseCase=1&pid=$pid") .
-                            "&nbsp;" . 
-                            icon('edit', $langEdit, "admin.php?course=$course_code&amp;pid=$pid") .
-                            "&nbsp;" . 
-                            icon('clear', $langPurgeExercises,
-                                "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete_results=yes&amp;pid=$pid",
-                                "onClick=\"return confirmation('" . js_escape($langConfirmPurgeExercises) . "');\"") .
-                            "&nbsp;" .
-                            icon('delete', $langDelete,
-                                "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete=yes&amp;pid=$pid",
-                                "onClick=\"return confirmation('" . js_escape($langConfirmDelete) . "');\"") .
-                            "&nbsp;" .
-                            icon($visibility_gif, $langVisible,
-                                "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;visibility=$visibility_func&amp;pid={$pid}") .
-                            "&nbsp;" .
-                            icon('duplicate', $langCreateDuplicate,
-                                "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;clone=yes&amp;pid={$pid}") .
-                            "</td></tr>";
+                        <td class='text-center'>$countAnswers</td>
+                        <td class='text-center option-btn-cell'>" .action_button(array(
+                            array(
+                                'title' => $langSee,
+                                'icon' => 'fa-search',
+                                'url' => "pollparticipate.php?course=$course_code&amp;UseCase=1&pid=$pid"
+                            ),
+                            array(
+                                'title' => $langEdit,
+                                'icon' => 'fa-edit',
+                                'url' => "admin.php?course=$course_code&amp;pid=$pid"                              
+                            ),
+                            array(
+                                'title' => $langPurgeExercises,
+                                'icon' => 'fa-eraser',
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete_results=yes&amp;pid=$pid",
+                                'confirm' => $langConfirmPurgeExercises                               
+                            ),
+                            array(
+                                'title' => $langDelete,
+                                'icon' => 'fa-times',
+                                'class' => 'delete',
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete=yes&amp;pid=$pid",
+                                'confirm' => $langConfirmDelete                               
+                            ),
+                            array(
+                                'title' => $langVisible,
+                                'icon' => $visibility_gif,
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;visibility=$visibility_func&amp;pid={$pid}"
+                            ),
+                            array(
+                                'title' => $langCreateDuplicate,
+                                'icon' => 'fa-copy',
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;clone=yes&amp;pid={$pid}"
+                            )                                        
+                        ))."</td></tr>";
                 } else {
                     $tool_content .= "
-                        <td class='center'>";
-                    if (($has_participated == 0) and ($poll_ended == 0)) {
+                        <td class='text-center'>";
+                    if ($has_participated == 0 && $poll_ended == 0 && $poll_not_started == 0) {
                         $tool_content .= "$langHasNotParticipated";
                     } else {
                         if ($poll_ended == 1) {
                             $tool_content .= $langPollHasEnded;
+                        } elseif($poll_not_started == 1) {
+                            $tool_content .= $langSurveyNotStarted;                           
                         } else {
                             $tool_content .= $langHasParticipated;
                         }
@@ -276,6 +291,6 @@ function printPolls() {
             }
             $index_aa ++;
         }
-        $tool_content .= "</table>";
+        $tool_content .= "</table></div>";
     }
 }

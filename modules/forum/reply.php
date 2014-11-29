@@ -72,7 +72,7 @@ $group_id = init_forum_group_info($forum_id);
 $nameTools = $langReply;
 $navigation[] = array('url' => "index.php?course=$course_code", 'name' => $langForums);
 $navigation[] = array('url' => "viewforum.php?course=$course_code&amp;forum=$forum_id", 'name' => q($forum_name));
-$navigation[] = array('url' => "viewtopic.php?course=$course_code&amp;topic=$topic&amp;forum=$forum_id", 'name' =>  q($topic_title));
+$navigation[] = array('url' => "viewtopic.php?course=$course_code&amp;topic=$topic&amp;forum=$forum_id", 'name' => q($topic_title));
 
 if (!does_exists($forum, "forum") || !does_exists($topic, "topic") || !$parent_post_ok) {
     $tool_content .= $langErrorTopicSelect;
@@ -81,7 +81,7 @@ if (!does_exists($forum, "forum") || !does_exists($topic, "topic") || !$parent_p
 }
 
 if ($topic_locked == 1) {
-    $tool_content .= "<p class='alert1'>$langErrorTopicLocked</p>";
+    $tool_content .= "<div class='alert alert-warning'>$langErrorTopicLocked</div>";
     draw($tool_content, 2, null, $head_content);
     exit();
 }
@@ -92,7 +92,7 @@ if (isset($_POST['submit'])) {
     $parent_post = $_POST['parent_post'];
     if (trim($message) == '') {
         $tool_content .= "
-                <p class='alert1'>$langEmptyMsg</p>
+                <div class='alert alert-warning'>$langEmptyMsg</div>
                 <p class='back'>&laquo; $langClick <a href='newtopic.php?course=$course_code&amp;forum=$forum_id'>$langHere</a> $langReturnTopic</p>";
         draw($tool_content, 2, null, $head_content);
         exit();
@@ -163,18 +163,20 @@ if (isset($_POST['submit'])) {
     } else {
         $page = '';
     }
-    $_SESSION['message'] = "<p class='success'>$langStored</p>";
+    $_SESSION['message'] = "<div class='alert alert-success'>$langStored</div>";
     header("Location: {$urlServer}modules/forum/viewtopic.php?course=$course_code&topic=$topic&forum=$forum_id" . $page);
     exit;
 } else {
     // Topic review
-    $tool_content .= "
-        <div id='operations_container'>
-            <ul id='opslist'>
-              <li><a href='viewtopic.php?course=$course_code&amp;topic=$topic&amp;forum=$forum_id' target='_blank'>$langTopicReview</a></li>
-              <li><a href='viewtopic.php?course=$course_code&topic=$topic&forum=$forum_id'>$langBack</li>
-            </ul>
-        </div>";
+    $tool_content .= action_bar(array(
+                array('title' => $langBack,
+                    'url' => "viewtopic.php?course=$course_code&topic=$topic&forum=$forum_id",
+                    'icon' => 'fa-reply',
+                    'level' => 'primary-label'),
+                array('title' => $langTopicReview,
+                    'url' => "viewtopic.php?course=$course_code&amp;topic=$topic&amp;forum=$forum_id",
+                    'icon' => 'fa-eye',
+                    'level' => 'primary')));
 
     $tool_content .= "<form action='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;topic=$topic&forum=$forum_id' method='post'>
 	<input type='hidden' name='parent_post' value='$parent_post'>
@@ -193,7 +195,7 @@ if (isset($_POST['submit'])) {
         </tr>
 	<tr>
 	  <td class='right'>	 
-	    <input type='submit' name='submit' value='$langSubmit'>&nbsp;	    
+	    <input class='btn btn-primary' type='submit' name='submit' value='$langSubmit'>&nbsp;	    
  	  </td>
 	</tr>
 	</table>

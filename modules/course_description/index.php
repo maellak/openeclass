@@ -42,11 +42,14 @@ ModalBoxHelper::loadModalBox();
 if ($is_editor) {
     load_js('tools.js');
     $tool_content .= "
-	<div id='operations_container'>
-	  <ul id='opslist'>
-		<li><a href='edit.php?course=$course_code'>$langEditCourseProgram</a></li>
-	  </ul>
-	</div>";
+	<div id='operations_container'>" .
+            action_bar(array(
+                array('title' => $langEditCourseProgram,
+                    'url' => "edit.php?course=$course_code",
+                    'icon' => 'fa-plus-circle',
+                    'level' => 'primary-label',
+                    'button-class' => 'btn-success'))) .
+            "</div>";
 
     processActions();
 
@@ -72,76 +75,53 @@ $q = Database::get()->queryArray("SELECT id, title, comments, type, visible FROM
 if ($q && count($q) > 0) {
     $i = 0;
     foreach ($q as $row) {
-        $tool_content .= "
-        <table width='100%' class='tbl_border'>
-        <tr class='odd'>
-         <td class='bold'>" . q($row->title) . "</td>" .
-                handleActions($row->id, $row->visible, $i, count($q)) . "
-        </tr>";
-        $tool_content .= handleType($row->type);
-        $tool_content .= "<tr>";
-        $colspan = ($is_editor) ? "colspan='6'" : "";
-        $tool_content .= "<td $colspan>" . standard_text_escape($row->comments) . "</td>";
-        $tool_content .= "</tr></table><br />";
+        $tool_content .= "            
+            <div class='panel panel-action-btn-default ".($row->visible ? "" : "not_visible")."'>
+              <div class='panel-heading'>
+                <div class='pull-right'>".
+                action_button(
+                        array(
+                            array(
+                                'title' => q($langEdit),
+                                'url' => "edit.php?course=$course_code&amp;id=$row->id",
+                                'icon' => 'fa-edit'
+                            ),
+                            array('title' => q($langDelete),
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;del=$row->id",
+                                'icon' => 'fa-times',
+                                'class' => 'delete',
+                                'confirm' => $langConfirmDelete),
+                            array('title' => $langAddToCourseHome,
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;vis=$row->id",
+                                'icon' => $row->visible ? 'fa-eye' : 'fa-eye-slash'
+                            ),
+                            array('title' => q($langUp),
+                                'icon' => 'fa-arrow-up',
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;up=$row->id",
+                                'show' => $i > 0),
+                            array('title' => q($langDown),
+                                'icon' => 'fa-arrow-down',
+                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;down=$row->id",
+                                'show' => $i + 1 < count($q))
+                        )
+                ) ."</div>
+              <h3 class='panel-title'>$row->title</h3>      
+              </div>
+              <div class='panel-body'>"
+                .handleType($row->type)."<br><br>"
+               . standard_text_escape($row->comments) . 
+              "</div>
+            </div>";
         $i++;
     }
 } else {
-    $tool_content .= "<p class='alert1'>$langThisCourseDescriptionIsEmpty</p>";
+    $tool_content .= "<div class='alert alert-warning'>$langThisCourseDescriptionIsEmpty</div>";
 }
 
 add_units_navigation(true);
 draw($tool_content, 2, null, $head_content);
 
 // Helper Functions
-
-function handleActions($cDescId, $visible, $counter, $total) {
-    global $is_editor, $langEdit, $langDelete,
-    $langAddToCourseHome, $langDown, $langUp,
-    $langConfirmDelete, $course_code, $themeimg;
-
-    if (!$is_editor) {
-        return '';
-    }
-
-    $cDescId = intval($cDescId);
-    $counter = intval($counter);
-    $total = intval($total);
-    $icon_vis = (intval($visible) === 1) ? 'publish.png' : 'unpublish.png';
-    $edit_link = "edit.php?course=$course_code&amp;id=$cDescId";
-
-    // edit
-    $content = "<td width='3'><a href='$edit_link'>" .
-            "<img src='$themeimg/edit.png' title='" . q($langEdit) . "' alt='" . q($langEdit) . "' /></a></td>";
-
-    // delete
-    $content .= "<td width='3'><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;del=$cDescId'" .
-            " onClick=\"return confirmation('" . js_escape($langConfirmDelete) . "')\">" .
-            "<img src='$themeimg/delete.png' " .
-            "title='" . q($langDelete) . "' alt='" . q($langDelete) . "'></a></td>";
-
-    // visibility
-    $content .= "<td width='3'><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;vis=$cDescId'>" .
-            "<img src='$themeimg/$icon_vis' " .
-            "title='" . q($langAddToCourseHome) . "' alt='" . q($langAddToCourseHome) . "'></a></td>";
-
-    // down
-    if ($counter + 1 < $total) {
-        $content .= "\n          <td width='12'><div align='right'><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;down=$cDescId'>" .
-                "<img src='$themeimg/down.png' title='" . q($langDown) . "' alt='" . q($langDown) . "'></a></div></td>";
-    } else {
-        $content .= "\n          <td width='12'>&nbsp;</td>";
-    }
-
-    // up
-    if ($counter > 0) {
-        $content .= "<td width='12'><div align='left'><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;up=$cDescId'>" .
-                "<img src='$themeimg/up.png' title='" . q($langUp) . "' alt='" . q($langUp) . "'></a></div></td>";
-    } else {
-        $content .= "\n          <td width='12'>&nbsp;</td>";
-    }
-
-    return $content;
-}
 
 function handleType($typeId) {
     global $is_editor, $language;
@@ -175,7 +155,7 @@ function processActions() {
         $res_id = intval($_REQUEST['del']);
         Database::get()->query("DELETE FROM course_description WHERE id = ?d AND course_id = ?d", $res_id, $course_id);
         CourseXMLElement::refreshCourse($course_id, $course_code);
-        $tool_content .= "<p class='success'>$langResourceCourseUnitDeleted</p>";
+        $tool_content .= "<div class='alert alert-success'>$langResourceCourseUnitDeleted</div>";
     } elseif (isset($_REQUEST['vis'])) { // modify visibility in text resources only 
         $res_id = intval($_REQUEST['vis']);
         $vis = Database::get()->querySingle("SELECT `visible` FROM course_description WHERE id = ?d AND course_id = ?d", $res_id, $course_id);

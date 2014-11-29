@@ -35,8 +35,6 @@ require_once 'hierarchy_validations.php';
 $tree = new Hierarchy();
 $user = new User();
 
-load_js('jquery');
-load_js('jquery-ui');
 load_js('jstree');
 
 $nameTools = $langMultiRegUser;
@@ -59,7 +57,7 @@ if (isset($_POST['submit'])) {
 
     foreach ($fields as $field) {
         if (!in_array($field, $acceptable_fields)) {
-            $tool_content = "<p class='caution'>$langMultiRegFieldError <b>" . q($field) . "</b></p>";
+            $tool_content = "<div class='alert alert-danger'>$langMultiRegFieldError <b>" . q($field) . "</b></div>";
             draw($tool_content, 3, 'admin');
             exit;
         }
@@ -183,7 +181,7 @@ if (isset($_POST['submit'])) {
                 $langMultiRegSendMail</td>
         </tr>
         <tr><th>&nbsp;</th>
-            <td class='right'><input type='submit' name='submit' value='$langSubmit' /></td>
+            <td class='right'><input class='btn btn-primary' type='submit' name='submit' value='$langSubmit' /></td>
         </tr>
         </table>
         </fieldset>

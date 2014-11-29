@@ -115,32 +115,32 @@ if (isset($_POST['submit'])) {
 
         if ($verified_mail === EMAIL_VERIFICATION_REQUIRED or $verified_mail === EMAIL_VERIFIED or $verified_mail === EMAIL_UNVERIFIED)
             $criteria[] = 'verified_mail = ?d';
-            $terms[] = $verified_mail;
-        }
+        $terms[] = $verified_mail;
+    }
 
-        if (!empty($am)) {
-            $criteria[] = 'am LIKE ?d';
-            $terms[] = '%' . $am . '%';
-        }
+    if (!empty($am)) {
+        $criteria[] = 'am LIKE ?d';
+        $terms[] = '%' . $am . '%';
+    }
 
-        if (!empty($user_type)) {
-            $criteria[] = 'status = ?d';
-            $terms[] = $user_type;
-        }
+    if (!empty($user_type)) {
+        $criteria[] = 'status = ?d';
+        $terms[] = $user_type;
+    }
 
-        if (!empty($auth_type)) {
-            if ($auth_type >= 2) {
-                $criteria[] = 'password = ?s';
-                $terms[] = $auth_ids[$auth_type];
-            } elseif ($auth_type == 1) {
-                $criteria[] = 'password NOT IN (' . implode(', ', array_fill(0, count($auth_ids), '?s')) . ')';
-                $terms = array_merge($terms, $auth_ids);
-            }
+    if (!empty($auth_type)) {
+        if ($auth_type >= 2) {
+            $criteria[] = 'password = ?s';
+            $terms[] = $auth_ids[$auth_type];
+        } elseif ($auth_type == 1) {
+            $criteria[] = 'password NOT IN (' . implode(', ', array_fill(0, count($auth_ids), '?s')) . ')';
+            $terms = array_merge($terms, $auth_ids);
         }
+    }
 
-        if (!empty($email)) {
-            $criteria[] = 'email LIKE ?s';
-            $terms[] = '%' . $email . '%';
+    if (!empty($email)) {
+        $criteria[] = 'email LIKE ?s';
+        $terms[] = '%' . $email . '%';
 
         if ($search == 'inactive') {
             $criteria[] = 'expires_at < ' . DBHelper::timeAfter();
@@ -213,14 +213,19 @@ if (isset($_POST['submit'])) {
         </tr>
         <tr>
             <th>&nbsp;</th>
-            <td class='right'><input type='submit' name='submit' value='" . $langSubmit . "' onclick='return confirmation(\"" . $langMultiDelUserConfirm . "\");' /></td>
+            <td class='right'><input class='btn btn-primary' type='submit' name='submit' value='" . $langSubmit . "' onclick='return confirmation(\"" . $langMultiDelUserConfirm . "\");' /></td>
         </tr>
         </table>
         </fieldset>
         </form>";
 }
 
-$tool_content .= "<div class='right'><a href='index.php'>$langBackAdmin</a></div><br/>\n";
+$tool_content .= action_bar(array(
+    array('title' => $langBack,
+        'url' => "index.php",
+        'icon' => 'fa-reply',
+        'level' => 'primary-label')));
+
 draw($tool_content, 3, 'admin', $head_content);
 
 // Translate username to uid

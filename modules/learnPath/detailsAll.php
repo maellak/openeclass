@@ -48,6 +48,7 @@ $require_editor = TRUE;
 
 require_once '../../include/baseTheme.php';
 require_once 'include/lib/learnPathLib.inc.php';
+require_once 'modules/usage/statistics_tools_bar.php';
 
 if (isset($_GET['from_stats']) and $_GET['from_stats'] == 1) { // if we come from statistics
     $navigation[] = array('url' => '../usage/?course=' . $course_code, 'name' => $langUsage);
@@ -68,26 +69,17 @@ $sql = "SELECT U.`surname`, U.`givenname`, U.`id`
 $usersList = get_limited_list($sql, 30);
 
 if (isset($_GET['from_stats']) and $_GET['from_stats'] == 1) { // if we come from statistics
-    $tool_content .= "
-        <div id='operations_container'>
-          <ul id='opslist'>
-            <li><a href='../usage/favourite.php?course=$course_code&amp;first='>$langFavourite</a></li>
-            <li><a href='../usage/userlogins.php?course=$course_code&amp;first='>$langUserLogins</a></li>
-            <li><a href='../usage/userduration.php?course=$course_code'>$langUserDuration</a></li>
-            <li><a href='detailsAll.php?course=$course_code&amp;from_stats=1'>$langLearningPaths</a></li>
-            <li><a href='../usage/group.php?course=$course_code'>$langGroupUsage</a></li>
-          </ul>
-        </div>";
+    statistics_tools($course_code, "detailsAll", "../usage/");
 }
 
 // check if there are learning paths available
 $lcnt = Database::get()->querySingle("SELECT COUNT(*) AS count FROM lp_learnPath WHERE course_id = ?d", $course_id)->count;
 if ($lcnt == 0) {
-    $tool_content .= "<p class='alert1'>$langNoLearningPath</p>";
+    $tool_content .= "<div class='alert alert-warning'>$langNoLearningPath</div>";
     draw($tool_content, 2, null, $head_content);
     exit;
 } else {
-    $tool_content .= "<div class='info'>
+    $tool_content .= "<div class='alert alert-info'>
            <b>$langDumpUserDurationToFile: </b>1. <a href='dumpuserlearnpathdetails.php?course=$course_code'>$langcsvenc2</a>
                 2. <a href='dumpuserlearnpathdetails.php?course=$course_code&amp;enc=1253'>$langcsvenc1</a>          
           </div>";

@@ -23,8 +23,7 @@
 /**
  * @file oldStats.php
  * @brief Show old statistics for the course, taken from table "action_summary" of the course's database.
- */  
-
+ */
 $require_current_course = true;
 $require_course_admin = true;
 $require_help = true;
@@ -33,9 +32,9 @@ $require_login = true;
 
 include '../../include/baseTheme.php';
 require_once 'include/action.php';
+require_once 'statistics_tools_bar.php';
 
 load_js('tools.js');
-load_js('jquery');
 load_js('jquery-ui');
 load_js('jquery-ui-timepicker-addon.min.js');
 
@@ -56,14 +55,7 @@ $('input[name=u_date_end]').datetimepicker({
 });
 </script>";
 
-$tool_content .= "
-  <div id='operations_container'>
-    <ul id='opslist'>
-      <li><a href='index.php?course=$course_code'>" . $langUsageVisits . "</a></li>
-      <li><a href='favourite.php?course=$course_code&amp;first='>" . $langFavourite . "</a></li>
-      <li><a href='userlogins.php?course=$course_code&amp;first='>" . $langUserLogins . "</a></li>
-    </ul>
-  </div>";
+statistics_tools($course_code, "oldStats");
 
 $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langUsage);
 $nameTools = $langOldStats;
@@ -123,7 +115,7 @@ if ($u_module_id != -1) {
 $chart = new Plotter(600, 300);
 $chart->setTitle("$langOldStats");
 switch ($u_stats_value) {
-    case "visits":               
+    case "visits":
         $result = Database::get()->queryArray("SELECT module_id, MONTH(start_date) AS month,
                         YEAR(start_date) AS year,
                         SUM(visits) AS visits
@@ -132,14 +124,14 @@ switch ($u_stats_value) {
                         AND $mod_where
                         AND course_id = ?d
                         GROUP BY MONTH(start_date)", $course_id);
-                     
+
         foreach ($result as $row) {
             $mont = $langMonths[$row->month];
             $chart->growWithPoint($mont . " - " . $row->year, $row->visits);
         }
         break;
 
-    case "duration":        
+    case "duration":
         $result = Database::get()->queryArray("SELECT module_id, MONTH(start_date) AS month,
                         YEAR(start_date) AS year,
                         SUM(duration) AS tot_dur FROM actions_summary
@@ -147,19 +139,19 @@ switch ($u_stats_value) {
                         AND $mod_where
                         AND course_id = ?d
                         GROUP BY MONTH(start_date)", $course_id);
-        
+
         foreach ($result as $row) {
             $mont = $langMonths[$row->month];
             $chart->growWithPoint($mont . " - " . $row->year, $row->tot_dur);
         }
-        $tool_content .= "<p class='info'>$langDurationExpl</p>";
+        $tool_content .= "<div class='alert alert-info'>$langDurationExpl</div>";
         break;
 }
 
 $chart_path = 'courses/' . $course_code . '/temp/chart_' . md5(serialize($chart)) . '.png';
 
 if (!$chart->isEmpty()) {
-    $tool_content .= "<p class='info'>" . sprintf($langOldStatsExpl, get_config('actions_expire_interval')) . "</p>";
+    $tool_content .= "<div class='alert alert-info'>" . sprintf($langOldStatsExpl, get_config('actions_expire_interval')) . "</div>";
     $tool_content .= $chart->plot($langNoStatistics);
 }
 
@@ -191,11 +183,11 @@ $tool_content .= '<form method="post" action="' . $_SERVER['SCRIPT_NAME'] . '?co
 	 </tr>
 	 <tr>
         <th>' . $langStartDate . ':</th>
-        <td><input type="text" name="u_date_start" value="' . $u_date_start .'"></td>
+        <td><input type="text" name="u_date_start" value="' . $u_date_start . '"></td>
         </tr>
         <tr>
         <th>' . $langEndDate . ':</th>
-        <td><input type="text" name="u_date_end" value="' . $u_date_end .'"></td>    
+        <td><input type="text" name="u_date_end" value="' . $u_date_end . '"></td>    
         </tr>
 	 <tr>
 	   <th>' . $langModule . '</th>
@@ -203,7 +195,7 @@ $tool_content .= '<form method="post" action="' . $_SERVER['SCRIPT_NAME'] . '?co
 	 </tr>
 	 <tr>
 	   <th>&nbsp;</th>
-	   <td><input type="submit" name="btnUsage" value="' . $langSubmit . '"></td>
+	   <td><input class="btn btn-primary" type="submit" name="btnUsage" value="' . $langSubmit . '"></td>
 	 </tr>
 	 </table>
        </fieldset>

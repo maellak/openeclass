@@ -31,7 +31,6 @@ $nameTools = $langAddGuest;
 $navigation[] = array('url' => "index.php?course=$course_code", 'name' => $langAdminUsers);
 
 // javascript
-load_js('jquery');
 load_js('pwstrength.js');
 $head_content .= <<<hContent
 <script type="text/javascript">
@@ -61,12 +60,16 @@ $default_guest_username = $langGuestUserName . $course_code;
 if (isset($_POST['submit'])) {
     $password = $_POST['guestpassword'];
     createguest($default_guest_username, $course_id, $password);
-    $tool_content .= "<p class='success'>$langGuestSuccess</p>" .
-            "<a href='index.php?course=$course_code'>$langBack</a>";
+    $tool_content .= "<div class='alert alert-success'>$langGuestSuccess</div>" .
+            action_bar(array(
+            array('title' => $langBack,
+                'url' => "",
+                'icon' => 'fa-reply',
+                'level' => 'primary-label')));
 } else {
     $guest_info = guestinfo($course_id);
     if ($guest_info) {
-        $tool_content .= "<p class='caution'>$langGuestExist</p>";
+        $tool_content .= "<div class='alert alert-danger'>$langGuestExist</div>";
         $submit_label = $langModify;
     } else {
         $guest_info = new stdClass();
@@ -107,7 +110,7 @@ if (isset($_POST['submit'])) {
         <th>&nbsp;</th>
         <td class='right'>&nbsp;</td>
         <td class='right'>
-          <input type='submit' name='submit' value='$submit_label' />
+          <input class='btn btn-primary' type='submit' name='submit' value='$submit_label' />
         </td>
         </tr>
         </table>

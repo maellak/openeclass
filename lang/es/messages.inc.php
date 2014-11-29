@@ -607,7 +607,7 @@ $langFinalize = "¡Crear curso!";
 $langCourseCategory = "La categoría del curso pertenece a";
 $langProfessorsInfo = "Nombres completos de los profesores;seperados por comas (e.j.<i>John Doe, George Smith</i>)";
 $langPublic = "Acceso público, incluso sin conexión";
-$langPrivate = "Privado (El acceso está garantizado sólo " . $langsStudents . "añadidos en la Lista de Usuarios)";
+$langClosedCourseShort = "Privado (El acceso está garantizado sólo " . $langsStudents . "añadidos en la Lista de Usuarios)";
 $langPrivate_1 = "Acceso al Curso";
 $langPrivate_2 = "garantizado sólo a " . $langsStudents . "añadidos a la Lista de Usuarios";
 $langPrivate_3 = "garantizado a todo el mundo";
@@ -981,7 +981,7 @@ $langGroupPropertiesModified = "Los ajustes de los grupos han sido modificados";
 $langGroupThisSpace = "Una área para este grupo";
 $langGroupName = "Nombre del grupo";
 $langEditGroup = "Edita este grupo";
-$langUncompulsory = "(opcional)";
+$langOptional = "(opcional)";
 $langNoGroupStudents = "No asignado " . $langsStudents . "";
 $langGroupMembers = "Miembros del grupo";
 $langGroupValidate = "validado";
@@ -1669,7 +1669,6 @@ $langPollEdited = "El cuestionario fue editado con éxito.<br><br> <a href=\"ind
 $langPollCreator = "Creador";
 $langPollCreation = "Fecha de creación";
 $langPollCreateDate = "Cuestionario credo en";
-$langPollCreationError = "Error de creación del cuestionario. Prueba otra vez.";
 $langPollDeleted = "Cuestionario borrado con éxito.<br><br><a href=\"index.php\">Back</a>.";
 $langPollDeactivated = "Cuestionario desactivado con éxito.";
 $langPollActivated = "Cuestionario¡ activado con éxito.";
@@ -1685,7 +1684,6 @@ $langCollectiveCharts = "Resultados colectivos";
 $langHasNotParticipated = "No ha participado";
 $langThereAreParticipants = "¡Ya hay participantes. Editar no está permitido!";
 $langPollEmpty = "¡Por favor añade más questiones al Questionario!";
-$langPollEmptyAnswers = "Error! No hay respuestas en este cuestionario";
 $langSee = "Vista previa";
 $langNoSee = "Registro requerido";
 $langCourseName = "Nombre del curso";
@@ -2113,10 +2111,10 @@ $timeNoSecFormat = '%I:%M %p';
 $langNoAdminAccess = '<p><b>La página que has probado entrar requiere un usuario y contraseñas válidas.</b><br/><br>
 El sistema te ha redireccionado automáticamente a la página de inicio de la entrada. Esto puede haber sido causado<br>
 por un error en la URL o por agotarse el tiempo de la sesión.</p>';
-$langLoginRequired = '<p><b>No estás matriculado en la lección a la que intentas acceder.</b><br/> El sistema directamente te ha redireccionado a la página de inicio para matricularte a la lección (si la lección está abierta para su registro).</p><br>
+$langLoginRequired = '<b>No estás matriculado en la lección a la que intentas acceder.</b><br/> El sistema directamente te ha redireccionado a la página de inicio para matricularte a la lección (si la lección está abierta para su registro).<br>
 ';
 $langSessionIsLost = "<p><b>Tu sesión ha expirado. </b><br/>El sistema te ha redireccionado automáticamente a la página de inicio para inscribirte de nuevo.</p>";
-$langCheckProf = "<p><b>Tu acción requiere " . $langsTeacher . "privilégios. </b><br/> El sistema te ha redireccionado automáticamente a la página de inicio para inscribirte de nuevo (si tu estás en las leccioens " . $langsTeacher . "te es permitido acceder a las herramientas de administración del curso).</p>";
+$langCheckProf = "<b>Tu acción requiere " . $langsTeacher . "privilégios. </b><br/> El sistema te ha redireccionado automáticamente a la página de inicio para inscribirte de nuevo (si tu estás en las leccioens " . $langsTeacher . "te es permitido acceder a las herramientas de administración del curso).";
 $langLessonDoesNotExist = "<p><b>La lección a la que estás intentando acceder no existe.</b><br/> El motivo puede ser que no tienes permiso para la acción o es un error de la plataforma.</p>";
 $langCheckAdmin = "<p><b>Tu acción requiere privilegios de administrador. </b><br/> El sistema te ha redireccionado automáticamente a la página de inicio para inscribirte (si tu eres administrador de la plataforma te será permitido acceder a las herramientas de administración).</p>";
 $langCheckGuest = "<p><b>La acción que estás intentando ejecutar no es posible con los privilegios de usuario invitado. </b><br/> Por motivos de seguridad el sistema te ha redireccioando automáticamente a la página de inicio para volver a inscribirte.</p>";
@@ -2705,7 +2703,7 @@ $langNewForumCat = "New forum category";
 $langNewForum = "New Forum";
 $langEditedBy = "Edited by";
 $langCaptchaWrong = "Wrong Captcha.";
-$langTipCaptcha = "Type code as it is displayed ";
+$langCaptcha = "Type code as it is displayed ";
 $langUserAccountInfo4 = 'Login as a different user';
 $langMultiRegUserData = "Usernames";
 $langRegistrationDateShort = "Resgistration <br />date";
