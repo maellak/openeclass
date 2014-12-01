@@ -637,7 +637,6 @@ function submit_work($id, $on_behalf_of = null) {
                 curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
                 //execute post
                 $result = curl_exec($ch);
-                echo $result . "<br/>";
                 $result = json_decode($result, true);
                 if(trim($result['run_status']['output']) == trim($curScenario['output'])) {
                     $passed++;
