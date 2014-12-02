@@ -606,6 +606,8 @@ function submit_work($id, $on_behalf_of = null) {
                 $auto_judge_scenarios_output = array(array('student_output'=> '', 'passed'=> 0));
                 $passed = 0;
                 $i = 0;
+                $partial = 0;
+                $weight_sum = 0;
                 foreach($auto_judge_scenarios as $curScenario) {
                     //set POST variables
                     $url = 'http://api.hackerearth.com/code/run/';
@@ -623,19 +625,26 @@ function submit_work($id, $on_behalf_of = null) {
                     curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
                     //execute post
                     $result = curl_exec($ch);
+                    echo $result . "<br>";
                     $result = json_decode($result, true);
                     $auto_judge_scenarios_output[$i]['student_output'] = trim($result['run_status']['output']);
 
                     if(trim($result['run_status']['output']) == trim($curScenario['output'])){ 
                         $passed++; 
                         $auto_judge_scenarios_output[$i]['passed'] = 1;
+                        $partial += $curScenario['weight'];
                     } 
                     else{
                          $auto_judge_scenarios_output[$i]['passed'] = 0;
                     }
+                    $weight_sum += $curScenario['weight'];
                     $i++;
                 }
-                $grade = round($passed/count($auto_judge_scenarios)*10);
+                // 3 decimal digits precision
+                $grade = round($partial / $weight_sum * $max_grade, 3);
+                // allow an error of 0.001
+                if($max_grade - $grade <= 0.001)
+                    $grade = $max_grade;
                 // Add the output as a comment
                 submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false, $auto_judge_scenarios_output, true);
 
