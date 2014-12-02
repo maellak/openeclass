@@ -91,7 +91,7 @@ if ($is_editor) {
     $head_content .= "
     <script type='text/javascript'>
     function check_weights() {
-        /* function to check whether the weights input fields are numbers */
+        /* function to check weight validity */
         var weights = document.getElementsByClassName('auto_judge_weight');
         var weight_sum = 0;
         var max_grade = parseFloat(document.getElementById('max_grade').value);
@@ -652,6 +652,7 @@ function submit_work($id, $on_behalf_of = null) {
 
             //$grade = round($partial / $weight_sum * 10, 2);
             // 3 decimal digits
+            // although output form has size = '3'
             $grade = round($partial / $weight_sum * $max_grade, 3);
 
             submit_grade_comments($id, $sid, $grade, 'Passed: '. $passed . '/'.
