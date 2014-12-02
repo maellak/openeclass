@@ -90,6 +90,45 @@ if ($is_editor) {
     global $themeimg, $m;
     $head_content .= "
     <script type='text/javascript'>
+    function check_weights() {
+        /* function to check weight validity */
+        var weights = document.getElementsByClassName('auto_judge_weight');
+        var weight_sum = 0;
+        var max_grade = parseFloat(document.getElementById('max_grade').value);
+        max_grade = Math.round(max_grade * 1000) / 1000;
+
+        for (i = 0; i < weights.length; i++) {
+            // match ints or floats
+            w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
+            if(w != null) {
+                w = parseFloat(w);
+                if(w >= 1  && w <= 10)  // 1->10 allowed
+                {
+                    /* allow 3 decimal digits */
+                    weight_sum += w;
+                    continue;
+                }
+                else{
+                    alert('Weights must be between 1 and 10!');
+                    return false;
+                }
+            }
+            else {
+                alert('Only numbers as weights!');
+                return false;
+            }
+        }
+        diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
+        if (diff >= 0 && diff <= 0.001) {
+            return true;
+        }
+        else {
+            alert('Weights do not sum up to ' + max_grade +
+                  '!\\n(Remember, 3 decimal digits precision)');
+            return false;
+        }
+    }
+
     $(function() {        
         $('input[name=group_submissions]').click(changeAssignLabel);
         $('input[id=assign_button_some]').click(ajaxAssignees);        
@@ -345,7 +384,9 @@ function add_assignment() {
             $assign_to_specific = 0;
         }
         if (@mkdir("$workPath/$secret", 0777) && @mkdir("$workPath/admin_files/$secret", 0777, true)) {       
+
             $id = Database::get()->query("INSERT INTO assignment (course_id, title, description, deadline, late_submission, comments, submission_date, secret_directory, group_submissions, max_grade, assign_to_specific, auto_judge, auto_judge_scenarios, lang) ". "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d, ?d, ?s, ?s)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
+
             $secret = work_secret($id);
             if ($id) {
                 $local_name = uid_to_name($uid);
@@ -413,15 +454,15 @@ function submit_work($id, $on_behalf_of = null) {
         'C' => 'c',
         'CPP' => 'cpp',
         'CPP11' => 'cpp11',
-        'CLOJURE' => 'clojure',
-        'CSHARP' => 'c#',
+        'CLOJURE' => 'clj',
+        'CSHARP' => 'cs',
         'JAVA' => 'java',
         'JAVASCRIPT' => 'js',
-        'HASKELL' => 'haskell',
+        'HASKELL' => 'hs',
         'PERL' => 'pl',
         'PHP' => 'php',
         'PYTHON' => 'py',
-        'RUBY' => 'ruby',
+        'RUBY' => 'rb',
     );
 
     if (isset($on_behalf_of)) {
@@ -450,12 +491,13 @@ function submit_work($id, $on_behalf_of = null) {
         }
     } //checks for submission validity end here
     
-    $row = Database::get()->querySingle("SELECT title, group_submissions, auto_judge, auto_judge_scenarios, lang FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $id);
+    $row = Database::get()->querySingle("SELECT title, group_submissions, auto_judge, auto_judge_scenarios, lang, max_grade FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $id);
     $title = q($row->title);
     $group_sub = $row->group_submissions;
     $auto_judge = $row->auto_judge;
     $auto_judge_scenarios = ($auto_judge == true) ? unserialize($row->auto_judge_scenarios) : null;
     $lang = $row->lang;
+    $max_grade = $row->max_grade;
     $nav[] = $works_url;
     $nav[] = array('url' => "$_SERVER[SCRIPT_NAME]?id=$id", 'name' => $title);
 
@@ -596,7 +638,7 @@ function submit_work($id, $on_behalf_of = null) {
                 $grade = round($passed/count($auto_judge_scenarios)*10);
                 // Add the output as a comment
                 submit_grade_comments($id, $sid, $grade, 'Passed: '.$passed.'/'.count($auto_judge_scenarios), false, $auto_judge_scenarios_output, true);
-          
+
         }
         // End Auto-judge
     } else { // not submit_ok
@@ -644,7 +686,7 @@ function new_assignment() {
     $max_grade_error = Session::getError('max_grade');
     $tool_content .= "
         <div class='form-wrapper'>
-        <form class='form-horizontal' role='form' enctype='multipart/form-data' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code'>
+        <form class='form-horizontal' role='form' enctype='multipart/form-data' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code' onsubmit='return check_weights();'>
         <fieldset>
             <div class='form-group ".($title_error ? "has-error" : "")."'>
                 <label for='title' class='col-sm-2 control-label'>$m[title]:</label>
@@ -756,6 +798,7 @@ function new_assignment() {
                                 <tr>
                                   <th>Input</th>
                                   <th>Expected Output</th>
+                                  <th>Weight</th>
                                   <th>Delete</th>
                                 </tr>
                             </thead>
@@ -763,9 +806,11 @@ function new_assignment() {
                                 <tr>
                                   <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
                                   <td><input type='text' name='auto_judge_scenarios[0][output]' /></td>
+				                  <td><input type='text' name='auto_judge_scenarios[0][weight]' class='auto_judge_weight'/></td>
                                   <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
                                 </tr>
                                 <tr>
+                                  <td> </td>
                                   <td> </td>
                                   <td> </td>
                                   <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
@@ -2013,7 +2058,7 @@ function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_
                                 WHERE id = ?d",serialize($auto_judge_scenarios_output), $sid);
     }
     if (Database::get()->query("UPDATE assignment_submit 
-                                SET grade = ?d, grade_comments = ?s,
+                                SET grade = ?f, grade_comments = ?s,
                                 grade_submission_date = NOW(), grade_submission_ip = ?s
                                 WHERE id = ?d", $grade, $comment, $_SERVER['REMOTE_ADDR'], $sid)->affectedRows>0) {
         $title = Database::get()->querySingle("SELECT title FROM assignment WHERE id = ?d", $id)->title;
