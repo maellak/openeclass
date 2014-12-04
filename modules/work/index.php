@@ -599,7 +599,7 @@ function submit_work($id, $on_behalf_of = null) {
         
         // Auto-judge: Send file to hackearth
         if ($auto_judge && $ext === $langExt[$lang]) {
-                global $hackerEarthKey;
+                $hackerEarthKey = q(get_config('hackerEarthKey'));
                 if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
                 $content = file_get_contents("$workPath/$filename");
                 // Run each scenario and count how many passed
