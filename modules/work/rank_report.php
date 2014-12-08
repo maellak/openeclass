@@ -30,17 +30,16 @@ require_once 'work_functions.php';
 require_once 'modules/group/group_functions.php';
 
 
-if (isset($_GET['assignment']) && isset($_GET['submission'])) {
+if (isset($_GET['assignment'])) {
     global $tool_content, $course_code, $m;
     $as_id = intval($_GET['assignment']);
-    $sub_id = intval($_GET['submission']);
     $assign = get_assignment_details($as_id);
-    $sub = get_assignment_submit_details($sub_id);
+    $submissions = find_submissions_by_assigment($as_id);
 
 	$nameTools = 'Κατατάξεις εργασίας ['. $assign->title. ']';
 
     
-    if($sub==null || $assign==null)
+    if($assign==null)
     {
         redirect_to_home_page('modules/work/index.php?course='.$course_code);
     }
@@ -48,16 +47,18 @@ if (isset($_GET['assignment']) && isset($_GET['submission'])) {
     $navigation[] = array("url" => "index.php?course=$course_code", "name" => $langWorks);
     $navigation[] = array("url" => "index.php?course=$course_code&amp;id=$as_id", "name" => q($assign->title));
 
-    if (count($sub)>0) {
+    if (count($submissions)>0) {
         if($assign->auto_judge){// auto_judge enable
-            $auto_judge_scenarios = unserialize($assign->auto_judge_scenarios);
-            $auto_judge_scenarios_output = unserialize($sub->auto_judge_scenarios_output);
+      //      $auto_judge_scenarios = unserialize($assign->auto_judge_scenarios);
+       //     $auto_judge_scenarios_output = unserialize($sub->auto_judge_scenarios_output);
 
             if(!isset($_GET['downloadpdf'])){
-                show_report($as_id, $sub_id, $assign, $sub, $auto_judge_scenarios, $auto_judge_scenarios_output);
+          //      show_report($as_id, $sub_id, $assign, $submissions, $auto_judge_scenarios, $auto_judge_scenarios_output);
+                show_report($assign, $submissions);
+               // echo "test";
                 draw($tool_content, 2);
             }else{
-                download_pdf_file($assign->title, get_course_title(),  q(uid_to_name($sub->uid)), $sub->grade.'/'.$assign->max_grade, $auto_judge_scenarios, $auto_judge_scenarios_output); 
+          //      download_pdf_file($assign->title, get_course_title(),  q(uid_to_name($sub->uid)), $sub->grade.'/'.$assign->max_grade, $auto_judge_scenarios, $auto_judge_scenarios_output); 
             }
          }
          else{
@@ -79,8 +80,10 @@ function get_assignment_details($id) {
     return Database::get()->querySingle("SELECT * FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $id);
 }
 
-function get_assignment_submit_details($sid) {
-    return Database::get()->querySingle("SELECT * FROM assignment_submit WHERE id = ?d",$sid);
+// returns an array of the submissions of an assigment
+function find_submissions_by_assigment($id) {
+	return Database::get()->queryArray("SELECT assignment_submit.grade, user.username FROM assignment_submit Inner Join user on (user.id=assignment_submit.uid) WHERE assignment_id = ?d", $id);
+ 
 }
 
 function get_course_title() {
@@ -89,38 +92,35 @@ function get_course_title() {
     return $course->title;
 }
 
-function show_report($id, $sid, $assign,$sub, $auto_judge_scenarios, $auto_judge_scenarios_output) {
-         global $course_code,$tool_content;
-               $tool_content = "
+//	function show_report($id, $sid, $assign,$submissions, $auto_judge_scenarios, $auto_judge_scenarios_output) {
+function show_report($assign,$submissions) {
+    //     global $course_code;
+		global $tool_content;
+           $tool_content = "
                                 <table  style=\"table-layout: fixed; width: 99%\" class='table-default'>
-                                <tr> <td> <b>Αποτελέσματα για</b>: ".  q(uid_to_name($sub->uid))."</td> </tr>
-                                <tr> <td> <b>Βαθμός</b>: $sub->grade /$assign->max_grade </td>
-                                     <td><b> Κατάταξη</b>: - </td>
-                                </tr>
-                                  <tr> <td> <b>Είσοδος</b> </td>
-                                       <td> <b>Έξοδος</b> </td>
-                                       <td> <b>Αναμενόμενη έξοδος</b> </td>
-                                       <td> <b>Αποτέλεσμα</b> </td>
-                                </tr>
-                                ".get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output)."
+                                <tr>
+                                     <td><b> Κατάταξη</b></td>
+                                     <td><b> Όνομα χρήστη</b></td>
+                                     <td><b> Βαθμός</b></td>
+                                     <td><b> Test/περασμένα</b></td>
+                                </tr>". get_table_content($assign,$submissions) . "
+                                
                                 </table>
-                                <p align='left'><a href='/openeclass/modules/work/work_result_rpt.php?course=".$course_code."&assignment=".$assign->id."&submission=".$sid."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
-                                <p align='right'><a href='/openeclass/modules/work/index.php?course=".$course_code."'>Επιστροφή</a></p>
-                             <br>";
+                              <br>";
   }
 
-function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output) {
+function get_table_content($assign,$submissions) {
     global $themeimg;
     $table_content = "";
-    $i=0;
-    foreach($auto_judge_scenarios as $cur_senarios){
-                     $icon = ($auto_judge_scenarios_output[$i]['passed']==1) ? 'tick.png' : 'delete.png';
+    $i=1;
+    foreach($submissions as $submission){
+//                     $icon = ($auto_judge_scenarios_output[$i]['passed']==1) ? 'tick.png' : 'delete.png';
                      $table_content.="
                                       <tr>
-                                      <td style=\"word-break:break-all;\">".$cur_senarios['input']."</td>
-                                      <td style=\"word-break:break-all;\">".$auto_judge_scenarios_output[$i]['student_output']."</td>
-                                      <td style=\"word-break:break-all;\">".$cur_senarios['output']."</td>
-                                      <td align=\"center\"><img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/" .$icon."\"></td></tr>";
+                                      <td style=\"word-break:break-all;\">".$i."</td>
+                                      <td style=\"word-break:break-all;\">".$submission->username."</td>
+                                      <td style=\"word-break:break-all;\">".$submission->grade."/". $assign->max_grade  ."</td>
+                                      <td align=\"center\">test</td></tr>";
                      $i++;
                 }
     return $table_content;
@@ -246,8 +246,8 @@ function download_pdf_file($assign_title, $course_title,  $username, $grade, $au
             </tr>
     </table>';
 
-    $pdf->writeHTML($report_details, true, false, true, false, '');
-    $pdf->Ln();     
-    $pdf->writeHTML($report_table, true, false, true, false, '');
-    $pdf->Output('auto_judge_report_'.$username.'.pdf', 'D');
+ //   $pdf->writeHTML($report_details, true, false, true, false, '');
+ //   $pdf->Ln();     
+ //   $pdf->writeHTML($report_table, true, false, true, false, '');
+ //   $pdf->Output('auto_judge_report_'.$username.'.pdf', 'D');
 }

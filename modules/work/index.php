@@ -1881,7 +1881,7 @@ function show_assignment($id, $display_graph_results = false) {
                 //professor comments
                 $gradelink = "grade_edit.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
                 $reportlink = "work_result_rpt.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
-                $rankreportlink = "rank_report.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
+                $rankreportlink = "rank_report.php?course=$course_code&amp;assignment=$id";
 
                 if (trim($row->grade_comments)) {
                     $label = $m['gradecomments'] . ':';
@@ -1899,7 +1899,7 @@ function show_assignment($id, $display_graph_results = false) {
                 $tool_content .= "<div style='padding-top: .5em;'><a href='$gradelink'><b>$label</b></a>
 				  <a href='$gradelink'><img src='$themeimg/$icon'></a>
 				  $comments
-                  <a href='$reportlink'><b>Προβολή αναφοράς αποτελεσμάτων</b></a><div><a href='$rankreportlink'><b>Προβολή κατατάξης εκπαιδευόμενων για την εργασία</b></a></div>
+                  <a href='$reportlink'><b>Προβολή αναφοράς αποτελεσμάτων</b></a><div><a href='$rankreportlink'><b>Προβολή κατάταξης εκπαιδευόμενων για την εργασία</b></a></div>
                                 </td>
                                 </tr>";
                 $i++;
