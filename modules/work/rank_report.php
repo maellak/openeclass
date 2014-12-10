@@ -82,7 +82,7 @@ function get_assignment_details($id) {
 
 // returns an array of the submissions of an assigment
 function find_submissions_by_assigment($id) {
-	return Database::get()->queryArray("SELECT assignment_submit.grade, user.username FROM assignment_submit Inner Join user on (user.id=assignment_submit.uid) WHERE assignment_id = ?d", $id);
+	return Database::get()->queryArray("SELECT assignment_submit.grade, assignment_submit.grade_comments, user.username FROM assignment_submit Inner Join user on (user.id=assignment_submit.uid) WHERE assignment_id = ?d", $id);
  
 }
 
@@ -120,7 +120,7 @@ function get_table_content($assign,$submissions) {
                                       <td style=\"word-break:break-all;\">".$i."</td>
                                       <td style=\"word-break:break-all;\">".$submission->username."</td>
                                       <td style=\"word-break:break-all;\">".$submission->grade."/". $assign->max_grade  ."</td>
-                                      <td align=\"center\">test</td></tr>";
+                                      <td align=\"center\">".$submission->grade_comments."</td></tr>";
                      $i++;
                 }
     return $table_content;
