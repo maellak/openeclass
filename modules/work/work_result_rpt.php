@@ -102,8 +102,8 @@ function show_report($id, $sid, $assign,$sub, $auto_judge_scenarios, $auto_judge
                                 </tr>
                                 ".get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output)."
                                 </table>
-                                <p align='left'><a href='/openeclass/modules/work/work_result_rpt.php?course=".$course_code."&assignment=".$assign->id."&submission=".$sid."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
-                                <p align='right'><a href='/openeclass/modules/work/index.php?course=".$course_code."'>Επιστροφή</a></p>
+                                <p align='left'><a href='work_result_rpt.php?course=".$course_code."&assignment=".$assign->id."&submission=".$sid."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
+                                <p align='right'><a href='index.php?course=".$course_code."'>Επιστροφή</a></p>
                              <br>";
   }
 
