@@ -31,10 +31,12 @@ require_once 'modules/group/group_functions.php';
 
 
 if (isset($_GET['assignment'])) {
-    global $tool_content, $course_code, $m;
+    global $tool_content, $course_title, $m;
     $as_id = intval($_GET['assignment']);
     $assign = get_assignment_details($as_id);
     $submissions = find_submissions_by_assigment($as_id);
+    $i = 1;
+    $i++;
 
 	$nameTools = 'Κατατάξεις εργασίας ['. $assign->title. ']';
 
@@ -54,12 +56,15 @@ if (isset($_GET['assignment'])) {
 
             if(!isset($_GET['downloadpdf'])){
           //      show_report($as_id, $sub_id, $assign, $submissions, $auto_judge_scenarios, $auto_judge_scenarios_output);
-                show_report($assign, $submissions);
+               show_report($assign, $submissions);
                // echo "test";
-                draw($tool_content, 2);
+             draw($tool_content, 2);
             }else{
-          //      download_pdf_file($assign->title, get_course_title(),  q(uid_to_name($sub->uid)), $sub->grade.'/'.$assign->max_grade, $auto_judge_scenarios, $auto_judge_scenarios_output); 
-            }
+          
+          //download_pdf_file($assign->title, get_course_title(),  q(uid_to_name($sub->uid)), $sub->grade.'/'.$assign->max_grade, $auto_judge_scenarios, $auto_judge_scenarios_output); 
+            
+               download_pdf_file($course_title,$i,'/'.$assign->max_grade); 
+                }
          }
          else{
                Session::Messages(' Ο αυτόματος κριτής δεν είναι ενεργοποιημένος για την συγκεκριμένη εργασία. ', 'alert-danger');
@@ -95,18 +100,19 @@ function get_course_title() {
 //	function show_report($id, $sid, $assign,$submissions, $auto_judge_scenarios, $auto_judge_scenarios_output) {
 function show_report($assign,$submissions) {
     //     global $course_code;
-		global $tool_content;
+		global $tool_content,$course_code;
            $tool_content = "
                                 <table  style=\"table-layout: fixed; width: 99%\" class='table-default'>
                                 <tr>
                                      <td><b> Κατάταξη</b></td>
                                      <td><b> Όνομα χρήστη</b></td>
                                      <td><b> Βαθμός</b></td>
-                                     <td><b> Test/περασμένα</b></td>
+                                     <td><b> Test/Περασμένα</b></td>
                                 </tr>". get_table_content($assign,$submissions) . "
                                 
                                 </table>
-                              <br>";
+                                 <p align='left'><a href='rank_report.php?course=".$course_code."&assignment=".$assign->id."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
+                                <br>";
   }
 
 function get_table_content($assign,$submissions) {
@@ -135,11 +141,9 @@ if ($i==5 or $i == 6) {$i.=" <img src='../../images/work_medals/Bronze_medal_wit
     return $table_content;
   }
   
-  
+//function download_pdf_file($assign_title, $course_title,  $username, $grade, $auto_judge_scenarios, $auto_judge_scenarios_output){ 
 
-
-
-function download_pdf_file($assign_title, $course_title,  $username, $grade, $auto_judge_scenarios, $auto_judge_scenarios_output){ 
+function download_pdf_file($course_title,$i,$grade){ 
     // create new PDF document
     $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
@@ -178,39 +182,8 @@ function download_pdf_file($assign_title, $course_title,  $username, $grade, $au
     // add a page
     $pdf->AddPage();
 
-    $report_table = '
-    <style>
-    table.first{
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    td {
-        font-size: 1em;
-        border: 1px solid #95CAFF;
-        padding: 3px 7px 2px 7px;
-    }
-
-     th {
-        font-size: 1.1em;
-        text-align: center;
-        padding-top: 5px;
-        padding-bottom: 4px;
-        background-color: #3399FF;
-        color: #ffffff;
-    }
-
-    </style>
-    <table class="first">
-        <tr>
-            <th >Είσοδος</th>
-            <th >Έξοδος</th>
-            <th >Αναμενόμενη Έξοδος</th>
-            <th >Αποτέλεσμα</th>
-        </tr>
-     '. get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output).'
-    </table>';
-
+$i=0;
+$i++;
 
  $report_details ='
         <style>
@@ -241,24 +214,21 @@ function download_pdf_file($assign_title, $course_title,  $username, $grade, $au
 
         <table class="first">
             <tr>
-            <th> Μάθημα</th> <td>'.$course_title.' </td>
+            <th> Rank</th> <td>'.$i.'</td>
             </tr>
              <tr>
-            <th> Εργασία</th> <td> '.$assign_title.'</td>
+            <th> Εκπαιδευόμενος </th> <td> ??</td>
             </tr>
              <tr>
-            <th> Εκπεδεύομενος</th><td> '.$username.'</td>
+            <th> Βαθμός</th><td> ?? </td>
             </tr>
              <tr>
-            <th> Βαθμός</th> <td>'.$grade.' </td>
-            </tr>
-             <tr>
-            <th> Κατάταξη</th> <td>-</td>
-            </tr>
+            <th> Περασμένα Σενάρια</th> <td>'.$grade.'</td>
+            </tr>                  
     </table>';
+                               
 
- //   $pdf->writeHTML($report_details, true, false, true, false, '');
- //   $pdf->Ln();     
- //   $pdf->writeHTML($report_table, true, false, true, false, '');
- //   $pdf->Output('auto_judge_report_'.$username.'.pdf', 'D');
+    $pdf->writeHTML($report_details, true, false, true, false, '');
+    $pdf->Ln();     
+    $pdf->Output('Rank Report for Lesson' .$course_title.'.pdf', 'D');
 }
