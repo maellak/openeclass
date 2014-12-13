@@ -802,7 +802,7 @@ function new_assignment() {
             <div class='form-group ".($title_error ? "has-error" : "")."'>
                 <label for='title' class='col-sm-2 control-label'>$m[title]:</label>
                 <div class='col-sm-10'>
-                  <input name='title' type='text' class='form-control' id='title' placeholder='$m[title]'>
+                  <input name='title' type='text' class='form-control' required='required' id='title' placeholder='$m[title]'>
                   <span class='help-block'>$title_error</span>
                 </div>
             </div>
