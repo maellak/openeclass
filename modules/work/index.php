@@ -183,8 +183,10 @@ if ($is_editor) {
         function changeAutojudgeScenariosVisibility() {
             if($(this).is(':checked')) {
                 $(this).parent().find('table').show();
+                $('#lang').parent().parent().show();
             } else {
                 $(this).parent().find('table').hide();
+                $('#lang').parent().parent().hide();
             }
         }
         $('#autojudge_new_scenario').click(function(e) {
