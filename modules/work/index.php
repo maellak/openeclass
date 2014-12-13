@@ -567,52 +567,56 @@ function submit_work($id, $on_behalf_of = null) {
             $msg1 = '';
         }
         if ($no_files or move_uploaded_file($_FILES['userfile']['tmp_name'], "$workPath/$filename")) {
-            if ($no_files) {
-                $filename = '';
-            } else {
-                @chmod("$workPath/$filename", 0644);
-            }
-            $msg2 = $langUploadSuccess;
-            $submit_ip = $_SERVER['REMOTE_ADDR'];
-            if (isset($on_behalf_of)) {
-                if ($group_sub) {
-                    $auto_comments = sprintf($langOnBehalfOfGroupComment, uid_to_name($uid), $gids[$group_id]);
+            if(file_get_contents("$workPath/$filename") != false){
+                if ($no_files) {
+                    $filename = '';
                 } else {
-                    $auto_comments = sprintf($langOnBehalfOfUserComment, uid_to_name($uid), uid_to_name($user_id));
+                    @chmod("$workPath/$filename", 0644);
                 }
-                $stud_comments = $auto_comments;
-                $grade_comments = $_POST['stud_comments'];
+                $msg2 = $langUploadSuccess;
+                $submit_ip = $_SERVER['REMOTE_ADDR'];
+                if (isset($on_behalf_of)) {
+                    if ($group_sub) {
+                        $auto_comments = sprintf($langOnBehalfOfGroupComment, uid_to_name($uid), $gids[$group_id]);
+                    } else {
+                        $auto_comments = sprintf($langOnBehalfOfUserComment, uid_to_name($uid), uid_to_name($user_id));
+                    }
+                    $stud_comments = $auto_comments;
+                    $grade_comments = $_POST['stud_comments'];
 
-                $grade_valid = filter_input(INPUT_POST, 'grade', FILTER_VALIDATE_FLOAT);
-                (isset($_POST['grade']) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
+                    $grade_valid = filter_input(INPUT_POST, 'grade', FILTER_VALIDATE_FLOAT);
+                    (isset($_POST['grade']) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
 
-                $grade_ip = $submit_ip;
-            } else {
-                $stud_comments = $_POST['stud_comments'];
-                $grade = NULL;
-                $grade_comments = $grade_ip = "";
-            }
-            if (!$group_sub or array_key_exists($group_id, $gids)) {
-                $file_name = $_FILES['userfile']['name'];
-                $sid = Database::get()->query("INSERT INTO assignment_submit
-                                        (uid, assignment_id, submission_date, submission_ip, file_path,
-                                         file_name, comments, grade, grade_comments, grade_submission_ip,
-                                         grade_submission_date, group_id)
-                                         VALUES (?d, ?d, NOW(), ?s, ?s, ?s, ?s, ?f, ?s, ?s, NOW(), ?d)", $user_id, $id, $submit_ip, $filename, $file_name, $stud_comments, $grade, $grade_comments, $grade_ip, $group_id)->lastInsertID;
-                Log::record($course_id, MODULE_ID_ASSIGN, LOG_INSERT, array('id' => $sid,
-                    'title' => $title,
-                    'assignment_id' => $id,
-                    'filepath' => $filename,
-                    'filename' => $file_name,
-                    'comments' => $stud_comments,
-                    'group_id' => $group_id));
-                if ($on_behalf_of and isset($_POST['email'])) {
-                    $email_grade = $_POST['grade'];
-                    $email_comments = "\n$auto_comments\n\n" . $_POST['stud_comments'];
-                    grade_email_notify($id, $sid, $email_grade, $email_comments);
+                    $grade_ip = $submit_ip;
+                } else {
+                    $stud_comments = $_POST['stud_comments'];
+                    $grade = NULL;
+                    $grade_comments = $grade_ip = "";
                 }
+                if (!$group_sub or array_key_exists($group_id, $gids)) {
+                    $file_name = $_FILES['userfile']['name'];
+                    $sid = Database::get()->query("INSERT INTO assignment_submit
+                                            (uid, assignment_id, submission_date, submission_ip, file_path,
+                                             file_name, comments, grade, grade_comments, grade_submission_ip,
+                                             grade_submission_date, group_id)
+                                             VALUES (?d, ?d, NOW(), ?s, ?s, ?s, ?s, ?f, ?s, ?s, NOW(), ?d)", $user_id, $id, $submit_ip, $filename, $file_name, $stud_comments, $grade, $grade_comments, $grade_ip, $group_id)->lastInsertID;
+                    Log::record($course_id, MODULE_ID_ASSIGN, LOG_INSERT, array('id' => $sid,
+                        'title' => $title,
+                        'assignment_id' => $id,
+                        'filepath' => $filename,
+                        'filename' => $file_name,
+                        'comments' => $stud_comments,
+                        'group_id' => $group_id));
+                    if ($on_behalf_of and isset($_POST['email'])) {
+                        $email_grade = $_POST['grade'];
+                        $email_comments = "\n$auto_comments\n\n" . $_POST['stud_comments'];
+                        grade_email_notify($id, $sid, $email_grade, $email_comments);
+                    }
+                }
+                $tool_content .= "<div class='alert alert-success'>$msg2<br>$msg1<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id'>$langBack</a></div><br>";
+            } else{
+                $tool_content .= "<div class='alert alert-danger'>Το αρχείο που επιχειρείτε να ανεβάσετε είναι κενό. Η εργασία δεν υποβλήθηκε.<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
             }
-            $tool_content .= "<div class='alert alert-success'>$msg2<br>$msg1<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id'>$langBack</a></div><br>";
         } else {
             $tool_content .= "<div class='alert alert-danger'>$langUploadError<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
         }
