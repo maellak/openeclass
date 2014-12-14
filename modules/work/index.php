@@ -92,41 +92,45 @@ if ($is_editor) {
     <script type='text/javascript'>
     function check_weights() {
         /* function to check weight validity */
-        var weights = document.getElementsByClassName('auto_judge_weight');
-        var weight_sum = 0;
-        var max_grade = parseFloat(document.getElementById('max_grade').value);
-        max_grade = Math.round(max_grade * 1000) / 1000;
+        if($('#hidden-opt').is(':visible') && $('#auto_judge').is(':checked')) {
+            var weights = document.getElementsByClassName('auto_judge_weight');
+            var weight_sum = 0;
+            var max_grade = parseFloat(document.getElementById('max_grade').value);
+            max_grade = Math.round(max_grade * 1000) / 1000;
 
-        for (i = 0; i < weights.length; i++) {
-            // match ints or floats
-            w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
-            if(w != null) {
-                w = parseFloat(w);
-                if(w >= 1  && w <= 10)  // 1->10 allowed
-                {
-                    /* allow 3 decimal digits */
-                    weight_sum += w;
-                    continue;
+            for (i = 0; i < weights.length; i++) {
+                // match ints or floats
+                w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
+                if(w != null) {
+                    w = parseFloat(w);
+                    if(w >= 1  && w <= 10)  // 1->10 allowed
+                    {
+                        /* allow 3 decimal digits */
+                        weight_sum += w;
+                        continue;
+                    }
+                    else{
+                        alert('Weights must be between 1 and 10!');
+                        return false;
+                    }
                 }
-                else{
-                    alert('Weights must be between 1 and 10!');
+                else {
+                    alert('Only numbers as weights!');
                     return false;
                 }
             }
+            diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
+            if (diff >= 0 && diff <= 0.001) {
+                return true;
+            }
             else {
-                alert('Only numbers as weights!');
+                alert('Weights do not sum up to ' + max_grade +
+                    '!\\n(Remember, 3 decimal digits precision)');
                 return false;
             }
         }
-        diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
-        if (diff >= 0 && diff <= 0.001) {
+        else
             return true;
-        }
-        else {
-            alert('Weights do not sum up to ' + max_grade +
-                  '!\\n(Remember, 3 decimal digits precision)');
-            return false;
-        }
     }
 
     $(function() {
@@ -661,7 +665,7 @@ function submit_work($id, $on_behalf_of = null) {
                     curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
                     //execute post
                     $result = curl_exec($ch);
-                    echo $result . "<br>";
+                    //echo $result . "<br>";
                     $result = json_decode($result, true);
 
                     $auto_judge_scenarios_output[$i]['student_output'] = trim($result['run_status']['output']);
