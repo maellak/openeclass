@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<course
+    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+    xmlns='http://www.openeclass.org'
+    xsi:schemaLocation='http://www.openeclass.org courseLooseMetadata.xsd'>
+    
+    <title lang="el"></title>
+    <title lang="en"></title>
+    <level></level>
+    <description lang="el"></description>
+    <description lang="en"></description>
+    <contents lang="el"></contents>
+    <contents lang="en"></contents>
+    <objectives lang="el"></objectives>
+    <objectives lang="en"></objectives>
+    <thematic>othersubj</thematic>
+    <subthematic>othersubsubj</subthematic>
+    <prerequisites lang="el"></prerequisites>
+    <prerequisites lang="en"></prerequisites>
+    <literature lang="el"></literature>
+    <literature lang="en"></literature>
+    <url></url>
+    <license lang="el"></license>
+    <license lang="en"></license>
+    <confirmAMinusLevel>false</confirmAMinusLevel>
+    <confirmALevel>false</confirmALevel>
+    <confirmAPlusLevel>false</confirmAPlusLevel>
+    <lastLevelConfirmation></lastLevelConfirmation>
+    <firstCreateDate></firstCreateDate>
+    <confirmCurriculum></confirmCurriculum>
+    <confirmVideolectures></confirmVideolectures>
+    <videolectures>0</videolectures>
+    
+    <code lang="el"></code>
+    <keywords lang="el"></keywords>
+    <keywords lang="en"></keywords>
+    <coursePhoto mime=""></coursePhoto>
+    <contentDevelopment lang="el"></contentDevelopment>
+    <contentDevelopment lang="en"></contentDevelopment>
+    <format></format>
+    <recommendedComponents lang="el"></recommendedComponents>
+    <recommendedComponents lang="en"></recommendedComponents>
+    <assignments lang="el"></assignments>
+    <assignments lang="en"></assignments>
+    <requirements lang="el"></requirements>
+    <requirements lang="en"></requirements>
+    <remarks lang="el"></remarks>
+    <remarks lang="en"></remarks>
+    <acknowledgments lang="el"></acknowledgments>
+    <acknowledgments lang="en"></acknowledgments>
+    
+    
+    <instructor>
+        <firstName lang="el"></firstName>
+        <lastName lang="el"></lastName>
+        
+        <firstName lang="en"></firstName>
+        <lastName lang="en"></lastName>
+        
+        <fullName lang="el"></fullName>
+        <fullName lang="en"></fullName>
+        
+        <moreInformation lang="el"></moreInformation>
+        <moreInformation lang="en"></moreInformation>
+        <cv></cv>
+        <photo mime=""></photo>
+    </instructor>
+    
+    <coTeaching></coTeaching>
+    <coTeachingColleagueOpensCourse></coTeachingColleagueOpensCourse>
+    <coTeachingAutonomousDepartment></coTeachingAutonomousDepartment>
+    <coTeachingDepartmentCreditHours></coTeachingDepartmentCreditHours>
+
+
+    <curriculumLevel></curriculumLevel>
+    <institution>otherinst</institution>
+    <department lang="el"></department>
+    <department lang="en"></department>
+    <language lang="el"></language>
+    <language lang="en"></language>
+    
+    <yearOfStudy></yearOfStudy>
+    <semester></semester>
+    <type></type>
+    <credithours></credithours>
+    <credits></credits>
+    <institutionDescription lang="el"></institutionDescription>
+    <institutionDescription lang="en"></institutionDescription>
+    <curriculumTitle lang="el"></curriculumTitle>
+    <curriculumTitle lang="en"></curriculumTitle>
+    <curriculumDescription lang="el"></curriculumDescription>
+    <curriculumDescription lang="en"></curriculumDescription>
+    <outcomes lang="el"></outcomes>
+    <outcomes lang="en"></outcomes>
+    <curriculumKeywords lang="el"></curriculumKeywords>
+    <curriculumKeywords lang="en"></curriculumKeywords>
+    <sector lang="el"></sector>
+    <sector lang="en"></sector>
+    <targetGroup lang="el"></targetGroup>
+    <targetGroup lang="en"></targetGroup>
+    <curriculumTargetGroup lang="el"></curriculumTargetGroup>
+    <curriculumTargetGroup lang="en"></curriculumTargetGroup>
+    <featuredBooks lang="el"></featuredBooks>
+    <featuredBooks lang="en"></featuredBooks>
+    <structure lang="el"></structure>
+    <structure lang="en"></structure>
+    <teachingMethod lang="el"></teachingMethod>
+    <teachingMethod lang="en"></teachingMethod>
+    <assessmentMethod lang="el"></assessmentMethod>
+    <assessmentMethod lang="en"></assessmentMethod>
+    <eudoxusCode></eudoxusCode>
+    <eudoxusURL></eudoxusURL>
+    <kalliposURL></kalliposURL>
+    
+    
+    <numberOfUnits></numberOfUnits>
+    <unit>
+        <title lang="el"></title>
+        <description lang="el"></description>
+        <keywords lang="el"></keywords>
+        <material>
+            <notes></notes>
+            <slides></slides>
+            <exercises></exercises>
+            <multimedia>
+                <title></title>
+                <speaker></speaker>
+                <subject></subject>
+                <description></description>
+                <keywords></keywords>
+                <url></url>
+            </multimedia>
+            <other></other>
+            <digital>
+                <url></url>
+                <library></library>
+            </digital>
+        </material>
+    </unit>
+</course>

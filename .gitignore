@@ -1,0 +1,17 @@
+courses/
+video/
+config/*.php
+html/
+nbproject/private/
+.htaccess
+.buildpath
+.project
+.settings
+.orig/
+.orig
+.chg/
+.rej
+.conflict
+.map
+.hg/
+.hgignore
