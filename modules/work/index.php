@@ -92,41 +92,45 @@ if ($is_editor) {
     <script type='text/javascript'>
     function check_weights() {
         /* function to check weight validity */
-        var weights = document.getElementsByClassName('auto_judge_weight');
-        var weight_sum = 0;
-        var max_grade = parseFloat(document.getElementById('max_grade').value);
-        max_grade = Math.round(max_grade * 1000) / 1000;
+        if($('#hidden-opt').is(':visible') && $('#auto_judge').is(':checked')) {
+            var weights = document.getElementsByClassName('auto_judge_weight');
+            var weight_sum = 0;
+            var max_grade = parseFloat(document.getElementById('max_grade').value);
+            max_grade = Math.round(max_grade * 1000) / 1000;
 
-        for (i = 0; i < weights.length; i++) {
-            // match ints or floats
-            w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
-            if(w != null) {
-                w = parseFloat(w);
-                if(w >= 1  && w <= 10)  // 1->10 allowed
-                {
-                    /* allow 3 decimal digits */
-                    weight_sum += w;
-                    continue;
+            for (i = 0; i < weights.length; i++) {
+                // match ints or floats
+                w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
+                if(w != null) {
+                    w = parseFloat(w);
+                    if(w >= 1  && w <= 10)  // 1->10 allowed
+                    {
+                        /* allow 3 decimal digits */
+                        weight_sum += w;
+                        continue;
+                    }
+                    else{
+                        alert('Weights must be between 1 and 10!');
+                        return false;
+                    }
                 }
-                else{
-                    alert('Weights must be between 1 and 10!');
+                else {
+                    alert('Only numbers as weights!');
                     return false;
                 }
             }
+            diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
+            if (diff >= 0 && diff <= 0.001) {
+                return true;
+            }
             else {
-                alert('Only numbers as weights!');
+                alert('Weights do not sum up to ' + max_grade +
+                    '!\\n(Remember, 3 decimal digits precision)');
                 return false;
             }
         }
-        diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
-        if (diff >= 0 && diff <= 0.001) {
+        else
             return true;
-        }
-        else {
-            alert('Weights do not sum up to ' + max_grade +
-                  '!\\n(Remember, 3 decimal digits precision)');
-            return false;
-        }
     }
 
     $(function() {
@@ -183,8 +187,10 @@ if ($is_editor) {
         function changeAutojudgeScenariosVisibility() {
             if($(this).is(':checked')) {
                 $(this).parent().find('table').show();
+                $('#lang').parent().parent().show();
             } else {
                 $(this).parent().find('table').hide();
+                $('#lang').parent().parent().hide();
             }
         }
         $('#autojudge_new_scenario').click(function(e) {
@@ -376,7 +382,7 @@ draw($tool_content, 2, null, $head_content);
 // insert the assignment into the database
 function add_assignment() {
     global $tool_content, $workPath, $course_id, $uid, $langTheField, $m,
-    $course_code, $langFormErrors;
+    $course_code, $langFormErrors, $langNewAssignSuccess;
     $v = new Valitron\Validator($_POST);
     $v->rule('required', ['title', 'max_grade']);
     $v->rule('numeric', ['max_grade']);
@@ -565,52 +571,56 @@ function submit_work($id, $on_behalf_of = null) {
             $msg1 = '';
         }
         if ($no_files or move_uploaded_file($_FILES['userfile']['tmp_name'], "$workPath/$filename")) {
-            if ($no_files) {
-                $filename = '';
-            } else {
-                @chmod("$workPath/$filename", 0644);
-            }
-            $msg2 = $langUploadSuccess;
-            $submit_ip = $_SERVER['REMOTE_ADDR'];
-            if (isset($on_behalf_of)) {
-                if ($group_sub) {
-                    $auto_comments = sprintf($langOnBehalfOfGroupComment, uid_to_name($uid), $gids[$group_id]);
+            if(file_get_contents("$workPath/$filename") != false){
+                if ($no_files) {
+                    $filename = '';
                 } else {
-                    $auto_comments = sprintf($langOnBehalfOfUserComment, uid_to_name($uid), uid_to_name($user_id));
+                    @chmod("$workPath/$filename", 0644);
                 }
-                $stud_comments = $auto_comments;
-                $grade_comments = $_POST['stud_comments'];
+                $msg2 = $langUploadSuccess;
+                $submit_ip = $_SERVER['REMOTE_ADDR'];
+                if (isset($on_behalf_of)) {
+                    if ($group_sub) {
+                        $auto_comments = sprintf($langOnBehalfOfGroupComment, uid_to_name($uid), $gids[$group_id]);
+                    } else {
+                        $auto_comments = sprintf($langOnBehalfOfUserComment, uid_to_name($uid), uid_to_name($user_id));
+                    }
+                    $stud_comments = $auto_comments;
+                    $grade_comments = $_POST['stud_comments'];
 
-                $grade_valid = filter_input(INPUT_POST, 'grade', FILTER_VALIDATE_FLOAT);
-                (isset($_POST['grade']) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
+                    $grade_valid = filter_input(INPUT_POST, 'grade', FILTER_VALIDATE_FLOAT);
+                    (isset($_POST['grade']) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
 
-                $grade_ip = $submit_ip;
-            } else {
-                $stud_comments = $_POST['stud_comments'];
-                $grade = NULL;
-                $grade_comments = $grade_ip = "";
-            }
-            if (!$group_sub or array_key_exists($group_id, $gids)) {
-                $file_name = $_FILES['userfile']['name'];
-                $sid = Database::get()->query("INSERT INTO assignment_submit
-                                        (uid, assignment_id, submission_date, submission_ip, file_path,
-                                         file_name, comments, grade, grade_comments, grade_submission_ip,
-                                         grade_submission_date, group_id)
-                                         VALUES (?d, ?d, NOW(), ?s, ?s, ?s, ?s, ?f, ?s, ?s, NOW(), ?d)", $user_id, $id, $submit_ip, $filename, $file_name, $stud_comments, $grade, $grade_comments, $grade_ip, $group_id)->lastInsertID;
-                Log::record($course_id, MODULE_ID_ASSIGN, LOG_INSERT, array('id' => $sid,
-                    'title' => $title,
-                    'assignment_id' => $id,
-                    'filepath' => $filename,
-                    'filename' => $file_name,
-                    'comments' => $stud_comments,
-                    'group_id' => $group_id));
-                if ($on_behalf_of and isset($_POST['email'])) {
-                    $email_grade = $_POST['grade'];
-                    $email_comments = "\n$auto_comments\n\n" . $_POST['stud_comments'];
-                    grade_email_notify($id, $sid, $email_grade, $email_comments);
+                    $grade_ip = $submit_ip;
+                } else {
+                    $stud_comments = $_POST['stud_comments'];
+                    $grade = NULL;
+                    $grade_comments = $grade_ip = "";
                 }
+                if (!$group_sub or array_key_exists($group_id, $gids)) {
+                    $file_name = $_FILES['userfile']['name'];
+                    $sid = Database::get()->query("INSERT INTO assignment_submit
+                                            (uid, assignment_id, submission_date, submission_ip, file_path,
+                                             file_name, comments, grade, grade_comments, grade_submission_ip,
+                                             grade_submission_date, group_id)
+                                             VALUES (?d, ?d, NOW(), ?s, ?s, ?s, ?s, ?f, ?s, ?s, NOW(), ?d)", $user_id, $id, $submit_ip, $filename, $file_name, $stud_comments, $grade, $grade_comments, $grade_ip, $group_id)->lastInsertID;
+                    Log::record($course_id, MODULE_ID_ASSIGN, LOG_INSERT, array('id' => $sid,
+                        'title' => $title,
+                        'assignment_id' => $id,
+                        'filepath' => $filename,
+                        'filename' => $file_name,
+                        'comments' => $stud_comments,
+                        'group_id' => $group_id));
+                    if ($on_behalf_of and isset($_POST['email'])) {
+                        $email_grade = $_POST['grade'];
+                        $email_comments = "\n$auto_comments\n\n" . $_POST['stud_comments'];
+                        grade_email_notify($id, $sid, $email_grade, $email_comments);
+                    }
+                }
+                $tool_content .= "<div class='alert alert-success'>$msg2<br>$msg1<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id'>$langBack</a></div><br>";
+            } else{
+                $tool_content .= "<div class='alert alert-danger'>Το αρχείο που επιχειρείτε να ανεβάσετε είναι κενό. Η εργασία δεν υποβλήθηκε.<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
             }
-            $tool_content .= "<div class='alert alert-success'>$msg2<br>$msg1<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id'>$langBack</a></div><br>";
         } else {
             $tool_content .= "<div class='alert alert-danger'>$langUploadError<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
         }
@@ -659,7 +669,7 @@ function submit_work($id, $on_behalf_of = null) {
                     curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
                     //execute post
                     $result = curl_exec($ch);
-                    echo $result . "<br>";
+                    //echo $result . "<br>";
                     $result = json_decode($result, true);
 
                     $auto_judge_scenarios_output[$i]['student_output'] = trim($result['run_status']['output']);
@@ -802,7 +812,7 @@ function new_assignment() {
             <div class='form-group ".($title_error ? "has-error" : "")."'>
                 <label for='title' class='col-sm-2 control-label'>$m[title]:</label>
                 <div class='col-sm-10'>
-                  <input name='title' type='text' class='form-control' id='title' placeholder='$m[title]'>
+                  <input name='title' type='text' class='form-control' required='required' id='title' placeholder='$m[title]'>
                   <span class='help-block'>$title_error</span>
                 </div>
             </div>
