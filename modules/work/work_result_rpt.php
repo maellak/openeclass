@@ -55,7 +55,7 @@ if (isset($_GET['assignment']) && isset($_GET['submission'])) {
                 show_report($as_id, $sub_id, $assign, $sub, $auto_judge_scenarios, $auto_judge_scenarios_output);
                 draw($tool_content, 2);
             }else{
-                download_pdf_file($assign->title, get_course_title(),  q(uid_to_name($sub->uid)), $sub->grade.'/'.$assign->max_grade, $auto_judge_scenarios, $auto_judge_scenarios_output); 
+                download_pdf_file($assign, $sub, $auto_judge_scenarios, $auto_judge_scenarios_output); 
             }
          }
          else{
@@ -87,17 +87,23 @@ function get_course_title() {
     return $course->title;
 }
 
+function get_submission_rank($assign_id,$grade, $submission_date) {
+    return Database::get()->querySingle("SELECT COUNT(*) AS count FROM assignment_submit WHERE (grade > ?f OR (grade = ?f AND submission_date < ?t)) AND assignment_id = ?d",$grade,$grade, $submission_date,$assign_id)->count+1;
+}
+
 function show_report($id, $sid, $assign,$sub, $auto_judge_scenarios, $auto_judge_scenarios_output) {
          global $course_code,$tool_content;
                $tool_content = "
                                 <table  style=\"table-layout: fixed; width: 99%\" class='table-default'>
                                 <tr> <td> <b>Αποτελέσματα για</b>: ".  q(uid_to_name($sub->uid))."</td> </tr>
                                 <tr> <td> <b>Βαθμός</b>: $sub->grade /$assign->max_grade </td>
-                                     <td><b> Κατάταξη</b>: - </td>
+                                     <td><b> Κατάταξη</b>: ".get_submission_rank($assign->id,$sub->grade, $sub->submission_date)." </td>
                                 </tr>
                                   <tr> <td> <b>Είσοδος</b> </td>
                                        <td> <b>Έξοδος</b> </td>
+                                       <td> <b>Τελεστής</b> </td>
                                        <td> <b>Αναμενόμενη έξοδος</b> </td>
+                                       <td> <b>Συντ. βαρύτητας</b> </td>
                                        <td> <b>Αποτέλεσμα</b> </td>
                                 </tr>
                                 ".get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output)."
@@ -111,22 +117,49 @@ function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output) 
     global $themeimg;
     $table_content = "";
     $i=0;
+    $assertions = array(
+    "eq" => "είναι ίσο με",
+    "same" => "είναι ίδιο με",
+    "notEq" => "δεν είναι ίσο με",
+    "notSame" => "δεν είναι ίδιο με",
+    "integer" => "είναι ακέραιος",
+    "float" => "είναι δεκαδικός",
+    "digit" => "είναι ψηφίο",
+    "boolean" => "είναιboolean",
+    "notEmpty" => "δεν είναι κενό",
+    "notNull" => "δεν είναι Null",
+    "string" => "είναι string",
+    "startsWith" => "αρχίζει με",
+    "endsWith" => "τελειώνει με",
+    "contains" => "περιέχει",
+    "numeric" => "είναι αριθμητικό",
+    "isArray" => "είναι array",
+    "true" => "είναι true",
+    "false" => "είναι false",
+    "isJsonString" => "είναι JSON string ",
+    "isObject" => "είναι αντικείμενο",
+);
+   
     foreach($auto_judge_scenarios as $cur_senarios){
-                     $icon = ($auto_judge_scenarios_output[$i]['passed']==1) ? 'tick.png' : 'delete.png';
-                     $table_content.="
-                                      <tr>
-                                      <td style=\"word-break:break-all;\">".$cur_senarios['input']."</td>
-                                      <td style=\"word-break:break-all;\">".$auto_judge_scenarios_output[$i]['student_output']."</td>
-                                      <td style=\"word-break:break-all;\">".$cur_senarios['output']."</td>
-                                      <td align=\"center\"><img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/" .$icon."\"></td></tr>";
+           if(!isset($cur_senarios['output']))// expected output disable
+               $cur_senarios['output'] = "-";
+           $icon = ($auto_judge_scenarios_output[$i]['passed']==1) ? 'tick.png' : 'delete.png';
+           $table_content.="
+                           <tr>
+                           <td style=\"word-break:break-all;\">".$cur_senarios['input']."</td>
+                           <td style=\"word-break:break-all;\">".$auto_judge_scenarios_output[$i]['student_output']."</td>
+                           <td style=\"word-break:break-all;\">".$assertions[$cur_senarios['assertion']]."</td>
+                           <td style=\"word-break:break-all;\">".$cur_senarios['output']."</td>
+                           <td style=\"word-break:break-all;\">".$cur_senarios['weight']."/10</td>
+                           <td align=\"center\"><img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/" .$icon."\"></td></tr>";
                      $i++;
                 }
-    return $table_content;
+       return $table_content;
   }
 
 
 
-function download_pdf_file($assign_title, $course_title,  $username, $grade, $auto_judge_scenarios, $auto_judge_scenarios_output){ 
+function download_pdf_file($assign, $sub, $auto_judge_scenarios, $auto_judge_scenarios_output){ 
     // create new PDF document
     $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
@@ -173,13 +206,13 @@ function download_pdf_file($assign_title, $course_title,  $username, $grade, $au
     }
 
     td {
-        font-size: 1em;
+        font-size: 0.9em;
         border: 1px solid #95CAFF;
         padding: 3px 7px 2px 7px;
     }
 
      th {
-        font-size: 1.1em;
+        font-size: 0.9em;
         text-align: center;
         padding-top: 5px;
         padding-bottom: 4px;
@@ -190,9 +223,11 @@ function download_pdf_file($assign_title, $course_title,  $username, $grade, $au
     </style>
     <table class="first">
         <tr>
-            <th >Είσοδος</th>
-            <th >Έξοδος</th>
-            <th >Αναμενόμενη Έξοδος</th>
+            <th>Είσοδος</th>
+            <th>Έξοδος</th>
+            <th>Τελεστής</th>
+            <th>Αναμεν. Έξοδος</th>
+            <th>Συντ. βαρύτητας</th>
             <th >Αποτέλεσμα</th>
         </tr>
      '. get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output).'
@@ -228,24 +263,24 @@ function download_pdf_file($assign_title, $course_title,  $username, $grade, $au
 
         <table class="first">
             <tr>
-            <th> Μάθημα</th> <td>'.$course_title.' </td>
+            <th> Μάθημα</th> <td>'.get_course_title().' </td>
             </tr>
              <tr>
-            <th> Εργασία</th> <td> '.$assign_title.'</td>
+            <th> Εργασία</th> <td> '.$assign->title.'</td>
             </tr>
              <tr>
-            <th> Εκπεδεύομενος</th><td> '.$username.'</td>
+            <th> Εκπεδεύομενος</th><td> '.q(uid_to_name($sub->uid)).'</td>
             </tr>
              <tr>
-            <th> Βαθμός</th> <td>'.$grade.' </td>
+            <th> Βαθμός</th> <td>'.$sub->grade.'/'.$assign->max_grade.' </td>
             </tr>
              <tr>
-            <th> Κατάταξη</th> <td>-</td>
+            <th> Κατάταξη</th> <td>'.get_submission_rank($assign->id, $sub->grade, $sub->submission_date).'</td>
             </tr>
     </table>';
 
     $pdf->writeHTML($report_details, true, false, true, false, '');
     $pdf->Ln();     
     $pdf->writeHTML($report_table, true, false, true, false, '');
-    $pdf->Output('auto_judge_report_'.$username.'.pdf', 'D');
+    $pdf->Output('auto_judge_report_'.q(uid_to_name($sub->uid)).'.pdf', 'D');
 }
