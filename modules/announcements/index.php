@@ -31,7 +31,7 @@ require_once 'include/sendMail.inc.php';
 require_once 'include/lib/modalboxhelper.class.php';
 require_once 'include/lib/multimediahelper.class.php';
 require_once 'include/log.php';
-require_once 'modules/search/announcementindexer.class.php';
+require_once 'modules/search/indexer.class.php';
 // The following is added for statistics purposes
 require_once 'include/action.php';
 
@@ -43,14 +43,13 @@ define('RSS', 'modules/announcements/rss.php?c=' . $course_code);
 //Identifying ajax request
 if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
     if (isset($_POST['action']) && $is_editor) {
-        $aidx = new AnnouncementIndexer();
         if ($_POST['action']=='delete') {
            /* delete announcement */
             $row_id = intval($_POST['value']);
             $announce = Database::get()->querySingle("SELECT title, content FROM announcement WHERE id = ?d ", $row_id);
             $txt_content = ellipsize_html(canonicalize_whitespace(strip_tags($announce->content)), 50, '+');
             Database::get()->query("DELETE FROM announcement WHERE id= ?d", $row_id);
-            $aidx->remove($row_id);
+            Indexer::queueAsync(Indexer::REQUEST_REMOVE, Indexer::RESOURCE_ANNOUNCEMENT, $row_id);
             Log::record($course_id, MODULE_ID_ANNOUNCE, LOG_DELETE, array('id' => $row_id,
                                                                           'title' => $announce->title,
                                                                           'content' => $txt_content));
@@ -60,7 +59,7 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
            $row_id = intval($_POST['value']);
            $visible = intval($_POST['visible']) ? 1 : 0;
            Database::get()->query("UPDATE announcement SET visible = ?d WHERE id = ?d", $visible, $row_id);
-           $aidx->store($row_id);
+           Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_ANNOUNCEMENT, $row_id);
            exit();
         }
     }
@@ -180,33 +179,39 @@ $head_content .= "<script type='text/javascript'>
             $(document).on( 'click','.delete_btn', function (e) {
                 e.preventDefault();
                 var row_id = $(this).closest('tr').attr('id');
-                bootbox.confirm('$langSureToDelAnnounce', function(result) {                       
-                    $.ajax({
-                      type: 'POST',
-                      url: '',
-                      datatype: 'json',
-                      data: {
-                         action: 'delete', 
-                         value: row_id
-                      },
-                      success: function(data){
-                        var num_page_records = oTable.fnGetData().length;
-                        var per_page = oTable.fnPagingInfo().iLength;
-                        var page_number = oTable.fnPagingInfo().iPage;
-                        if(num_page_records==1){
-                            if(page_number!=0) {
-                                page_number--;
+                bootbox.confirm('$langSureToDelAnnounce', function(result) {
+                    if(result) {                       
+                        $.ajax({
+                          type: 'POST',
+                          url: '',
+                          datatype: 'json',
+                          data: {
+                             action: 'delete', 
+                             value: row_id
+                          },
+                          success: function(data){
+                            var num_page_records = oTable.fnGetData().length;
+                            var per_page = oTable.fnPagingInfo().iLength;
+                            var page_number = oTable.fnPagingInfo().iPage;
+                            if(num_page_records==1){
+                                if(page_number!=0) {
+                                    page_number--;
+                                }
                             }
-                        }
-                        console.log(page_number);
-                        oTable.fnPageChange(page_number);
-                      },
-                      error: function(xhr, textStatus, error){
-                          console.log(xhr.statusText);
-                          console.log(textStatus);
-                          console.log(error);
-                      }
-                    });              
+                            console.log(page_number);
+                            oTable.fnPageChange(page_number);
+                          },
+                          error: function(xhr, textStatus, error){
+                              console.log(xhr.statusText);
+                              console.log(textStatus);
+                              console.log(error);
+                          }
+                        });
+                        $.ajax({
+                            type: 'POST',
+                            url: '{$urlAppend}/modules/search/idxasync.php'
+                        });
+                    }              
                 });                
             });
             $(document).on( 'click','.vis_btn', function (g) {
@@ -232,7 +237,11 @@ $head_content .= "<script type='text/javascript'>
                       console.log(textStatus);
                       console.log(error);
                   }
-                });                
+                });
+                $.ajax({
+                    type: 'POST',
+                    url: '{$urlAppend}/modules/search/idxasync.php'
+                });
             });
             $('.success').delay(3000).fadeOut(1500);
             $('.dataTables_filter input').attr('placeholder', '$langTitle');
@@ -252,9 +261,7 @@ if (isset($_GET['an_id'])) {
     }
 }
 if ($is_editor) {
-  $head_content .= '<script type="text/javascript">var langEmptyGroupName = "' .
-       $langEmptyAnTitle . '";</script>';
-        $aidx = new AnnouncementIndexer();
+  $head_content .= '<script type="text/javascript">var langEmptyGroupName = "' . $langEmptyAnTitle . '";</script>';
   $displayForm = true;
   /* up and down commands */
   if (isset($_GET['down'])) {
@@ -285,6 +292,7 @@ if ($is_editor) {
                     $thisAnnouncementOrderFound = true;
                 }
            }
+           redirect_to_home_page("modules/announcements/index.php?course=$course_code");
   }
 
     /* modify */
@@ -345,7 +353,7 @@ if ($is_editor) {
                                              stop_display = ?t", $newContent, $antitle, $course_id, $order, $start_display, $stop_display)->lastInsertID;
             $log_type = LOG_INSERT;
         }
-        $aidx->store($id);
+        Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_ANNOUNCEMENT, $id);
         $txt_content = ellipsize_html(canonicalize_whitespace(strip_tags($_POST['newContent'])), 50, '+');
         Log::record($course_id, MODULE_ID_ANNOUNCE, $log_type, array('id' => $id,
                                                                      'email' => $send_mail,
@@ -446,14 +454,14 @@ if ($is_editor) {
                 array('title' => $langBack,
                       'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code",
                       'icon' => 'fa-reply',
-                      'level' => 'primary')));
+                      'level' => 'primary-label')));
     $tool_content .= "<div class='form-wrapper'>";
     $tool_content .= "<form class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]?course=".$course_code."' onsubmit=\"return checkrequired(this, 'antitle');\">
         <fieldset>
         <div class='form-group'>
             <label for='AnnTitle' class='col-sm-2 control-label'>$langAnnTitle:</label>
             <div class='col-sm-10'>
-                <input type='text' name='antitle' value='$titleToModify' size='50' />
+                <input class='form-control' type='text' name='antitle' value='$titleToModify' size='50' />
             </div>
         </div>
         <div class='form-group'>
@@ -476,11 +484,11 @@ if ($is_editor) {
         
         <div class='form-group'>
             <label for='From' class='col-sm-2 control-label'>$langFrom:</label>
-            <div class='col-sm-10'><input type='text' name='startdate' id='startdate' value='$showFrom'></div>
+            <div class='col-sm-10'><input class='form-control' type='text' name='startdate' id='startdate' value='$showFrom'></div>
         </div>
         <div class='form-group'>
             <label for='From' class='col-sm-2 control-label'>$langUntil:</label>
-            <div class='col-sm-10'><input type='text' name='enddate' id='enddate' value='$showUntil'></div>
+            <div class='col-sm-10'><input class='form-control' type='text' name='enddate' id='enddate' value='$showUntil'></div>
         </div>
         <div class='col-sm-offset-2 col-sm-10'>
             <input class='btn btn-primary' type='submit' name='submitAnnouncement' value='".q($langAdd)."' />

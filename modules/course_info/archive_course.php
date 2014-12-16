@@ -120,11 +120,13 @@ $archive_conditions = array(
                                                          WHERE course_id = $course_id)",
     'gradebook_book' => "gradebook_activity_id IN (SELECT gradebook_activities.id FROM gradebook_activities, gradebook
                                                          WHERE gradebook.course_id = $course_id AND gradebook_activities.gradebook_id = gradebook.id)",
+    'gradebook_users' => "gradebook_id IN (SELECT id FROM gradebook WHERE course_id = $course_id)",
     'attendance' => $sql_course,
     'attendance_activities' => "attendance_id IN (SELECT id FROM attendance
                                                          WHERE course_id = $course_id)",
     'attendance_book' => "attendance_activity_id IN (SELECT attendance_activities.id FROM attendance_activities, attendance
                                                          WHERE attendance.course_id = $course_id AND attendance_activities.attendance_id = attendance.id)",
+    'attendance_users' => "attendance_id IN (SELECT id FROM attendance WHERE course_id = $course_id)",
     'agenda' => $sql_course,
     'exercise' => $sql_course,
     'exercise_question' => $sql_course,
@@ -139,7 +141,8 @@ $archive_conditions = array(
     'blog_post' => "id IN (SELECT id FROM blog_post WHERE course_id = $course_id)",
     'comments' => "(rtype = 'blogpost' AND rid IN (SELECT id FROM blog_post WHERE course_id = $course_id)) OR (rtype = 'course' AND rid = $course_id)",
     'rating' => "(rtype = 'blogpost' AND rid IN (SELECT id FROM blog_post WHERE course_id = $course_id)) OR (rtype = 'course' AND rid = $course_id)",
-    'rating_cache' => "(rtype = 'blogpost' AND rid IN (SELECT id FROM blog_post WHERE course_id = $course_id)) OR (rtype = 'course' AND rid = $course_id)");
+    'rating_cache' => "(rtype = 'blogpost' AND rid IN (SELECT id FROM blog_post WHERE course_id = $course_id)) OR (rtype = 'course' AND rid = $course_id)",
+    'note' => "(reference_obj_course IS NOT NULL AND reference_obj_course = $course_id)");
 
 foreach ($archive_conditions as $table => $condition) {
     backup_table($archivedir, $table, $condition);

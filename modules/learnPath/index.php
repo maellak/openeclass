@@ -339,6 +339,8 @@ if ($is_editor) {
         exit;
     } else {
         $tool_content .= "
+        <div class='row'>
+            <div class='col-sm-12'>
                 <div id='operations_container'>" .
                 action_bar(array(
                     array('title' => $langCreate,
@@ -349,16 +351,18 @@ if ($is_editor) {
                     array('title' => $langimportLearningPath,
                         'url' => "importLearningPath.php?course=$course_code",
                         'icon' => 'fa-upload',
-                        'level' => 'primary',),
+                        'level' => 'secondary',),
                     array('title' => $langTrackAllPathExplanation,
                         'url' => "detailsAll.php?course=$course_code",
                         'icon' => 'fa-line-chart',
-                        'level' => 'primary'),
+                        'level' => 'secondary'),
                     array('title' => $langLearningObjectsInUse_sort,
                         'url' => "modules_pool.php?course=$course_code",
                         'icon' => 'fa-book',
-                        'level' => 'primary'))) .
-                "</div>";
+                        'level' => 'secondary'))) .
+                "</div>
+            </div>
+        </div>";
     }
 }
 
@@ -371,9 +375,10 @@ if ($l == 0) {
 }
 
 $tool_content .= "
-    <table width='100%' class='tbl_alt'>
+<div class='table-responsive'>    
+    <table class='table-default'>
     <tr>
-      <th colspan='2'><div align='left'>$langLearningPaths</div></th>\n";
+      <th><div align='left'>$langLearningPaths</div></th>\n";
 
 if ($is_editor) {
     // Titles for teachers
@@ -472,7 +477,6 @@ foreach ($result as $list) { // while ... learning path list
         }
 
         $tool_content .= "
-      <td width='20'>$play_button</td>
       <td><a href='learningPath.php?course=$course_code&amp;path_id=" . $list->learnPath_id . "'>" . htmlspecialchars($list->name) . "</a></td>\n";
 
         // --------------TEST IF FOLLOWING PATH MUST BE BLOCKED------------------
@@ -538,7 +542,7 @@ foreach ($result as $list) { // while ... learning path list
         // 5 administration columns
         // LOCK link
         // EXPORT links
-        $tool_content .= "      <td class='center' width='1'>" .
+        $tool_content .= "      <td class='option-btn-cell'>" .
                 action_button(array(
                     array('title' => $langExport2004,
                         'url' => $_SERVER['SCRIPT_NAME'] . '?course=' . $course_code . '&amp;cmd=export&amp;path_id=' . $list->learnPath_id,
@@ -553,7 +557,7 @@ foreach ($result as $list) { // while ... learning path list
 
         $is_real_dir = is_dir(realpath($webDir . "/courses/" . $course_code . "/scormPackages/path_" . $list->learnPath_id));
 
-        $tool_content .= "      <td class='center' width='1'>" .
+        $tool_content .= "      <td class='option-btn-cell'>" .
                 action_button(array(
                     array('title' => $langBlock,
                         'url' => $_SERVER['SCRIPT_NAME'] . "?course=$course_code&amp;cmd=mkBlock&amp;cmdid=" . $list->learnPath_id,
@@ -606,8 +610,8 @@ foreach ($result as $list) { // while ... learning path list
         if ($prog >= 0) {
             $globalprog += $prog;
         }
-        $tool_content .= "<td class='right' width='120'>" . disp_progress_bar($prog, 1) . "</td>\n";
-        $tool_content .= "<td class='left' width='10'>" . $prog . "% </td>";
+        $tool_content .= "<td class='text-right' width='120'>" . disp_progress_bar($prog, 1) . "</td>\n";
+        $tool_content .= "<td class='text-left' width='10'>" . $prog . "% </td>";
     }
     $tool_content .= "</tr>\n";
     $iterator++;
@@ -618,12 +622,12 @@ if (!$is_editor && $iterator != 1 && $uid) {
     // add a blank line between module progression and global progression
     $total = round($globalprog / ($iterator - 1));
     $tool_content .= "
-    <tr class='odd'>
+    <tr>
       <th colspan='2'><div align='right'><b>$langPathsInCourseProg</b>:</div></th>
       <th><div align='right'>" . disp_progress_bar($total, 1) . "</div></th>
       <th><div align='left'>$total%</div></th>
     </tr>\n";
 }
-$tool_content .= "\n     </table>\n";
+$tool_content .= "\n     </table></div>\n";
 
 draw($tool_content, 2, null, $head_content);

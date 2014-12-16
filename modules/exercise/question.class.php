@@ -508,7 +508,104 @@ if (!class_exists('Question')):
 
             return $id;
         }
+        /**
+         *
+         * Calculate Question success rate
+         */        
+        function successRate($exerciseId = NULL) {
+            $id = $this->id;
+            $type = $this->type;           
+            $objAnswerTmp = new Answer($id);
+            $nbrAnswers = $objAnswerTmp->selectNbrAnswers();               
+            $q_correct_answers_sql = '';
+            $q_incorrect_answers_sql = '';
+            $extra_sql = '';
+            $query_vars = array($id, ATTEMPT_COMPLETED);         
+            if(isset($exerciseId)) {
+                $extra_sql = " AND b.eid = ?d";
+                $query_vars[] = $exerciseId;
+            }         
+            $total_answer_attempts = Database::get()->querySingle("SELECT COUNT(DISTINCT a.eurid) AS count
+                    FROM exercise_answer_record a, exercise_user_record b
+                    WHERE a.eurid = b.eurid AND a.question_id = ?d AND b.attempt_status=?d$extra_sql", $query_vars)->count;
+            
+            //BUILDING CORRECT ANSWER QUERY BASED ON QUESTION TYPE
+            if($type == UNIQUE_ANSWER || $type == MULTIPLE_ANSWER || $type == TRUE_FALSE){ //works wrong for MULTIPLE_ANSWER                           
+                $i=1;
+                for ($answerId = 1; $answerId <= $nbrAnswers; $answerId++) {
+                    if ($objAnswerTmp->isCorrect($answerId)) {
+                        $q_correct_answers_sql .= ($i!=1) ? ' OR ' : '';
+                        $q_correct_answers_sql .= 'a.answer_id = '.$objAnswerTmp->selectPosition($answerId);
+                        $q_incorrect_answers_sql .= ($i!=1) ? ' AND ' : '';  
+                        $q_incorrect_answers_sql .= 'a.answer_id != '.$objAnswerTmp->selectPosition($answerId);                                         
+                        $i++;                        
+                    }
+                }
+                $q_correct_answers_cnt = $i-1;
+            } elseif ($type == MATCHING) { // to be done
+                    $i = 1;
+                    for ($answerId = 1; $answerId <= $nbrAnswers; $answerId++) {
+                        //must get answer id ONLY where correct value existS
+                        $answerCorrect = $objAnswerTmp->isCorrect($answerId);
+                        if ($answerCorrect) {
+                            $q_correct_answers_sql .= ($i!=1) ? " OR " : "";
+                            $q_correct_answers_sql .= "(a.answer = $answerId AND a.answer_id = $answerCorrect)";
+                            $q_incorrect_answers_sql .= ($i!=1) ? " OR " : "";
+                            $q_incorrect_answers_sql .= "(a.answer = $answerId AND a.answer_id != $answerCorrect)";                            
+                            $i++;
+                        }
+                    }
+                    $q_correct_answers_cnt = $i-1;
+            } elseif ($type == FILL_IN_BLANKS) { // Works Great                              
+               $answer_field = $objAnswerTmp->selectAnswer($nbrAnswers);
+               //splits answer string from weighting string
+               list($answer, $answerWeighting) = explode('::', $answer_field);
+               //getting all matched strings between [ and ] delimeters
+               preg_match_all('#\[(.*?)\]#', $answer, $match);
 
+               $i=1;
+               foreach ($match[1] as $value){
+                   $q_correct_answers_sql .= ($i!=1) ? ' OR ' : '';
+                   $q_correct_answers_sql .= "(a.answer = '$value'  AND a.answer_id = $i)";
+                   $q_incorrect_answers_sql .= ($i!=1) ? ' OR ' : '';                     
+                   $q_incorrect_answers_sql .= "(a.answer != '$value'  AND a.answer_id = $i)";                
+                   $i++;
+               }
+                $q_correct_answers_cnt = $i-1;
+                            
+            }
+            //FIND CORRECT ANSWER ATTEMPTS
+            if ($type == FREE_TEXT) {
+                // This query gets answers which where graded with queston maximum grade
+                $correct_answer_attempts = Database::get()->querySingle("SELECT COUNT(DISTINCT a.eurid) AS count
+                        FROM exercise_answer_record a, exercise_user_record b, exercise_question c
+                        WHERE a.eurid = b.eurid AND a.question_id = c.id AND a.weight=c.weight AND a.question_id = ?d AND b.attempt_status=?d$extra_sql", $query_vars)->count;                           
+            } else {
+                // One Query to Rule Them All (except free text questions)
+                // This query groups attempts and counts correct and incorrect answers
+                // then counts attempts where (correct answers == total anticipated correct attempts)
+                // and (incorrect answers == 0) (this control is necessary mostly in cases of MULTIPLE ANSWER type)
+                if ($q_correct_answers_cnt > 0) {
+                    $correct_answer_attempts = Database::get()->querySingle("
+                        SELECT COUNT(*) AS counter FROM(
+                            SELECT a.eurid, 
+                            SUM($q_correct_answers_sql) as correct_answer_cnt,
+                            SUM($q_incorrect_answers_sql) as incorrect_answer_cnt
+                            FROM exercise_answer_record a, exercise_user_record b
+                            WHERE a.eurid = b.eurid AND a.question_id = ?d AND b.attempt_status = ?d$extra_sql
+                            GROUP BY(a.eurid) HAVING correct_answer_cnt = $q_correct_answers_cnt AND incorrect_answer_cnt = 0
+                        )sub", $query_vars)->counter;
+                } else {
+                    $correct_answer_attempts = 0;
+                }
+            }
+            if ($total_answer_attempts>0) {
+                $successRate = round($correct_answer_attempts/$total_answer_attempts*100, 2);
+            } else {
+                $successRate = NULL;
+            }
+            return $successRate;
+        }
     }
 
     

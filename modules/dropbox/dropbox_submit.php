@@ -35,13 +35,25 @@ $personal_msgs_allowed = get_config('dropbox_allow_personal_messages');
 
 if (!isset($course_id) || !$course_id) {
     $course_id = 0;
-}
-
-if ($course_id != 0) {
+} else {
     $dropbox_dir = $webDir . "/courses/" . $course_code . "/dropbox";
     // get dropbox quotas from database
     $d = Database::get()->querySingle("SELECT dropbox_quota FROM course WHERE code = ?s", $course_code);
     $diskQuotaDropbox = $d->dropbox_quota;
+}
+
+if (isset($_POST['course'])) {//for the case of course messages from central ui
+    $cid = course_code_to_id($_POST['course']);
+    if ($cid === false) {
+        $cid = $course_id;
+    } else {
+        $dropbox_dir = $webDir . "/courses/" . $_POST['course'] . "/dropbox";
+        // get dropbox quotas from database
+        $d = Database::get()->querySingle("SELECT dropbox_quota FROM course WHERE code = ?s", $_POST['course']);
+        $diskQuotaDropbox = $d->dropbox_quota;
+    }
+} else {
+    $cid = $course_id;
 }
 
 $nameTools = $langDropBox;
@@ -103,14 +115,6 @@ if (isset($_POST['submit'])) {
             } else {
                 $subject = $langMessage;
             }
-            if (isset($_POST['course'])) {//for the case of course messages from central ui
-                $cid = course_code_to_id($_POST['course']);
-                if ($cid === false) {
-                    $cid = $course_id;
-                }
-            } else {
-                $cid = $course_id;
-            }
             
             $msg = new Msg($uid, $cid, $subject, $_POST['body'], $recipients, $filename, $real_filename, $filesize);
         } else {
@@ -146,14 +150,6 @@ if (isset($_POST['submit'])) {
                 $filename_final = $dropbox_dir . '/' . $filename;
                 move_uploaded_file($filetmpname, $filename_final) or die($langUploadError);
                 @chmod($filename_final, 0644);
-                if (isset($_POST['course'])) {//for the case of course messages from central ui
-                    $cid = course_code_to_id($_POST['course']);
-                    if ($cid === false) {
-                        $cid = $course_id;
-                    }
-                } else {
-                    $cid = $course_id;
-                }
                 
                 $msg = new Msg($uid, $cid, $subject, $_POST['body'], $recipients, $filename, $real_filename, $filesize);
             }            
@@ -184,7 +180,7 @@ if (isset($_POST['submit'])) {
                     if (get_user_email_notification($userid)) {
                         $linkhere = "<a href='${urlServer}main/profile/profile.php'>$langHere</a>.";
                         //$unsubscribe = "<br />" . sprintf($langLinkUnsubscribe, $title);
-                        $body_dropbox_message = "$langSender: $_SESSION[givenname] $_SESSION[surname] <br /><br /> $subject <br /><br />" . $_POST['body']. "<br />";
+                        $body_dropbox_message = "$langSender: " . q($_SESSION['givenname']) . " " . q($_SESSION['surname']). " <br /><br /> $subject <br /><br />" . $_POST['body']. "<br />";
                         $body_dropbox_message .= "$langNote: $langDoNotReply <a href='${urlServer}modules/dropbox/index.php'>$langHere</a>.<br />";
                         //$body_dropbox_message .= "$unsubscribe $linkhere";
                         $plain_body_dropbox_message = html2text($body_dropbox_message);

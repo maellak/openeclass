@@ -20,7 +20,7 @@
  * ======================================================================== */
 
 load_js('bootstrap-slider');
-load_js("select2");
+load_js('select2');
    
 $head_content .= " 
 <script>
@@ -65,7 +65,7 @@ $(function() {
 // the question form has been submitted
 if (isset($_POST['submitQuestion'])) {
     $v = new Valitron\Validator($_POST);
-    $v->rule('required', ['questionName']);
+    $v->rule('required', array('questionName'));
     $v->labels(array(
         'questionName' => "$langTheField $langQuestion"
     ));

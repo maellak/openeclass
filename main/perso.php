@@ -151,7 +151,7 @@ function getUserLessonInfo($uid) {
 
     //getting user's lesson info
     if ($myCourses) {
-        $lesson_content .= "<table id='portfolio_lessons' class='table-default'>";
+        $lesson_content .= "<table id='portfolio_lessons' class='table table-striped'>";
         $lesson_content .= "<thead style='display:none'><tr><th></th><th></th></tr></thead>";
         foreach ($myCourses as $data) {
             array_push($lesson_ids, $data->course_id);
@@ -159,7 +159,7 @@ function getUserLessonInfo($uid) {
 			  <td class='text-left'>
 			  <b><a href='${urlServer}courses/$data->code/'>" . q($data->title) . "</a></b><span class='smaller'>&nbsp;(" . q($data->public_code) . ")</span>
 			  <div class='smaller'>" . q($data->professor) . "</div></td>";
-            $lesson_content .= "<td class='text-center'>";
+            $lesson_content .= "<td class='text-center right-cell'>";
             if ($data->status == USER_STUDENT) {
                 $lesson_content .= icon('fa-sign-out', $langUnregCourse, "${urlServer}main/unregcours.php?cid=$data->course_id&amp;uid=$uid");
             } elseif ($data->status == USER_TEACHER) {
@@ -188,14 +188,19 @@ function getUserLessonInfo($uid) {
  * @param type $param
  * @return string
  */ 
-function getUserAnnouncements($lesson_id) {
+function getUserAnnouncements($lesson_id, $type = '') {
 
     global $urlAppend, $dateFormatLong;
-
+            
     $ann_content = '';
-    $last_month = strftime('%Y %m %d', strtotime('now -1 month'));
+    $last_month = strftime('%Y-%m-%d', strtotime('now -1 month'));
 
     $course_id_sql = implode(', ', array_fill(0, count($lesson_id), '?d'));
+    if ($type == 'more') {
+        $sql_append = '';
+    } else {
+        $sql_append = 'LIMIT 5';
+    }
     $q = Database::get()->queryArray("SELECT announcement.title,
                                              announcement.`date`,
                                              announcement.id,
@@ -209,7 +214,7 @@ function getUserAnnouncements($lesson_id) {
                                 AND announcement.`date` >= ?s
                                 AND course_module.module_id = ?d
                                 AND course_module.visible = 1
-                        ORDER BY announcement.`date` DESC LIMIT 5", $lesson_id, $last_month, MODULE_ID_ANNOUNCE);
+                        ORDER BY announcement.`date` DESC $sql_append", $lesson_id, $last_month, MODULE_ID_ANNOUNCE);
     if ($q) { // if announcements exist
         foreach ($q as $ann) {
             $course_title = q(ellipsize($ann->course_title, 30));

@@ -38,6 +38,7 @@ check_guest();
 
 $tree = new Hierarchy();
 $userObj = new User();
+$image_path = $webDir . '/courses/userimg/' . $_SESSION['uid'];
 
 load_js('jstree');
 load_js('tools.js');
@@ -92,7 +93,6 @@ if (isset($_POST['submit'])) {
         mkdir($webDir . '/courses/userimg/', 0775);
         touch($webDir."courses/userimg/index.php");
     }
-    $image_path = $webDir . '/courses/userimg/' . $_SESSION['uid'];
     $subscribe = (isset($_POST['subscribe']) and $_POST['subscribe'] == 'yes') ? '1' : '0';
     $old_language = $language;
     $langcode = $language = $_SESSION['langswitch'] = $_POST['userLanguage'];
@@ -131,10 +131,12 @@ if (isset($_POST['submit'])) {
         $image_file = $_FILES['userimage']['tmp_name'];
 
         if (!copy_resized_image($image_file, $type, IMAGESIZE_LARGE, IMAGESIZE_LARGE, $image_path . '_' . IMAGESIZE_LARGE . '.jpg')) {
-            redirect_to_message(7);
+            Session::Messages($langInvalidPicture);
+            redirect_to_home_page("main/profile/profile.php");             
         }
         if (!copy_resized_image($image_file, $type, IMAGESIZE_SMALL, IMAGESIZE_SMALL, $image_path . '_' . IMAGESIZE_SMALL . '.jpg')) {
-            redirect_to_message(7);
+            Session::Messages($langInvalidPicture);
+            redirect_to_home_page("main/profile/profile.php"); 
         }
         Database::get()->query("UPDATE user SET has_icon = 1 WHERE id = ?d", $_SESSION['uid']);        
         Log::record(0, 0, LOG_PROFILE, array('uid' => intval($_SESSION['uid']),
@@ -144,12 +146,14 @@ if (isset($_POST['submit'])) {
 
     // check if email is valid
     if ((get_config('email_required') | get_config('email_verification_required')) and !email_seems_valid($email_form)) {
-        redirect_to_message(6);
+        Session::Messages($langEmailWrong);
+        redirect_to_home_page("main/profile/profile.php");         
     }
 
     // check if there are empty fields
     if (!$all_ok) {
-        redirect_to_message(4);
+        Session::Messages($langFieldsMissing);
+        redirect_to_home_page("main/profile/profile.php");        
     }
 
     if (!$allow_username_change) {
@@ -161,7 +165,8 @@ if (isset($_POST['submit'])) {
     if ($username_form != $_SESSION['uname']) {        
         $username_check = Database::get()->querySingle("SELECT username FROM user WHERE username = ?s", $username_form);        
         if ($username_check) {
-            redirect_to_message(5);
+            Session::Messages($langUserFree);
+            redirect_to_home_page("main/profile/profile.php");
         }
     }
 
@@ -199,45 +204,13 @@ if (isset($_POST['submit'])) {
             $_SESSION['surname'] = $surname_form;
             $_SESSION['givenname'] = $givenname_form;
             $_SESSION['email'] = $email_form;
-            redirect_to_message(1);
+            Session::Messages($langProfileReg, 'alert-success');
+            redirect_to_home_page("main/profile/display_profile.php");
         }
     if ($old_language != $language) {
-        redirect_to_message(1);
+        Session::Messages($langProfileReg, 'alert-success');
+        redirect_to_home_page("main/profile/display_profile.php");
     }
-}
-
-//Show message if exists
-if (isset($_GET['msg'])) {
-    $urlText = '';
-    $type = 'warning';
-    switch ($_GET['msg']) {
-        case 1: //profile information changed successfully
-            $message = $langProfileReg;
-            $urlText = "<br /><a href='$urlServer'>$langHome</a>";
-            $type = "success";
-            break;
-        case 3: //pass too easy
-            $message = $langPassTooEasy . ": <strong>" . genPass() . "</strong>";
-            break;
-        case 4: // empty fields check
-            $message = $langFieldsMissing;
-            break;
-        case 5: //username already exists
-            $message = $langUserFree;
-            break;
-        case 6: //email not valid
-            $message = $langEmailWrong;
-            break;
-        case 7: //invalid image
-            $message = $langInvalidPicture;
-            break;
-        case 10: // invalid characters
-            $message = $langInvalidCharsUsername;
-            break;
-        default:
-            exit;
-    }
-    $tool_content .= "<div class='alert alert-$type'>$message$urlText</div>";
 }
 
 $surname_form = q($myrow->surname);
@@ -253,56 +226,40 @@ $icon = $myrow->has_icon;
 $sec = $urlSecure . 'main/profile/profile.php';
 $passurl = $urlSecure . 'main/profile/password.php';
 
-$tool_content .= "
-  <div id='operations_container'>" .
+$tool_content .= 
         action_bar(array(
-            array('title' => $langDisplayProfile,
+            array('title' => $langBack,
                 'url' => "display_profile.php",
-                'icon' => 'fa-eye',
-                'level' => 'primary-label'),
-            array('title' => $langChangePass,
-                'url' => "$passurl",
-                'icon' => 'fa-key',
-                'show' => $allow_password_change,
-                'level' => 'primary'),
-            array('title' => $langEmailUnsubscribe,
-                'url' => "emailunsubscribe.php",
-                'icon' => 'fa-envelope',
-                'level' => 'primary'),
-            array('title' => $langUnregUser,
-                'url' => "../unreguser.php",
-                'icon' => 'fa-times',
-                'button-class'=>'btn-danger',
-                'level' => 'primary')
-            )) .
-        "</div>";
-$tool_content .= "<div class='form-wrapper'>
+                'icon' => 'fa-reply',
+                'level' => 'primary-label')));
+        $tool_content .=
+            "<div class='form-wrapper'>
                 <form class='form-horizontal' role='form' method='post' enctype='multipart/form-data' action='$sec' onsubmit='return validateNodePickerForm();'>                
-            <fieldset>     
-            <div class='form-group'>
-            <label for='Name' class='col-sm-2 control-label'>$langName:</label>
-            <div class='col-sm-10'>";
+                <fieldset>     
+                    <div class='form-group'>
+                    <label for='givenname_form' class='col-sm-2 control-label'>$langName:</label>
+                        <div class='col-sm-10'>";
 
 if ($allow_name_change) {
-    $tool_content .= "<input type='text' size='40' name='givenname_form' value='$givenname_form' />";
+    $tool_content .= "<input type='text' class='form-control' name='givenname_form' id='givenname_form' value='$givenname_form'>";
 } else {
     $tool_content .= "<label>$givenname_form</label>
             <input type='hidden' name='givenname_form' value='$givenname_form' />";
 }
 
 $tool_content .= "</div></div>";
-$tool_content .= "<div class='form-group'><label for='SurName' class='col-sm-2 control-label'>$langSurname:</label>";
+$tool_content .= "<div class='form-group'><label for='surname_form' class='col-sm-2 control-label'>$langSurname:</label>";
 $tool_content .= "<div class='col-sm-10'>";
 if ($allow_name_change) {
-    $tool_content .= "<input type='text' size='40' name='surname_form' value='$surname_form' />";
+    $tool_content .= "<input type='text' class='form-control' name='surname_form' id='surname_form' value='$surname_form'>";
 } else {
     $tool_content .= "<label>" . $surname_form . "</label><input type='hidden' name='surname_form' value='$surname_form' />";
 }
 $tool_content .= "</div></div>";
-$tool_content .= "<div class='form-group'><label for='UserName' class='col-sm-2 control-label'>$langUsername:</label>";
+$tool_content .= "<div class='form-group'><label for='username_form' class='col-sm-2 control-label'>$langUsername:</label>";
 $tool_content .= "<div class='col-sm-10'>";
 if ($allow_username_change) {
-    $tool_content .= "<input type='text' size='40' name='username_form' value='$username_form' />";
+    $tool_content .= "<input class='form-control' class='form-control' type='text' name='username_form' id='username_form' value='$username_form' />";
 } else {
     // means that it is external auth method, so the user cannot change this password
     $tool_content .= "<label>$username_form</label> [$auth_text]
@@ -314,20 +271,33 @@ $access_options = array(ACCESS_PRIVATE => $langProfileInfoPrivate,
                         ACCESS_PROFS => $langProfileInfoProfs,
                         ACCESS_USERS => $langProfileInfoUsers);
 
-$tool_content .= "<div class='form-group'><label for='email' class='col-sm-2 control-label'>$langEmail:</label>";
-$tool_content .= "<div class='col-sm-10'>";
-$tool_content .= "<input type='text' size='40' name='email_form' value='$email_form' />";
-
-$tool_content .= selection($access_options, 'email_public', $myrow->email_public) . "</div></div>";
 $tool_content .= "<div class='form-group'>
-        <label for='email' class='col-sm-2 control-label'>$langAm:</label>
-            <div class='col-sm-10'><input type='text' size='40' name='am_form' value='$am_form' /> " .
-        selection($access_options, 'am_public', $myrow->am_public) . "</div></div>
-        <div class='form-group'><label for='phone' class='col-sm-2 control-label'>$langPhone</label>
-            <div class='col-sm-10'><input type='text' size='40' name='phone_form' value='$phone_form' /> " 
-                . selection($access_options, 'phone_public', $myrow->phone_public) . 
-            "</div>
-        </div>";
+                    <label for='email_form' class='col-sm-2 control-label'>$langEmail:</label>
+                    <div class='col-sm-5'>
+                        <input class='form-control' type='text' name='email_form' id='email_form' value='$email_form'>
+                    </div>
+                    <div class='col-sm-5'>
+                        " . selection($access_options, 'email_public', $myrow->email_public, "class='form-control'") . "
+                    </div>                    
+                </div>
+                <div class='form-group'>
+                    <label for='am_form' class='col-sm-2 control-label'>$langAm:</label>
+                    <div class='col-sm-5'>
+                        <input type='text' class='form-control' name='am_form' id='am_form' value='$am_form'>
+                    </div>
+                    <div class='col-sm-5'>
+                        " . selection($access_options, 'am_public', $myrow->am_public, "class='form-control'") . "
+                    </div>                    
+                </div>
+                <div class='form-group'>
+                    <label for='phone_form' class='col-sm-2 control-label'>$langPhone</label>
+                    <div class='col-sm-5'>
+                        <input type='text' class='form-control' name='phone_form' id='phone_form' value='$phone_form'>
+                    </div>
+                    <div class='col-sm-5'>
+                        " . selection($access_options, 'phone_public', $myrow->phone_public, "class='form-control'") . "
+                    </div>                        
+                </div>";
 
 if (get_user_email_notification_from_courses($uid)) {
     $selectedyes = 'checked';
@@ -382,13 +352,13 @@ if (!get_config('restrict_owndep')) {
 }
 
 $tool_content .= "<div class='form-group'><label for='language' class='col-sm-2 control-label'>$langLanguage:</label>
-                      <div class='col-sm-10'>" . lang_select_options('userLanguage') . "</div>
+                      <div class='col-sm-10'>" . lang_select_options('userLanguage', "class='form-control'") . "</div>
                   </div>";
 
 if ($icon) {
     $message_pic = $langReplacePicture;
     $picture = profile_image($uid, IMAGESIZE_SMALL) . "&nbsp;&nbsp;";
-    $delete = '&nbsp;' . icon('fa-times', $langDelete, null, 'id="delete"') . '&nbsp;';
+    $delete = '&nbsp;' . icon('fa-times', $langDelete, '#', 'id="delete"') . '&nbsp;';
 } else {
     $picture = $delete = '';
     $message_pic = $langAddPicture;
@@ -402,7 +372,8 @@ $tool_content .= "<div class='form-group'>
           <div class='col-sm-10'>" . rich_text_editor('desc_form', 5, 20, $desc_form) . "</div>
         </div>
         <div class='col-sm-offset-2 col-sm-10'>        
-          <input class='btn btn-primary' type='submit' name='submit' value='$langModify' />
+          <input class='btn btn-primary' type='submit' name='submit' value='$langSubmit'>
+          <a href='display_profile.php' class='btn btn-default'>$langCancel</a>
         </div>      
       </fieldset>
       </form>
@@ -423,13 +394,4 @@ function valid_access($val) {
     } else {
         return 0;
     }
-}
-
-/**
- * @brief display message
- * @param type $id
- */
-function redirect_to_message($id) {
-    header('Location: ' . $_SERVER['SCRIPT_NAME'] . '?msg=' . $id);
-    exit();
 }

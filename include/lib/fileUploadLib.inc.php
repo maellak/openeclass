@@ -38,7 +38,7 @@
   ==============================================================================
  */
 
-require_once 'modules/search/documentindexer.class.php';
+require_once 'modules/search/indexer.class.php';
 
 /*
  * replaces some dangerous character in a string for HTML use
@@ -420,32 +420,33 @@ function showquota($quota, $used) {
     );     
     $retstring .= action_bar($action_bar_options);
 $retstring .= "
-<div class='panel padding'>
+<div class='row'><div class='col-sm-12'>
+<div class='form-wrapper'>
 <form class='form-horizontal' role='form'>
   <div class='form-group'>
     <label class='col-sm-2'>$langQuotaUsed:</label>
     <div class='col-sm-10'>
-      <input type='text' class='form-control' value='$used' disabled>
+      <p class='form-control-static'>$used</p>
     </div>
   </div>
   <div class='form-group'>
     <label class='col-sm-2'>$langQuotaPercentage:</label>
     <div class='col-sm-10'>
         <div class='progress'>
-          <div class='progress-bar progress-bar-striped active' role='progressbar' aria-valuenow='".str_replace('%','',$diskUsedPercentage)."' aria-valuemin='0' aria-valuemax='100' style='width: $diskUsedPercentage;'>
+          <p class='progress-bar progress-bar-striped active from-control-static' role='progressbar' aria-valuenow='".str_replace('%','',$diskUsedPercentage)."' aria-valuemin='0' aria-valuemax='100' style='width: $diskUsedPercentage;'>
             $diskUsedPercentage
-          </div>
+          </p>
         </div>
     </div>
   </div>
   <div class='form-group'>
     <label class='col-sm-2'>$langQuotaTotal:</label>
     <div class='col-sm-10'>
-      <input type='text' class='form-control' value='$quota' disabled>
+          <p class='form-control-static'>$quota</p>
     </div>
   </div>  
 </form>
-</div>";
+</div></div></div>";
     $tmp_cwd = getcwd();
 
     return $retstring;
@@ -464,7 +465,6 @@ function unwanted_file($filename) {
 function process_extracted_file($p_event, &$p_header) {
     global $uploadPath, $realFileSize, $basedir, $course_id,
     $subsystem, $subsystem_id, $uploadPath, $group_sql;
-    $didx = new DocumentIndexer();
 
     $replace = isset($_POST['replace']);
 
@@ -495,7 +495,7 @@ function process_extracted_file($p_event, &$p_header) {
         // Directory has been created by make_path(),
         // only need to update the index
         $r = Database::get()->querySingle("SELECT id FROM document WHERE $group_sql AND path = ?s", $path);
-        $didx->store($r->id);
+        Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_DOCUMENT, $r->id);
         return 0;
     } else {
         // Check if file already exists        
@@ -531,7 +531,7 @@ function process_extracted_file($p_event, &$p_header) {
                 Database::get()->query("UPDATE document SET filename = ?s
                                                  WHERE $group_sql AND
                                                        path = ?s", $backup, $file_path);
-                $didx->store($old_id);
+                Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_DOCUMENT, $old_id);
             }
         }
 
@@ -559,7 +559,7 @@ function process_extracted_file($p_event, &$p_header) {
                 , $file_creator, $file_date, $file_date, $file_subject, $file_description
                 , $file_author, $format, $file_language, $file_copyrighted)->lastInsertID;
         // Logging
-        $didx->store($id);
+        Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_DOCUMENT, $id);
         Log::record($course_id, MODULE_ID_DOCS, LOG_INSERT, array('id' => $id,
             'filepath' => $path,
             'filename' => $filename,
@@ -660,8 +660,9 @@ function validateUploadedZipFile($listContent, $menuTypeID = 2) {
         return false;
     }
     foreach ($listContent as $key => $entry) {
-        if ($entry['folder'] == 1)
+        if ($entry['folder'] == 1) {
             continue;
+        }
 
         $filename = basename($entry['filename']);
 
@@ -691,8 +692,9 @@ function isWhitelistAllowed($filename) {
 
     $whitelist = explode(',', preg_replace('/\s+/', '', $wh)); // strip any whitespace
 
-    if (in_array('*', $whitelist))
+    if (in_array('*', $whitelist)) {
         return true;
+    }
 
     $ext = getPureFileExtension($filename);
     return in_array($ext, $whitelist);
@@ -717,8 +719,9 @@ function fetchUserWhitelist($uid) {
  */
 function getPureFileExtension($filename) {
     $matches = array();
-    if (preg_match('/\.([a-zA-Z0-9_-]{1,8})$/i', $filename, $matches))
+    if (preg_match('/\.([a-zA-Z0-9_-]{1,8})$/i', $filename, $matches)) {
         return strtolower($matches[1]);
-    else
+    } else {
         return '';
+    }
 }

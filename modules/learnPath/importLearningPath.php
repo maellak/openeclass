@@ -845,8 +845,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !is_null($_POST)) {
                     // finally : insert in learning path
                     // get the inserted id of the learnPath_module rel to allow 'parent' link in next inserts
                     $insertedLPMid[$item['itemIdentifier']]['LPMid'] = Database::get()->query("INSERT INTO `lp_rel_learnPath_module`
-                            (`learnPath_id`, `module_id`,`rank`, `visible`, `parent`)
-                            VALUES (?d, ?d, ?d, ?d, ?d)", $tempPathId, $insertedModule_id[$i], $rank, $visibility, $parent)->lastInsertID;
+                            (`learnPath_id`, `module_id`,`rank`, `visible`, `parent`, `specificComment`)
+                            VALUES (?d, ?d, ?d, ?d, ?d, '')", $tempPathId, $insertedModule_id[$i], $rank, $visibility, $parent)->lastInsertID;
                     $insertedLPMid[$item['itemIdentifier']]['rank'] = 1;
 
                     if (!$insertedLPMid[$item['itemIdentifier']]['LPMid']) {
@@ -1059,7 +1059,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !is_null($_POST)) {
     /* --------------------------------------
       status messages
       -------------------------------------- */
-    $tool_content .= "\n<p><!-- Messages -->\n";
+    $tool_content .= "\n<!-- Messages -->\n";
     foreach ($okMsgs as $msg) {
         $tool_content .= "\n<span class=\"correct\">$langSuccessOk</span>" . $msg . "<br />";
     }
@@ -1088,32 +1088,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !is_null($_POST)) {
     /* --------------------------------------
       UPLOAD FORM
       -------------------------------------- */
+    
+    // Action_bar section
     $tool_content .= "
-    <form enctype=\"multipart/form-data\" action=\"" . $_SERVER['SCRIPT_NAME'] . "?course=$course_code\" method=\"post\">
-    <fieldset>
-    <legend>$langImport</legend>
-    <table width=\"100%\" class=\"tbl\">
-    <tr>
-      <th width=\"120\">$langFileName:</th>
-      <td>
-          <input type=\"hidden\" name=\"claroFormId\" value=\"" . uniqid('') . "\" >
-          <input type=\"file\" name=\"uploadedPackage\">
-          <br />
-          <span class='smaller'>$langLearningPathUploadFile</span>
-      </td>
-    </tr>
-    <tr>
-      <th class=\"left\">&nbsp;</th>
-      <td class='right'><input type=\"submit\" value=\"" . $langImport . "\"></td>
-    </tr>
-    <tr>
-      <th>&nbsp;</th>
-      <td class='right smaller'>$langMaxFileSize " . ini_get('upload_max_filesize') . "</td>
-    </tr>
-    </table>
-    </fieldset>
-    </form>
-    <p>";
+        <div class='row'>
+            <div class='col-sm-12'>";
+            $tool_content .= action_bar(array(
+                        array('title' => $langBack,
+                            'url' => "index.php?course=$course_code",
+                            'icon' => 'fa-reply',
+                            'level' => 'primary-label'
+                        )
+                    ));
+            $tool_content .= "</div>
+        </div>
+    ";
+    // Upload Form section
+    $tool_content .="
+        <div class='row'>
+            <div class='col-sm-12'>
+                <div class='form-wrapper'>
+                    <form class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code' enctype='multipart/form-data'>
+                        <fieldset>
+                            <legend>$langImport</legend>
+                            <div class='form-group'>
+                                <label for='uploadedPackage' class='col-sm-2 control-label'>Εισαγωγή αρχείου</label>
+                                <div class='col-sm-10'>
+                                    <input type='hidden' name='claroFormId' value='" . uniqid('') . "' >
+                                    <input id='uploadedPackage' type='file' name='uploadedPackage'>
+                                    <span class='smaller'>$langLearningPathUploadFile</span>
+                                    <span class='smaller'>$langMaxFileSize " . ini_get('upload_max_filesize') . "</span>
+                                </div>
+                            </div>
+                            <div class='form-group'>
+                                <div class='col-sm-offset-2 col-sm-10'>
+                                    <input class='btn btn-primary' type='submit' value='$langImport' >
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    ";
 
 
     /*     * ***************************************
@@ -1224,7 +1241,7 @@ EOF;
     $tool_content .= "\n</form>";
     $tool_content .= "\n</div>";
 
-    $tool_content .= "</p><p class='right smaller'>$langNote:<br/>$langScormIntroTextForDummies</p>";
+    $tool_content .= "<p class='right smaller'>$langNote:<br/>$langScormIntroTextForDummies</p>";
 } // else if method == 'post'
 
 chdir($pwd);

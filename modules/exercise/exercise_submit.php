@@ -102,7 +102,7 @@ if (isset($_POST['buttonCancel'])) {
         Database::get()->query("DELETE FROM exercise_answer_record WHERE eurid = ?d", $eurid);
         unset_exercise_var($exerciseId);
 
-        Session::Messages($landAttemptCanceled);
+        Session::Messages($langAttemptCanceled);
         redirect_to_home_page('modules/exercise/index.php?course='.$course_code);
 }
 
@@ -161,7 +161,7 @@ if (isset($_SESSION['questionList'][$exerciseId])) {
     $questionList = $_SESSION['questionList'][$exerciseId];
 } else {
     if ($paused_attempt) {
-        $record_question_ids = Database::get()->queryArray("SELECT DISTINCT question_id FROM exercise_answer_record WHERE eurid = ?d", $paused_attempt->eurid);
+        $record_question_ids = Database::get()->queryArray("SELECT DISTINCT question_id FROM exercise_answer_record WHERE eurid = ?d ORDER BY answer_record_id ASC", $paused_attempt->eurid);
         $i=1;
         foreach ($record_question_ids as $row) {
             $questionList[$i] = $row->question_id;
@@ -274,6 +274,12 @@ if (isset($_POST['formSent'])) {
         Database::get()->query("UPDATE exercise_user_record SET record_end_date = ?t, total_score = ?f, attempt_status = ?d,
                                 total_weighting = ?f, secs_remaining = ?d WHERE eurid = ?d", $record_end_date, $totalScore, $attempt_status, $totalWeighting, $secs_remaining, $eurid);
         
+        if ($attempt_status == ATTEMPT_COMPLETED) {
+            // update attendance book
+            update_attendance_book($exerciseId, 'exercise');
+            // update gradebook
+            update_gradebook_book($uid, $exerciseId, $totalScore, 'exercise');
+        }
         unset($objExercise);
         unset_exercise_var($exerciseId);
         // if time expired set flashdata
@@ -306,7 +312,7 @@ if (isset($_POST['formSent'])) {
 $exerciseDescription_temp = standard_text_escape($exerciseDescription);
 $tool_content .= "<div class='panel panel-primary'>
   <div class='panel-heading'>
-    <h3 class='panel-title'>$exerciseTitle ".(isset($timeleft) && $timeleft>0 ? "<div class='pull-right'>$langRemainingTime: <span id='progresstime'>".($timeleft)."</span></div>" : "" )."</h3>
+    <h3 class='panel-title'>".(isset($timeleft) && $timeleft>0 ? "<div class='pull-right'>$langRemainingTime: <span id='progresstime'>".($timeleft)."</span></div>" : "" )."$exerciseTitle</h3>
   </div>";
 if (!empty($exerciseDescription_temp)) {
     $tool_content .= "<div class='panel-body'>

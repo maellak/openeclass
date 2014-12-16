@@ -53,8 +53,14 @@ load_js('tools.js');
 load_js('bootstrap-datetimepicker');
 load_js('bootstrap-timepicker');
 load_js('bootstrap-datepicker');
+if (!empty($langLanguageCode)) {
+    load_js('bootstrap-calendar-master/js/language/' . $langLanguageCode . '.js');
+}
+load_js('bootstrap-calendar-master/js/calendar.js');
+load_js('bootstrap-calendar-master/components/underscore/underscore-min.js');
  
 $head_content .= "
+<link rel='stylesheet' type='text/css' href='{$urlAppend}js/bootstrap-calendar-master/css/calendar.css' />
 <script type='text/javascript'>
 var dialogUpdateOptions = {
     title: '$langConfirmUpdate',
@@ -118,11 +124,11 @@ $(function() {
 if ($is_editor and (isset($_GET['addEvent']) or isset($_GET['id']))) {
 
     //--if add event
-    $head_content .= <<<hContent
-<script type="text/javascript">
+    $head_content .= 
+"<script type='text/javascript'>
 function checkrequired(thisform) {
     if ($('#event_title').val()=='' || $('#startdate').val()=='') {
-            bootbox.alert("$langTitleDateNotEmpty");
+            bootbox.alert('$langTitleDateNotEmpty');
             return false;
     }
     if($('#id').val()>0 && $('#rep').val() != ''){
@@ -131,18 +137,8 @@ function checkrequired(thisform) {
         thisform.submit();
     }
 }
-</script>
-hContent;
+</script>";
 }
-
-$result = Database::get()->queryArray("SELECT id FROM agenda WHERE course_id = ?d", $course_id);
-    if (count($result) > 1) {
-        if (isset($_GET["sens"]) && $_GET["sens"] == "d") {
-            $sens = " DESC"; 
-        } else {
-            $sens = " ASC";    
-        }
-    }
     
 // display action bar
 if (isset($_GET['addEvent']) or isset($_GET['edit'])) {
@@ -160,16 +156,10 @@ if (isset($_GET['addEvent']) or isset($_GET['edit'])) {
                   'level' => 'primary-label',
                   'button-class' => 'btn-success',
                   'show' => $is_editor),
-            array('title' => $langOldToNew,
-                  'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;sens=",
-                  'icon' => 'fa-arrows-v',
-                  'level' => 'primary-label',
-                  'show' => count($result) and (isset($_GET['sens']) and $_GET['sens'] == "d")),
-            array('title' => $langOldToNew,
-                  'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;sens=d",
-                  'icon' => 'fa-arrows-v',
-                  'level' => 'primary-label',
-                  'show' => count($result) and (!isset($_GET['sens']) or (isset($_GET['sens']) and $_GET['sens'] != "d")))
+            array('title' => $langiCalExport,
+                  'url' => "icalendar.php?c=$course_id",
+                  'icon' => 'fa-calendar',
+                  'level' => 'primary')
         ));                        
 }
 
@@ -238,25 +228,25 @@ if ($is_editor) {
                 . "<input type='hidden' name='rep' id='rep' value='$rep'>";
         @$tool_content .= "
             <div class='form-group'>
-                <label for='Title' class='col-sm-2 control-label'>$langTitle: </label>
+                <label for='event_title' class='col-sm-2 control-label'>$langTitle :</label>
                 <div class='col-sm-10'>
                     <input type='text' class='form-control' id='event_title' name='event_title' placeholder='$langTitle' value='" . q($event_title) . "'>
                 </div>
             </div>
             <div class='input-append date form-group' id='startdatecal' data-date='$langDate' data-date-format='dd-mm-yyyy'>
-                <label for='DateStart' class='col-sm-2 control-label'>$langDate :</label>
+                <label for='startdate' class='col-sm-2 control-label'>$langDate :</label>
                 <div class='col-xs-10 col-sm-9'>        
-                    <input name='startdate' id='startdate' type='text' value = '" .$startdate . "'>
+                    <input class='form-control' name='startdate' id='startdate' type='text' value = '" .$startdate . "'>
                 </div>
                 <div class='col-xs-2 col-sm-1'>  
                     <span class='add-on'><i class='fa fa-times'></i></span>
                     <span class='add-on'><i class='fa fa-calendar'></i></span>
                 </div>
             </div>
-            <div class='input-append bootstrap-timepicker form-group' id='durationcal'>
-                <label for='Duration' class='col-sm-2 control-label'>$langDuration <small>$langInHour</small></label>
+            <div class='input-append bootstrap-timepicker form-group'>
+                <label for='durationcal' class='col-sm-2 control-label'>$langDuration <small>$langInHour</small></label>
                 <div class='col-xs-10 col-sm-9'>
-                    <input name='duration' id='duration' type='text' class='input-small' value='" . $duration . "'>
+                    <input class='form-control' name='duration' id='durationcal' type='text' class='input-small' value='" . $duration . "'>
                 </div>
                 <div class='col-xs-2 col-sm-1'>
                     <span class='add-on'><i class='icon-time'></i></span>
@@ -284,7 +274,7 @@ if ($is_editor) {
             $tool_content .= "<div class='input-append date form-group' id='enddatecal' data-date='$langDate' data-date-format='dd-mm-yyyy'>
                 <label for='Enddate' class='col-sm-2 control-label'>$langUntil :</label>
                     <div class='col-xs-10 col-sm-9'>
-                        <input name='enddate' id='enddate' type='text' value = '" . $enddate . "'>
+                        <input class='form-control' name='enddate' id='enddate' type='text' value = '" . $enddate . "'>
                     </div>
                     <div class='col-xs-2 col-sm-1'>  
                         <span class='add-on'><i class='fa fa-times'></i></span>
@@ -309,118 +299,80 @@ if ($is_editor) {
 /* ---------------------------------------------
  *  End  of  prof only
  * ------------------------------------------- */
-if (!isset($_GET['sens'])) {
-    $sens = " ASC";
-}
-if ($is_editor) {
-    $result = Database::get()->queryArray("SELECT id, title, content, start, duration, visible, recursion_period, recursion_end FROM agenda WHERE course_id = ?d
-		ORDER BY start " . $sens, $course_id);
-} else {
-    $result = Database::get()->queryArray("SELECT id, title, content, start, duration, visible FROM agenda WHERE course_id = ?d
-		AND visible = 1 ORDER BY start " . $sens, $course_id);
-}
+$cal_content_list = event_list_view();
+$tool_content .= ''
+            . '<div id="calendar_wrapper" class="row">
+                <div class="col-md-12">
+                    <div class="row calendar-header">
+                    <div class="col-md-12">
+                    <div id="calendar-header">
+                        <div class="pull-right form-inline">
+                            <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm" data-calendar-nav="prev"><i class="fa fa-caret-left"></i>  ' . '' . '</button>
+                                    <button class="btn btn-sm" data-calendar-nav="today">' . $langToday . '</button>
+                                    <button class="btn btn-primary btn-sm" data-calendar-nav="next">' . '' . ' <i class="fa fa-caret-right"></i> </button>
+                            </div>
+                            <div class="btn-group">
+                                    <button class="btn btn-warning btn-sm" data-calendar-view="year">' . $langYear . '</button>
+                                    <button class="btn btn-warning btn-sm active" data-calendar-view="month">' . $langMonth . '</button>
+                                    <button class="btn btn-warning btn-sm" data-calendar-view="week">' . $langWeek . '</button>
+                                    <button class="btn btn-warning btn-sm" data-calendar-view="day">' . $langDay . '</button>
+                                    <button class="btn btn-warning btn-sm" id="listviewbtn">' . $langListAll . '</button>
+                            </div>
+                        </div>
+                        <h4></h4>
+                        </div>
+                        </div>
+                    </div>'
+            . '<div class="row"><div id="bootstrapcalendar" class="col-md-12"></div></div>'
+            . '<div class="row"><div class="col-md-12" id="raweventlist">'.$cal_content_list.'</div></div>'
+            . '</div></div>';
 
-if (count($result) > 0) {
-    $barMonth = '';
-    $nowBarShowed = false;
-    $tool_content .= "<div class='table-responsive'><table class='table-default'>
-                    <tr><th class='left'>$langEvents</th>";
-    if ($is_editor) {
-        $tool_content .= "<th class='text-center'>" . icon('fa-gears') . "</th>";
-    } else {
-        $tool_content .= "<th width='50'>&nbsp;</th>";
-    }
-    $tool_content .= "</tr>";
+$tool_content .= "<script type='text/javascript'>" .
+'$(document).ready(function(){
+    $("#raweventlist").hide();
+    var calendar = $("#bootstrapcalendar").calendar(
+        {
+            tmpl_path: "' . $urlAppend . 'js/bootstrap-calendar-master/tmpls/",
+            events_source: "' . $urlAppend . 'modules/agenda/calendar_data.php?course='.$course_code.'",
+            language: "el-GR",
+            onAfterViewLoad: function(view) {
+                        $(".calendar-header h4").text(this.getTitle());
+                        $(".btn-group button").removeClass("active");
+                        $("button[data-calendar-view=\'" + view + "\']").addClass("active");
+                        $("button[data-calendar-nav=\'today\']").text(this.getTitle());
+                        }
+        }
+    );
+    $(".btn-group button[data-calendar-nav]").each(function() {
+        var $this = $(this);
+        $this.click(function() {
+            calendar.navigate($this.data("calendar-nav"));
+            $("#raweventlist").hide();
+            $("#bootstrapcalendar").show();
+        });
+    });
 
-    foreach ($result as $myrow) {
-        $content = standard_text_escape($myrow->content);
-        $d = strtotime($myrow->start);
-        if (!$nowBarShowed) {
-            // Following order
-            if ((($d > time()) and ($sens == " ASC")) or ( ($d < time()) and ( $sens == " DESC "))) {
-                if ($barMonth != date("m", time())) {
-                    $barMonth = date("m", time());
-                    $tool_content .= "<tr>";
-                    // current month
-                    $tool_content .= "<td colspan='2' class='monthLabel'>" . $langCalendar . "&nbsp;<b>" . ucfirst(claro_format_locale_date("%B %Y", time())) . "</b></td>";
-                    $tool_content .= "</tr>";
-                }
-                $nowBarShowed = TRUE;
-                $tool_content .= "<tr>";
-                $tool_content .= "<td colspan='2' class='today'>$langDateNow $dateNow</td>";
-                $tool_content .= "</tr>";
-            }
-        }
-        if ($barMonth != date("m", $d)) {
-            $barMonth = date("m", $d);
-            // month LABEL
-            $tool_content .= "<tr>";            
-            $tool_content .= "<td colspan='2' class='monthLabel'>";            
-            $tool_content .= "<div align='center'>" . $langCalendar . "&nbsp;<b>" . ucfirst(claro_format_locale_date("%B %Y", $d)) . "</b></div></td>";
-            $tool_content .= "</tr>";
-        }
-         
-        $classvis = '';         
-        if ($is_editor) {
-            if ($myrow->visible == 0) {
-                $classvis = 'class = "not_visible"';
-            }
-        }
-        $tool_content .= "<tr $classvis>";
-        if ($is_editor) {
-            $tool_content .= "<td>";
-        } else {
-            $tool_content .= "<td colspan='2'>";
-        }
+    $(".btn-group button[data-calendar-view]").each(function() {
+        var $this = $(this);
+        $this.click(function() {
+            calendar.view($this.data("calendar-view"));
+            $("#raweventlist").hide();
+            $("#bootstrapcalendar").show();
+        });
+        
+    $("#listviewbtn").click(function() {
+        $("#listviewbtn").addClass("active");
+        $(".btn-group button").removeClass("active");
+        $("#bootstrapcalendar").hide();
+        $("#raweventlist").show();
+    });
+});    
+});
 
-        $tool_content .= "<span class='day'>" . ucfirst(claro_format_locale_date($dateFormatLong, $d)) . "</span> ($langHour: " . ucfirst(date('H:i', $d)) . ")";
-        if ($myrow->duration != '') {
-            if ($myrow->duration == 1) {
-                $message = $langHour;
-            } else {
-                $message = $langHours;
-            }
-            $msg = "($langDuration: " . q($myrow->duration) . " $message)";
-        } else {
-            $msg = '';
-        }
-        $tool_content .= "<br><b>";
-        if ($myrow->title == '') {
-            $tool_content .= $langAgendaNoTitle;
-        } else {
-            $tool_content .= q($myrow->title);
-        }
-        $tool_content .= " $msg $content</b></td>";
+</script>';
+    
 
-        if ($is_editor) {
-            $tool_content .= "<td class='option-btn-cell'>";
-            $tool_content .= action_button(array(
-                    array('title' => $langModify,
-                          'url' => "?course=$course_code&amp;id=$myrow->id&amp;edit=true",
-                          'icon' => 'fa-edit'),
-                    array('title' => $langConfirmDeleteRecursive,
-                          'url' => "?course=$course_code&amp;id=$myrow->id&amp;delete=yes&amp;rep=yes",
-                          'icon' => 'fa-times-circle-o',
-                          'class' => 'delete',
-                          'confirm' => $langConfirmDeleteRecursiveEvents,
-                          'show' => !(is_null($myrow->recursion_period) || is_null($myrow->recursion_end))),
-                    array('title' => $langDelete,
-                          'url' => "?course=$course_code&amp;id=$myrow->id&amp;delete=yes",
-                          'icon' => 'fa-times',
-                          'class' => 'delete',
-                          'confirm' => $langConfirmDeleteEvent),
-                    array('title' => $langVisible,
-                          'url' => "?course=$course_code&amp;id=$myrow->id" . ($myrow->visible? "&amp;mkInvisibl=true" : "&amp;mkVisibl=true"),
-                          'icon' => $myrow->visible ? 'fa-eye' : 'fa-eye-slash')
-                ));
-           $tool_content .= "</td>";                                 
-        }
-        $tool_content .= "</tr>";
-    }
-    $tool_content .= "</table></div>";
-} else {
-    $tool_content .= "<p class='alert alert-warning text-center'>$langNoEvents</p>";
-}
 add_units_navigation(TRUE);
 
 draw($tool_content, 2, null, $head_content);

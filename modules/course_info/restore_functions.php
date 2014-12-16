@@ -256,10 +256,18 @@ function course_details_form($code, $title, $prof, $lang, $type = null, $vis, $d
 }
 
 function restore_users($users, $cours_user, $departments, $restoreHelper) {
-    global $tool_content, $langRestoreUserExists, $langRestoreUserNew;
+    global $tool_content, $langRestoreUserExists, $langRestoreUserNew, $uid;
 
     $userid_map = array();
     if ($_POST['add_users'] == 'none') {
+        // find the 1st teacher (oldid)
+        foreach ($cours_user as $cudata) {
+            if (intval($cudata[$restoreHelper->getField('course_user', 'status')]) === USER_TEACHER) {
+                $old_id = $cudata['user_id'];
+                $userid_map[$old_id] = $uid;
+                break;
+            }
+        }
         return $userid_map;
     }
 
@@ -569,6 +577,62 @@ function comments_map_function(&$data, $maps) {
         $data['rid'] = $blog_post_map[$data['rid']];
     } elseif ($rtype == 'course') {
         $data['rid'] = $course_id;
+    }
+    return true;
+}
+
+function attendance_gradebook_activities_map_function(&$data, $maps) {
+    list($assignments_map, $exercise_map) = $maps;
+    $type = intval($data['module_auto_type']);
+    if ($type === 1) {
+        $data['module_auto_id'] = $assignments_map[$data['module_auto_id']];
+    } else if ($type === 2) {
+        $data['module_auto_id'] = $exercise_map[$data['module_auto_id']];
+    }
+    return true;
+}
+
+function notes_map_function(&$data, $maps) {
+    list($course_id, $agenda_map, $document_map, $link_map, $video_map, 
+            $videolink_map, $assignments_map, $exercise_map, $ebook_map, 
+            $lp_learnPath_map) = $maps;
+    $type = $data['reference_obj_type'];
+    switch ($type) {
+        case 'course':
+            $data['reference_obj_id'] = $course_id;
+            break;
+        case 'course_event':
+            $data['reference_obj_id'] = $agenda_map[$data['reference_obj_id']];
+            break;
+        case 'course_document':
+            $data['reference_obj_id'] = $document_map[$data['reference_obj_id']];
+            break;
+        case 'course_link':
+            $data['reference_obj_id'] = $link_map[$data['reference_obj_id']];
+            break;
+        case 'course_video':
+            $data['reference_obj_id'] = $video_map[$data['reference_obj_id']];
+            break;
+        case 'course_videolink':
+            $data['reference_obj_id'] = $videolink_map[$data['reference_obj_id']];
+            break;
+        case 'course_assignment':
+            $data['reference_obj_id'] = $assignments_map[$data['reference_obj_id']];
+            break;
+        case 'course_exercise':
+            $data['reference_obj_id'] = $exercise_map[$data['reference_obj_id']];
+            break;
+        case 'course_ebook':
+            $data['reference_obj_id'] = $ebook_map[$data['reference_obj_id']];
+            break;
+        case 'course_learningpath':
+            $data['reference_obj_id'] = $lp_learnPath_map[$data['reference_obj_id']];
+            break;
+        case 'course_learningpath':
+            $data['reference_obj_id'] = $lp_learnPath_map[$data['reference_obj_id']];
+            break;
+        default:
+            break;
     }
     return true;
 }

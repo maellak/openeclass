@@ -27,7 +27,6 @@ require_once 'include/lib/hierarchy.class.php';
 $tree = new Hierarchy();
 
 $nameTools = $langChoiceLesson;
-$navigation[] = array('url' => 'courses.php', 'name' => $langChoiceDepartment);
 
 $icons = array(
     COURSE_OPEN => "<img src='$themeimg/lock_open.png' alt='" . $langOpenCourse . "' title='" . $langOpenCourse . "' />",
@@ -118,7 +117,7 @@ if (isset($_POST['submit'])) {
         if (count($tree->buildRootsArray()) > 1)
             $tool_content .= $tree->buildRootsSelectForm($fc);
         $tool_content .= "<form action='$_SERVER[SCRIPT_NAME]' method='post'>";
-        $tool_content .= "<table width='100%' class='tbl_border'>
+        $tool_content .= "<table class='table-default'>
                                   <tr><th><a name='top'></a>$langFaculty: " .
                 $tree->getFullPath($fc, false, $_SERVER['SCRIPT_NAME'] . '?fc=') . "
                                   </th></tr></table><br />";
@@ -214,7 +213,7 @@ function expanded_faculte($facid, $uid) {
 
     $retString .= $tree->buildDepartmentChildrenNavigationHtml($facid, 'courses');
 
-    $retString .= "\n    <table class='tbl_alt' width='100%'>";
+    $retString .= "\n    <div class='table-responsive'><table class='table-default'>";
     $retString .= "\n    <tr>";
     $retString .= "\n      <th width='50' align='center'>$langRegistration</th>";
     $retString .= "\n      <th>$langCourseCode</th>";
@@ -240,9 +239,9 @@ function expanded_faculte($facid, $uid) {
         $course_title = q($mycours->i);
         $password = q($mycours->password);
         // link creation
-        if ($mycours->visible == COURSE_OPEN or $uid == COURSE_REGISTRATION) { //open course                
+        if ($mycours->visible == COURSE_OPEN or $GLOBALS['is_power_user']) { // open course, or power_user who can see all
             $codelink = "<a href='../../courses/" . $mycours->k . "/'>$course_title</a>";
-        } elseif ($mycours->visible == COURSE_CLOSED) { //closed course
+        } elseif ($mycours->visible == COURSE_CLOSED) { // closed course
             $codelink = "<a href='../contact/index.php?course_id=$cid'>$course_title</a>";
         } else {
             $codelink = $course_title;
@@ -295,7 +294,7 @@ function expanded_faculte($facid, $uid) {
         $retString .= "</td></tr>";
         $k++;
     }, intval($facid), COURSE_INACTIVE);
-    $retString .= "</table>";
+    $retString .= "</table></div>";
 
     return $retString;
 }

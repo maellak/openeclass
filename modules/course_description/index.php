@@ -59,6 +59,8 @@ if ($is_editor) {
         } else {
             updateCourseDescription(null, $_POST['editTitle'], $_POST['editComments'], $_POST['editType']);
         }
+        Session::Messages($langCourseUnitAdded,"alert-success");
+        redirect_to_home_page("modules/course_description/index.php");
     } else if (isset($_POST['submit']) && isset($_POST['edIdBloc'])) {
         // Save results from block edit (save action)
         $res_id = intval($_POST['edIdBloc']);
@@ -81,19 +83,19 @@ if ($q && count($q) > 0) {
                 <div class='pull-right'>".
                 action_button(
                         array(
-                            array(
-                                'title' => q($langEdit),
-                                'url' => "edit.php?course=$course_code&amp;id=$row->id",
-                                'icon' => 'fa-edit'
-                            ),
                             array('title' => q($langDelete),
                                 'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;del=$row->id",
                                 'icon' => 'fa-times',
                                 'class' => 'delete',
                                 'confirm' => $langConfirmDelete),
+                            array(
+                                'title' => q($langEdit),
+                                'url' => "edit.php?course=$course_code&amp;id=$row->id",
+                                'icon' => 'fa-edit'
+                            ),
                             array('title' => $langAddToCourseHome,
                                 'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;vis=$row->id",
-                                'icon' => $row->visible ? 'fa-eye' : 'fa-eye-slash'
+                                'icon' => $row->visible ? 'fa-eye-slash' : 'fa-eye'
                             ),
                             array('title' => q($langUp),
                                 'icon' => 'fa-arrow-up',
@@ -155,19 +157,23 @@ function processActions() {
         $res_id = intval($_REQUEST['del']);
         Database::get()->query("DELETE FROM course_description WHERE id = ?d AND course_id = ?d", $res_id, $course_id);
         CourseXMLElement::refreshCourse($course_id, $course_code);
-        $tool_content .= "<div class='alert alert-success'>$langResourceCourseUnitDeleted</div>";
+        Session::Messages($langResourceCourseUnitDeleted, "alert-success");
+        redirect_to_home_page("modules/course_description/index.php?course=$course_code");
     } elseif (isset($_REQUEST['vis'])) { // modify visibility in text resources only 
         $res_id = intval($_REQUEST['vis']);
         $vis = Database::get()->querySingle("SELECT `visible` FROM course_description WHERE id = ?d AND course_id = ?d", $res_id, $course_id);
         $newvis = (intval($vis->visible) === 1) ? 0 : 1;
         Database::get()->query("UPDATE course_description SET `visible` = ?d, update_dt = NOW() WHERE id = ?d AND course_id = ?d", $newvis, $res_id, $course_id);
         CourseXMLElement::refreshCourse($course_id, $course_code);
+        redirect_to_home_page("modules/course_description/index.php?course=$course_code");
     } elseif (isset($_REQUEST['down'])) { // change order down
         $res_id = intval($_REQUEST['down']);
         move_order('course_description', 'id', $res_id, 'order', 'down', "course_id = $course_id");
+        redirect_to_home_page("modules/course_description/index.php?course=$course_code");
     } elseif (isset($_REQUEST['up'])) { // change order up
         $res_id = intval($_REQUEST['up']);
         move_order('course_description', 'id', $res_id, 'order', 'up', "course_id = $course_id");
+        redirect_to_home_page("modules/course_description/index.php?course=$course_code");
     }
 }
 

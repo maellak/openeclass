@@ -42,7 +42,7 @@ function draw($toolContent, $options=null) {
     }
 
 	$t = new Template();
-	$t->set_file('fh', '../template/bootstrap/theme.html');
+	$t->set_file('fh', '../template/default/theme.html');
 	$t->set_block('fh', 'mainBlock', 'main');
 
     $t->set_var('SITE_NAME', 'Open eClass');
@@ -55,10 +55,12 @@ function draw($toolContent, $options=null) {
     $t->set_block('mainBlock', 'breadCrumbStartBlock', 'delete');
     $t->set_block('mainBlock', 'breadCrumbEndBlock', 'delete');
     $t->set_block('mainBlock', 'modalWindowBlock', 'delete');
-    $t->set_var('template_base', '../template/bootstrap');
+    $t->set_var('template_base', '../template/default');
 
     if (isset($options['no-menu'])) {
         $t->set_block('mainBlock', 'leftNavBlock', 'delete');
+        $t->set_block('mainBlock', 'breadCrumbs', 'delete');
+        $t->set_block('mainBlock', 'normalViewOpenDiv', 'delete');
     } else {
         //display the left column (installation steps)
         $toolArr = installerMenu();
@@ -66,6 +68,7 @@ function draw($toolContent, $options=null) {
 
         $t->set_block('mainBlock', 'leftNavCategoryBlock', 'leftNavCategory');
         $t->set_block('leftNavCategoryBlock', 'leftNavLinkBlock', 'leftNavLink');
+        $t->set_block('mainBlock', 'mobileViewOpenDiv', 'delete');
 
         if (is_array($toolArr)) {
             for ($i = 0; $i < $numOfToolGroups; $i++) {
@@ -105,7 +108,7 @@ function draw($toolContent, $options=null) {
 /**
  * @brief installation right menu 
  * @global type $langRequirements
- * @global type $langLicence
+ * @global type $langLicense
  * @global type $langDBSetting
  * @global type $langBasicCfgSetting 
  * @global type $langLastCheck
@@ -113,7 +116,7 @@ function draw($toolContent, $options=null) {
  * @return array
  */
 function installerMenu(){
-	global $langRequirements, $langLicence, $langDBSetting;
+	global $langRequirements, $langLicense, $langDBSetting;
 	global $langBasicCfgSetting, $langLastCheck, $langInstallEnd;
 
 	$sideMenuGroup = array();
@@ -141,7 +144,7 @@ function installerMenu(){
 	array_push($sideMenuLink, $currentStep[0]);
 	array_push($sideMenuImg, $stepImg[0]);
 
-	array_push($sideMenuText, $langLicence);
+	array_push($sideMenuText, $langLicense);
 	array_push($sideMenuLink, $currentStep[1]);
 	array_push($sideMenuImg, $stepImg[1]);
 

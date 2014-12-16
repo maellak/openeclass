@@ -39,9 +39,8 @@ if (isset($_POST['submit'])) {
     $unit_id = description_unit_id($course_id);
     add_unit_resource($unit_id, 'description', -1, $langDescription, trim($_POST['description']));
     // update index
-    require_once 'modules/search/courseindexer.class.php';
-    $idx = new CourseIndexer();
-    $idx->store($course_id);
+    require_once 'modules/search/indexer.class.php';
+    Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_COURSE, $course_id);
 }
 
 $description = '';
@@ -63,15 +62,18 @@ if ($q && count($q) > 0) {
 }
 
 $tool_content = "
- <form method='post' action='index.php?course=$course_code'>
- <input type='hidden' name='edIdBloc' value='-1' />
- <input type='hidden' name='edTitleBloc' value='$langDescription' />
-   <fieldset>
-   <legend>$langDescription</legend>
-         " . rich_text_editor('edContentBloc', 4, 20, $description) . "
-   <br />
-   <div class='right'><input class='btn btn-primary' type='submit' name='submit' value='$langSubmit' /></div>
-   </fieldset>
- </form>\n";
+    <div class='row'><div class='col-xs-12'>
+    <div class='form-wrapper'>
+        <form role='form' method='post' action='index.php?course=$course_code'>
+        <input type='hidden' name='edIdBloc' value='-1' />
+        <input type='hidden' name='edTitleBloc' value='$langDescription' />
+          <fieldset>
+          <legend>$langDescription</legend>
+                " . rich_text_editor('edContentBloc', 4, 20, $description) . "
+          <br />
+          <div class='right'><input class='btn btn-primary' type='submit' name='submit' value='$langSubmit' /></div>
+          </fieldset>
+        </form>
+    </div></div></div>";
 
 draw($tool_content, 2, null, $head_content);

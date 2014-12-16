@@ -26,7 +26,6 @@
 
 $require_usermanage_user = TRUE;
 require_once '../../include/baseTheme.php';
-require_once 'admin.inc.php';
 require_once 'modules/auth/auth.inc.php';
 require_once 'include/lib/user.class.php';
 require_once 'include/lib/hierarchy.class.php';
@@ -235,7 +234,7 @@ if ($u) {
          <td>
          <div class='input-append date form-group' id='id_expires_at' data-date='" . $info->expires_at . "' data-date-format='dd-mm-yyyy'>
         <div class='col-xs-11'>        
-            <input name='expires_at' type='text' value='$info->expires_at'>
+            <input class='form-control' name='expires_at' type='text' value='$info->expires_at'>
         </div>
         <span class='add-on'><i class='fa fa-times'></i></span>
         <span class='add-on'><i class='fa fa-calendar'></i></span>
@@ -333,7 +332,7 @@ if ($u) {
         $newstatus = isset($_POST['newstatus']) ? $_POST['newstatus'] : 'NULL';
         $registered_at = isset($_POST['registered_at']) ? $_POST['registered_at'] : '';        
         $expires_at = isset($_POST['expires_at']) ? $_POST['expires_at'] : '';          
-        $user_expires_at = DateTime::createFromFormat("d-m-Y H:i", $expires_at);
+        $user_expires_at = DateTime::createFromFormat("Y-m-d H:i:s", $expires_at);
         $date_expires_at = $user_expires_at->format("Y-m-d H:i:s");        
         $user_upload_whitelist = isset($_POST['user_upload_whitelist']) ? $_POST['user_upload_whitelist'] : '';
         $user_exist = FALSE;

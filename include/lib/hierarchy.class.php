@@ -593,7 +593,7 @@ $(document).ready(function() {
             $( "#nodCnt" ).append( '<p id="nd_' + countnd + '">'
                                  + '<input type="hidden" $params value="' + newnode.attr("id").substring(2) + '" />'
                                  + newnode.children("a").text()
-                                 + '&nbsp;<a href="#nodCnt" onclick="$( \'#nd_' + countnd + '\').remove(); $(\'#dialog-set-key\').val(null); $(\'#dialog-set-value\').val(null);"><img src="$themeimg/delete.png" title="$langNodeDel" alt="$langNodeDel"/><\/a>'
+                                 + '&nbsp;<a href="#nodCnt" onclick="$( \'#nd_' + countnd + '\').remove(); $(\'#dialog-set-key\').val(null); $(\'#dialog-set-value\').val(null);"><i class='fa fa-times' data-toggle='tooltip' data-original-title="'.$langNodeDel.'" rel='tooltip' data-placement='top' title="'.$langNodeDel.'"><\/i><\/a>'
                                  + '<\/p>');
 
             $( "#dialog-set-value" ).val( newnode.children("a").text() );
@@ -609,6 +609,7 @@ $(document).ready(function() {
 jContent;
 
         if ($xmlout) {
+            $xmldata = str_replace('"', '\"', $xmldata);
             $js .= <<<jContent
         "plugins" : ["xml_data", "themes", "ui", "cookies", "types", "sort"],
         "xml_data" : {
@@ -721,14 +722,14 @@ jContent;
                     $html .= '<p id="nd_' . $i . '">';
                     $html .= '<input type="hidden" ' . $params . ' value="' . $def . '" />';
                     $html .= $this->getFullPath($def);
-                    $html .= '&nbsp;<a href="#nodCnt" onclick="$(\'#nd_' . $i . '\').remove(); $(\'#dialog-set-key\').val(null); $(\'#dialog-set-value\').val(null);"><img src="' . $themeimg . '/delete.png" title="' . $langNodeDel . '" alt="' . $langNodeDel . '"/></a></p>';
+                    $html .= '&nbsp;<a href="#nodCnt" onclick="$(\'#nd_' . $i . '\').remove(); $(\'#dialog-set-key\').val(null); $(\'#dialog-set-value\').val(null);"><i class="fa fa-times" data-toggle="tooltip" data-original-title="'.$langNodeDel.'" rel="tooltip" data-placement="top" title="'.$langNodeDel.'"></i></a></p>';
                     $html .= '</p>';
                     $i++;
                 }
             }
 
             $html .= '</div>';
-            $html .= '<div><p><a id="ndAdd" href="#add"><img src="' . $themeimg . '/add.png" title="' . $langNodeAdd . '" alt="' . $langNodeAdd . '"/></a></p></div>';
+            $html .= '<div><p><a id="ndAdd" href="#add"><i class="fa fa-plus" data-toggle="tooltip" rel="tooltip" data-placement="top" title="'.$langNodeAdd.'"></i></a></p></div>';
 
             // Unused for multi usecase, however present to use a unique generic JS event function
             $html .= '<input id="dialog-set-key" type="hidden" onchange="" />';
@@ -753,7 +754,7 @@ jContent;
 
             $html .= '<input id="dialog-set-key" type="hidden" ' . $params . ' value="' . $defs[0] . '" />';
             $onclick = (!empty($defs[0])) ? '$( \'#js-tree\' ).jstree(\'select_node\', \'#' . $defs[0] . '\', true, null);' : '';
-            $html .= '<input id="dialog-set-value" type="text" onclick="' . $onclick . ' $( \'#treeModal\' ).modal(\'show\');" onfocus="' . $onclick . ' $(\'#treeModal\').modal(\'show\');" value="' . $def . '" />&nbsp;';
+            $html .= '<input class="form-control" id="dialog-set-value" type="text" onclick="' . $onclick . ' $( \'#treeModal\' ).modal(\'show\');" onfocus="' . $onclick . ' $(\'#treeModal\').modal(\'show\');" value="' . $def . '" />&nbsp;';
         }
 
         $html .= '<div class="modal fade" id="treeModal" tabindex="-1" role="dialog" aria-labelledby="treeModalLabel" aria-hidden="true">

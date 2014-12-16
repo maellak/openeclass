@@ -1,0 +1,904 @@
+/* 
+==========================================================
+    SASS for structure of eclass v3.0 - version 0.01008a 
+==========================================================
+*/
+
+@import 'global';
+
+
+
+body
+{
+	background: $color-background;
+        font-family: 'Open Sans';
+        position: relative;
+}
+ 
+body > .container{
+  padding: 0 15px;
+}
+
+
+
+/* LEFTNAV - MAIN MENU, LOGO */
+#leftnav{
+    background: $color-background;
+    padding: 0;
+    .logo{
+        margin:2em 1em;a
+        img{margin:0 auto;}
+    }
+    .panel{
+        border: none;
+        margin: 0;
+        margin-bottom: 1em;
+        background: inherit;		
+        border-top: 2px solid rgba(255,255,255,.1);
+        border-bottom: 2px solid rgba(255,255,255,.1);
+        border-radius: 5px 0px 0px 5px;
+        .list-group{
+            border-radius:0;
+            @include box-shadow(none);
+        }
+        .panel-heading{
+            border-radius: 4px 0px 0px 0px!important;
+            padding: 10px 7px;
+            .panel-title{
+                text-align: center;
+                font-size: 0.85em;
+                font-weight: bold;
+            }
+            &:hover{
+                color: $color-hover;
+                @include transition(all $transition-time linear);
+            }
+        }
+        a{
+            color: #ADADAD;
+            text-decoration: none;
+        }
+        a.parent-menu{
+            outline: 0;
+            display: block;
+            background: rgba(0, 0, 0, 0.2);
+            &:not(.collapsed){
+                border-radius: 4px 0px 0px 0px;
+                color: $color-hover;
+            }
+            &:hover{
+                //background: rgba(255,255,255,.25);
+            }
+            &:hover, &:not(.collapsed){
+                border-radius: 4px 0px 0px 4px;
+            }
+        }
+        a.list-group-item{
+            border: none;
+            border-top: 1px solid rgba(255,255,255,.075);
+            padding: 0.6em 15px;
+            background: transparent;
+            text-align: center;
+            @include transition(all $transition-time linear);
+            > span{
+                font-size: 0.9em;
+                margin-left: 0.5em;
+            }
+            &:hover{
+                text-decoration: none;
+                color: #eee;
+                background: $color-hover;
+                border-radius: 4px 0px 0px 4px;
+                margin-left: 0px;
+                @include transition(all $transition-time linear);
+            }
+            &.active{
+                background: $color-main-content;
+                text-shadow: none;
+                color: #333;
+                border-radius: 4px 0px 0px 4px;
+                box-shadow: -8px 0px 10px -4px rgba(0,0,0,.8);
+                -moz-box-shadow: -8px -0px 10px -4px rgba(0,0,0,.8);
+                -webkit-box-shadow: -8px 0px 10px -4px rgba(0,0,0,.8);
+            }
+            //we don't want a border-bottom if it's the last option
+            &:last-child{
+                border-bottom: none;
+            }
+            &:first-child{
+                border-top: 1px solid rgba(255,255,255,.075);
+            }
+        }
+    }
+}
+
+
+
+
+
+/* LOGO - Extent bootstrap style -------------------------------------*/
+
+.logo
+{
+  min-height: 20px;
+  min-width: 20px;
+}
+
+
+
+
+/* MAIN-CONTENT -------------------------------------------------------*/
+#main-content
+{
+  background-color: $color-main-content;
+  overflow: hidden;
+}
+
+#header.navbar{
+    margin-bottom: 0px;
+    padding: 0;
+    border: 0;
+    background-color: $color-header;
+    border-bottom: 1px solid #DBDBDB;
+    
+		.navbar-nav{
+			margin: 0;
+			float:right;
+
+			>li{
+				border-left: 1px solid rgb(231, 231, 231);
+				float: left;
+                                cursor: pointer;
+                                ul li a{
+                                    padding-top: 3px;
+                                    padding-bottom: 3px;
+                                }
+				a {
+					padding-top: 15px;
+					padding-bottom: 15px;
+                                        line-height: 22px;
+
+          @include transition(all $transition-time linear);
+
+					i.fa{
+						margin:0 1em;		
+					}
+
+					&:hover,
+					&:focus{
+						background: $color-hover;
+						color: white;
+					}
+				}
+
+        .user-icon
+        {
+          width: 20px;
+          margin-right: 10px;
+        }
+
+				&:last-child > a{
+					border-radius: 0 4px 0px 0px;
+				}
+			}
+		}
+
+	}
+
+.navbar-default
+{
+  border-radius: 4px 4px 0px 0px; 
+}
+
+#progressbar-outer
+{
+    width:500px;
+    border:1px solid #025694;
+}
+
+#progressbar-inner
+{
+    height: 25px;
+    background: #423440;
+    background: linear-gradient(top,  #273242,  #6F8FBD);
+    background: -ms-linear-gradient(top,  #273242,  #6F8FBD);
+    background: -webkit-gradient(linear, left top, left bottom, from(#273242), to(#6F8FBD));
+    background: -moz-linear-gradient(top,  #273242,  #6F8FBD);
+}
+
+
+/* FOOTER --------------------------------------------------------------------------------------*/
+footer.footer
+{
+  text-align: center;
+  padding: 1em;
+  background: $color-footer;
+  color: rgb(167, 167, 167);
+  border-top: 1px solid #DBDBDB;
+  border-radius: 0 0 4px 4px;
+}
+
+
+
+
+
+
+
+/* SIDEBAR ------------------------------------------------------------------------------------ */
+a.toggle-active{
+    background-color: #e3e4e6 !important;
+}
+
+#sidebar-container{
+    display: none;
+    position: absolute;
+    width: 18.5em;
+    right: 0px;
+    overflow: hidden;
+    border-left: #c9c9c9;
+    border-bottom: #c9c9c9;
+
+    #sidebar{
+        position: relative;
+        width: 18.5em;
+        right: -18.5em;
+        //padding: 1.6em 0;
+        background-color: $color-sidebar;
+        word-wrap:break-word;
+        @include user-select(none);
+
+        .panel-group.outerpanel{
+            padding: 0px;
+            margin: 0px;
+            
+            .input-group-addon{
+                width: 39px;
+            }
+            
+            .input-group{
+                margin: 5px 0;
+            }
+
+            .sidebar-title
+            {
+                margin: 0;
+                font-weight: 600;
+                padding-left: 13px;
+                font-size: 0.75em; 
+                text-transform: uppercase;
+                padding: 1.8em;
+
+                background: rgb(227, 228, 230);
+            }
+
+            .title
+            {
+
+                margin: 0;
+                padding: 2em 0em!important;
+                font-weight: 700;
+                font-size: 0.8em;
+                text-align: center;
+                overflow: hidden;
+                text-transform: uppercase;
+
+                i.fa
+                {
+                    display: block;
+                    opacity:.9;
+                    font-size: 2.3em;
+
+                    margin-top: 0.4em;
+                }
+                .tricky
+                {
+
+                    margin-left:-100%;
+                    width: 200%;
+                    position: relative;
+                    height: 45px;
+                    @include transition(margin-left $transition-time linear);
+
+                    > div{        
+                        display: inline-block;
+                        width: 49%;
+                        height: 100%;
+                        position: relative;
+                        top: 0px;
+                        vertical-align: middle;
+                        padding: 0.5em 0em;
+
+                        @include transition(opacity 60ms linear);  
+                    }
+
+                    .icon{
+                        opacity: 1;
+                    }
+
+                    .description{
+                        font-weight: 400;
+                        padding:0.5em 1em;
+                        opacity: 0;
+                    }
+                }
+
+                &:hover:not(.ui-accordion-header-active){
+                    .tricky{
+                        margin-left: 0%;
+
+                        .description{
+                            opacity: .55;
+                        }
+
+                        .icon{
+                            opacity:0;
+                        }
+
+                    }
+
+                    .txt{
+                        color:$color-hover;
+                    }
+                }
+
+                &.ui-accordion-header-active{
+                    .tricky{
+                        margin-left: 0%;
+                        .description{
+                            opacity: .55;
+                        }
+                    }
+                }
+
+            }
+
+            li.outerpanel{
+                border-bottom: 1px solid rgba(0,0,0,.05);
+
+                > .ui-accordion-content,
+                > .ui-accordion-header-active {
+                    background: rgba(255,255,255,.3);
+                }
+
+                > .ui-accordion-content{
+                    padding:1em 0em;
+                }
+
+                textarea,input{
+                    width: 90%;
+                    margin: 0em auto 1em auto;
+                    display: block;
+                }
+
+                textarea{ 
+                    min-height: 12em;
+                }
+
+                button{
+                    margin: 1.1em;
+                    margin-top: 0em;
+                    font-size: 0.8em;
+                }
+
+                .goto{
+                    float: right;
+                    color: #7E7E7E;
+                    padding: 0.5em;
+                    margin-right: 0.5em;
+                }
+
+                .input-parent{
+                    position: relative;
+
+                    textarea,input{
+                        padding-left:2em;
+                    }
+
+                    .fa{
+                        position: absolute;
+                        top: 0.7em;
+                        left: 1.5em;
+                        z-index: 9;
+                        opacity: 0.2;
+                    }
+                }
+            }
+
+            .panel{
+                border: none;
+                margin: 0px;
+                background-color: #dddddd;
+            }
+
+            .panel-heading{
+                background-image: none;
+                border: none;
+                background-color: #DEE0E2;
+
+                h4{
+                    cursor: pointer;
+                }
+            }
+
+            .innerpanel{
+                margin-bottom:0px;
+
+                .panel-body{
+                    background: #253447;
+                    border-top: none;
+                    color: rgba(255, 255, 255, 0.9);
+                }
+                .panel-heading{
+                    margin: 0px;
+                    padding: 0px;
+
+                    h4{
+                        margin-left: 0px;
+                        margin-right: 0px;
+                        border: none;
+                        border-radius: 0px;
+                    }
+                }
+
+            }
+        }
+    }
+    h1,h2,h3,h4,h5,h6{
+        color: #686868;
+        font-weight: 600;
+    }
+    ul,li{
+        list-style-type: none;
+        padding: 0em;
+        margin: 0em;
+    }
+}
+#sidebar
+{
+
+    .side-list{
+        background: #253447;
+        border-top: none;
+        color: rgba(255,255,255,.9);
+        margin: 0 16px;
+
+        &:last-of-type{
+            @include border-radius(0px 0px 4px 4px);
+        }
+
+        .lesson-title{
+            background: #344458;
+            font-size: 0.85em;
+            margin:0px;
+            padding: 10px 15px;
+            cursor: pointer;
+            position: relative;
+            outline: none;
+            color: rgba(255,255,255,0.5);
+            font-weight: 600;      
+            margin: 0 16px;
+            border: 1px solid #48586D;
+            border-top-width: 0px;
+            @include transition(all $transition-time linear);
+            //@include box-shadow(0px 1px 5px 0px rgba(0,0,0,.1));
+            &:first-of-type{
+                border-top-width: 1px;
+                @include border-radius(4px 4px 0px 0px);
+            }
+
+            &:last-of-type{
+                @include border-radius(0px 0px 4px 4px);
+            }
+
+            &:hover{
+                background: #48586D;
+                color: rgba(255,255,255,0.85);
+
+                &:after{
+                    color: rgba(255,255,255,.6);
+                }
+            }
+
+            &.ui-accordion-header-active{
+                border-bottom: none;
+                color: rgba(255,255,255,1);
+                background: #425164;
+
+                &:last-of-type{
+                    @include border-radius(0px);
+                }
+
+                &:after{
+                    color: $color-hover;
+                }
+            }
+        }
+
+        ul{
+            font-size: 0.75em;
+
+            >li{
+                padding: 5px 0em;          
+            }
+        }
+
+        .lesson-id{
+            opacity: 0.5;
+            font-size:0.85em;
+            font-weight:700;
+        }
+
+        .lesson-professor{
+            font-weight: 600;
+            padding-top:0px;
+        }
+
+        .lesson-notifications{
+
+            margin-top:1em;
+
+            .item{
+                margin-right:1.5em;
+                position: relative;
+
+                .count{
+                    position: absolute;
+                    left: 0.8em;
+                    bottom: 0.8em;
+                    display: inline-block;
+                    text-align: center;
+                    background: $color-red;
+                    color: white;
+                    width: 1.5em;
+                    height: 1.5em;
+                    font-size:0.75em;
+                    font-weight: 600;
+                    //border: 2px solid #253447;
+                    @include border-radius(0.75em);
+                }
+
+                .fa{
+                    font-size: 1.2em;
+                    color: rgba(255,255,255,.8);
+                }    
+            }
+        }
+    }
+}
+
+/* ACCORDIONS --------------------------------------------------------------------*/
+.accordion{
+  list-style: none;
+  margin:0px;
+  padding:0px;
+  ul,li{
+    margin:0px;
+    padding:0px;
+    list-style: none;
+  }
+}
+
+
+.accordion-title,
+.ui-accordion-header{
+  
+  padding-right: 2em!important;
+  position: relative;
+  display: block;
+  outline: none!important;
+
+  cursor: pointer;
+
+  &:after{
+        position: absolute;
+        display: inline-block;
+        
+        width: 1em;
+        height: 1em;
+        right: 1em;
+        top: 42%;
+        top: calc(50% - 0.5em);
+        font-family: FontAwesome;
+        font-size: 0.85em;
+
+        content: "\f107";
+        color: rgba(255,255,255,.2);
+        moz-transform-origin: center center;
+        -webkit-transform-origin: center center;
+        -o-transform-origin: center center;
+        -ms-transform-origin: center center;
+        transform-origin: center center;
+
+        @include transition(all $transition-time linear);
+  }
+  
+  &.ui-state-active:after{
+    @include transform(180deg);
+    @include transition(all $transition-time linear);
+  }  
+}
+
+
+
+
+
+
+
+
+
+
+/* INDEX --------------------------------------------------------------------------- */
+
+body.page-login h1{
+  margin: 1.25em 1em;
+}
+
+// LOGIN JUMBOTRON
+.jumbotron.jumbotron-login{
+
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+  margin-bottom:60px;
+  margin-top:10px;
+
+  margin-left: -15px;
+  margin-right: -15px;
+
+  border-radius: 0px;
+  -moz-border-radius: 0px;
+  -webkit-border-radius: 0px;
+
+  background-color: #025694;
+  /* fallback from css grandient */
+  
+  background: url('{%template_base%}/img/jumbotron-bg.png') repeat center center fixed; 
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+
+  background-position: 30% 60%;
+  background-repeat: no-repeat;
+  background: -webkit-gradient(radial, 30% 60%, 0, 30% 60%, 300, from(#009bcf), to(#025694));
+  background: -webkit-radial-gradient(30% 60%, closest-corner, #009BCF, #025694);
+  background: -moz-radial-gradient(30% 60%, closest-corner, #009BCF, #025694);
+  background: -ms-radial-gradient(30% 60%, closest-corner, #009BCF, #025694);
+
+  .graphic{
+    position: absolute;
+    z-index: 9;
+
+    width: 77%;
+    max-width:100%;
+    
+    bottom: 1.5rem;
+    height: 90%;
+    width: auto; 
+  }
+}
+
+// LOGIN FORM
+form.login-form{
+
+  font-size: 0.85em;
+
+  position: relative;
+  z-index: 99;
+
+  background:white;
+  border-radius: 3rem;
+  padding: 2em 3em;
+
+  @include box-shadow(0px 0px 25px rgba(0,0,0,.5));
+  @include transition(all $transition-time linear);
+
+   &:hover{
+
+    @include box-shadow(0px 0px 20px 3px rgb(0,0,0));
+    @include transition(all $transition-time linear);
+
+  }
+
+
+  h2{
+    text-align:center;
+    font-size:1.8em;
+    margin: 2rem 0rem;
+    margin-top: 0rem;
+    color: #232c3a;
+  }
+
+  .form-group{
+    margin:0rem;
+  }
+
+
+  .form-group >*{
+    display:inline-block;
+    float:none;
+  }
+
+
+  .form-group input{
+
+    width: 82%;
+
+    border-bottom: 1px solid #eeeeee;
+    border-top: none;
+    border-right: none;
+    border-left: none;
+    border-radius: 0px;
+    border-width: 1px;
+    
+
+    @include box-shadow(none);
+
+    
+    outline:none;
+    font-size:1.1em;
+    padding: 0.4em;
+    line-height: 1.42857143;
+    color: #444444;
+
+    &:focus{
+      border-color: $color-hover;
+    }
+
+  }
+
+  .form-group label{
+    width: 17%;
+    margin:0;
+    text-align: center;
+  }
+
+  .form-group i.fa{
+    font-size:1.2em;
+    margin:0;
+    color:#aaaaaa;
+  }
+
+  // Remember me + forgot your password
+  .login-settings{
+    margin: 2rem 0rem;
+    font-size:0.9em;
+    
+    > * {
+      margin:0;
+    }
+
+    .checkbox,
+    .link{
+      color:rgba(0,0,0,.5);
+    }
+
+    .checkbox label,
+    .link label{
+      font-weight: bold;
+    }
+
+    .link a{
+        float:right;
+        margin-top:0.3em;
+        color:rgba(0,0,0,.5);
+    }
+
+    .checkbox label span{
+      margin-top: 0.3em;
+      display: inline-block;
+    }
+  }
+
+  .btn.btn-login{
+     width: 100%;
+    height:4rem;
+    border-radius: 4rem;
+    font-weight: 600;
+    
+    color:white;
+
+    background:#428bca;
+    letter-spacing:0.1em;
+    outline: none;
+    &:hover{
+      background:#3071a9;
+    }
+    
+  }
+}
+
+/* DELETE THIS */
+.row .deleteThisClass{
+  height: 400px;
+  border: 1px solid #eee;
+  background: rgba(0,0,0,.05);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* MEDIA QUERIES -------------------------------------------------------------------*/
+
+
+@media only screen and (min-width: 768px) and (max-width : 992px) {
+
+  .jumbotron.jumbotron-login img.graphic{
+    bottom: -3.5rem;
+    
+  }
+
+}
+
+
+
+
+
+
+
+/* No breakpoints bellow 1366 or smth */
+
+@media (max-width: 1339px){
+  body > .container {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1340px){
+  .container {
+    width: 1340px;
+  }
+}
+
+@media (min-width: 992px){
+  #leftnav .panel a.list-group-item,
+  #leftnav .panel .panel-heading .panel-title{
+    text-align: left;
+  }
+}
+
+@media (max-width: 992px){
+  body>.container{
+    padding:0;
+    margin:0;
+  }
+
+  #leftnav .panel a{
+    font-size: 1.5em;
+  }
+
+  .navbar .navbar-nav > li a{
+    padding: 15px 0.5em;    
+  }
+
+  #leftnav .panel a.list-group-item{
+      padding:0.5em 0.8em;
+  }
+
+  #main-content,
+  #leftnav .panel a.list-group-item,
+  #header.navbar .navbar-nav > li:last-child > a,
+  .navbar-default{
+    border-radius: 0px!important;
+  }
+}
+
+@media
+only screen and (-webkit-min-device-pixel-ratio: 2)      and (min-width: 992px),
+only screen and (   min--moz-device-pixel-ratio: 2)      and (min-width: 992px),
+only screen and (     -o-min-device-pixel-ratio: 2/1)    and (min-width: 992px),
+only screen and (        min-device-pixel-ratio: 2)      and (min-width: 992px),
+only screen and (                min-resolution: 192dpi) and (min-width: 992px),
+only screen and (                min-resolution: 2dppx)  and (min-width: 992px) { 
+
+  /* Medium screen, retina, stuff to override above media query */
+
+}
