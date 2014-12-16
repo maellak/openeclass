@@ -2060,6 +2060,7 @@ function show_student_assignments() {
                                       <th class='text-center'>$m[deadline]</th>
                                       <th class='text-center'>$m[submitted]</th>
                                       <th>$m[grade]</th>
+                                      <th>κατάταξη</th>
                                   </tr>";
         $k = 0;
         foreach ($result as $row) {
