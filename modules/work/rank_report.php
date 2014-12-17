@@ -28,6 +28,11 @@ require_once __DIR__.'/../../include/tcpdf/tcpdf.php';
 
 require_once 'work_functions.php';
 require_once 'modules/group/group_functions.php';
+require_once 'modules/document/doc_init.php';
+require_once 'include/lib/fileDisplayLib.inc.php';
+require_once 'include/lib/fileManageLib.inc.php';
+require_once 'include/lib/fileUploadLib.inc.php';
+
 
 
 if (isset($_GET['assignment'])) {
@@ -56,14 +61,14 @@ if (isset($_GET['assignment'])) {
 
             if(!isset($_GET['downloadpdf'])){
           //      show_report($as_id, $sub_id, $assign, $submissions, $auto_judge_scenarios, $auto_judge_scenarios_output);
-               show_report($assign, $submissions);
+               show_report($assign, $submissions,$i);
                // echo "test";
              draw($tool_content, 2);
             }else{
           
           //download_pdf_file($assign->title, get_course_title(),  q(uid_to_name($sub->uid)), $sub->grade.'/'.$assign->max_grade, $auto_judge_scenarios, $auto_judge_scenarios_output); 
             
-               download_pdf_file($course_title,$i,'/'.$assign->max_grade); 
+               download_pdf_file($assign,$submissions); 
                 }
          }
          else{
@@ -143,7 +148,7 @@ if ($i==5 or $i == 6) {$i.=" <img src='../../images/work_medals/Bronze_medal_wit
   
 //function download_pdf_file($assign_title, $course_title,  $username, $grade, $auto_judge_scenarios, $auto_judge_scenarios_output){ 
 
-function download_pdf_file($course_title,$i,$grade){ 
+function download_pdf_file($assign,$submissions){ 
     // create new PDF document
     $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
@@ -182,9 +187,6 @@ function download_pdf_file($course_title,$i,$grade){
     // add a page
     $pdf->AddPage();
 
-$i=0;
-$i++;
-
  $report_details ='
         <style>
     table.first{
@@ -211,24 +213,23 @@ $i++;
            border: 1px solid #000000;
     }
     </style>
-
-        <table class="first">
+     
+     <table class="first">
             <tr>
-            <th> Rank</th> <td>'.$i.'</td>
+            <th> Rank</th>
+            <th> Εκπαιδευόμενος </th>
+            <th> Βαθμός</th>
+            <th> Περασμένα Σενάρια</th> 
             </tr>
-             <tr>
-            <th> Εκπαιδευόμενος </th> <td> ??</td>
-            </tr>
-             <tr>
-            <th> Βαθμός</th><td> ?? </td>
-            </tr>
-             <tr>
-            <th> Περασμένα Σενάρια</th> <td>'.$grade.'</td>
-            </tr>                  
-    </table>';
-                               
+             '. get_table_content($assign,$submissions).'
+             </table>
+             ';
+    
+            
+             
 
     $pdf->writeHTML($report_details, true, false, true, false, '');
     $pdf->Ln();     
-    $pdf->Output('Rank Report for Lesson' .$course_title.'.pdf', 'D');
+    $pdf->Output("C:/xampp/htdocs/openeclass/courses/TMA100/document/Rank Report for Lesson.pdf",'F');
+    
 }
