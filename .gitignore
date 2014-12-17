@@ -13,3 +13,5 @@ nbproject/private/
 .rej
 .conflict
 .map
+.hg/
+.hgignore
