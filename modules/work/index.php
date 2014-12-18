@@ -673,7 +673,8 @@ function submit_work($id, $on_behalf_of = null) {
                     // Check if we have compilation errors.
                     if ($result['compile_status'] !== 'OK') {
                         // Write down the error message.
-                        $errorsComment = 'Εργασία '.$i+1.': '.$result['compile_status'].'<br />';
+                        $num = $i+1;
+                        $errorsComment = "Εργασία $num: ".$result['compile_status']."<br />";
                         $auto_judge_scenarios_output[$i]['passed'] = 0;
                     } else {
                         // Get all needed values to run the assertion.
@@ -691,7 +692,8 @@ function submit_work($id, $on_behalf_of = null) {
                             $passed++;
                             $auto_judge_scenarios_output[$i]['passed'] = 1;
                         } else {
-                            $errorsComment = 'Εργασία '.$i+1.': Assertion \''.$scenarionAssertion.'\' failed! <br />';
+                            $num = $i+1;
+                            $errorsComment = "Εργασία $num: Assertion failed! <br />";
                             $auto_judge_scenarios_output[$i]['passed'] = 0;
                         }
                     }
@@ -701,6 +703,7 @@ function submit_work($id, $on_behalf_of = null) {
                 $grade = round($passed / count($auto_judge_scenarios) * 10);
                 // Add the output as a comment
                 $comment = 'Passed: '.$passed.'/'.count($auto_judge_scenarios);
+                rtrim($errorsComment, '<br />');
                 if ($errorsComment !== '') {
                     $comment .= '<br /><br />'.$errorsComment;
                 }
