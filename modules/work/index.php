@@ -697,6 +697,7 @@ function submit_work($id, $on_behalf_of = null) {
                         if ($assertionResult) {
                             $passed++;
                             $auto_judge_scenarios_output[$i]['passed'] = 1;
+                            $partial += $curScenario['weight'];
                         } else {
                             $num = $i+1;
                             $errorsComment = "Εργασία $num: Assertion failed! <br />";
