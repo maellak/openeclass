@@ -103,17 +103,17 @@ function show_report($id, $sid, $assign,$sub, $auto_judge_scenarios, $auto_judge
                                        <td> <b>Έξοδος</b> </td>
                                        <td> <b>Τελεστής</b> </td>
                                        <td> <b>Αναμενόμενη έξοδος</b> </td>
-                                       <td> <b>Συντ. βαρύτητας</b> </td>
+                                       <td> <b>Βαρύτητα</b> </td>
                                        <td> <b>Αποτέλεσμα</b> </td>
                                 </tr>
-                                ".get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output)."
+                                ".get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output, $assign->max_grade)."
                                 </table>
                                 <p align='left'><a href='work_result_rpt.php?course=".$course_code."&assignment=".$assign->id."&submission=".$sid."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
                                 <p align='right'><a href='index.php?course=".$course_code."'>Επιστροφή</a></p>
                              <br>";
   }
 
-function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output) {
+function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output, $max_grade) {
     global $themeimg;
     $table_content = "";
     $i=0;
@@ -150,7 +150,7 @@ function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output) 
                            <td style=\"word-break:break-all;\">".$auto_judge_scenarios_output[$i]['student_output']."</td>
                            <td style=\"word-break:break-all;\">".$assertions[$cur_senarios['assertion']]."</td>
                            <td style=\"word-break:break-all;\">".$cur_senarios['output']."</td>
-                           <td style=\"word-break:break-all;\">".$cur_senarios['weight']."/10</td>
+                           <td align=\"center\" style=\"word-break:break-all;\">".$cur_senarios['weight']."/".$max_grade."</td>
                            <td align=\"center\"><img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/" .$icon."\"></td></tr>";
                      $i++;
                 }
@@ -227,10 +227,10 @@ function download_pdf_file($assign, $sub, $auto_judge_scenarios, $auto_judge_sce
             <th>Έξοδος</th>
             <th>Τελεστής</th>
             <th>Αναμεν. Έξοδος</th>
-            <th>Συντ. βαρύτητας</th>
+            <th>Βαρύτητα</th>
             <th >Αποτέλεσμα</th>
         </tr>
-     '. get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output).'
+     '. get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output,$assign->max_grade).'
     </table>';
 
 
