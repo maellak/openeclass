@@ -103,7 +103,7 @@ if ($is_editor) {
                 w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
                 if(w != null) {
                     w = parseFloat(w);
-                    if(w >= 1  && w <= max_grade)  // 1->max_grade allowed
+                    if(w >= 0  && w <= max_grade)  // 0->max_grade allowed
                     {
                         /* allow 3 decimal digits */
                         weight_sum += w;
