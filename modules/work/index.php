@@ -1998,7 +1998,7 @@ function show_student_assignments() {
     global $tool_content, $m, $uid, $course_id, $course_code,
     $langDaysLeft, $langDays, $langNoAssign, $urlServer,
     $course_code, $themeimg;
-    $rankreportlink = "rank_report.php?course=$course_code&amp;assignment=$id";
+    
 
     $gids = user_group_info($uid, $course_id);
     if (!empty($gids)) {
@@ -2027,6 +2027,7 @@ function show_student_assignments() {
         foreach ($result as $row) {
             $title_temp = q($row->title);
             $test = (int)$row->deadline;
+            $rankreportlink = "rank_report.php?course=$course_code&amp;assignment=$row->id";
             if((int)$row->deadline){
                 $deadline = nice_format($row->deadline, true);
             }else{

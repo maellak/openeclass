@@ -19,6 +19,18 @@
  *                  e-mail: info@openeclass.org
  * ======================================================================== */
 
+
+/*
+ * Σκοπός είναι η δημιουργία ενός πίνακα κατάταξης των εκπαιδευόμενων, σύμφωνα με την
+ * βαθμολογία που έχουν λάβει για μία εργασία που έχουν αναλάβει. Κάθε εκπαιδευόμενος
+ * υποβάλει την δική του καταχώρηση, και βαθμολογείται αυτόματα γι' αυτήν. Αυτό τον πίνακα
+ * θα μπορεί να το κατεβάσει σε μορφή pdf ο κάθε εκπαιδευόμενος. Αρχικά λαμβάνουμε μέσω GET
+ * το id της εργασίας, και μέσω αυτού λαμβάνουμε τα δεδομένα της εργασίας και των αντίστοιχων
+ * καταχωρήσεων των εκπαιδευόμενων, τις οποίες και ταξινομούμε με αύξουσα αρίθμηση βάσει του βαθμού
+ * και του χρόνου υποβολής της εργασίας σε περίπτωση ισοβαθμίας.  
+ * 
+ */
+ 
 $require_current_course = true;
 require_once '../../include/baseTheme.php';
 
@@ -27,15 +39,16 @@ require_once __DIR__.'/../../include/tcpdf/tcpdf_include.php';
 require_once __DIR__.'/../../include/tcpdf/tcpdf.php';
 
 require_once 'work_functions.php';
-require_once 'modules/group/group_functions.php';
-require_once 'modules/document/doc_init.php';
-require_once 'include/lib/fileDisplayLib.inc.php';
-require_once 'include/lib/fileManageLib.inc.php';
-require_once 'include/lib/fileUploadLib.inc.php';
+//	require_once 'modules/group/group_functions.php';
+// require_once 'modules/document/doc_init.php';
+// require_once 'include/lib/fileDisplayLib.inc.php';
+// require_once 'include/lib/fileManageLib.inc.php';
+// require_once 'include/lib/fileUploadLib.inc.php';
 
 
 
 if (isset($_GET['assignment'])) {
+	// declare variables
     global $tool_content, $course_title, $m;
     $as_id = intval($_GET['assignment']);
     $assign = get_assignment_details($as_id);
@@ -55,31 +68,16 @@ if (isset($_GET['assignment'])) {
     $navigation[] = array("url" => "index.php?course=$course_code&amp;id=$as_id", "name" => q($assign->title));
 
     if (count($submissions)>0) {
-        if($assign->auto_judge){// auto_judge enable
-      //      $auto_judge_scenarios = unserialize($assign->auto_judge_scenarios);
-       //     $auto_judge_scenarios_output = unserialize($sub->auto_judge_scenarios_output);
-
-            if(!isset($_GET['downloadpdf'])){
-          //      show_report($as_id, $sub_id, $assign, $submissions, $auto_judge_scenarios, $auto_judge_scenarios_output);
-               show_report($assign, $submissions,$i);
-               // echo "test";
-             draw($tool_content, 2);
-            }else{
-          
-          //download_pdf_file($assign->title, get_course_title(),  q(uid_to_name($sub->uid)), $sub->grade.'/'.$assign->max_grade, $auto_judge_scenarios, $auto_judge_scenarios_output); 
-            
+         if(!isset($_GET['downloadpdf'])){
+			show_report($assign, $submissions,$i);
+			draw($tool_content, 2);
+          }else {
                download_pdf_file($assign,$submissions); 
-                }
-         }
-         else{
-               Session::Messages(' Ο αυτόματος κριτής δεν είναι ενεργοποιημένος για την συγκεκριμένη εργασία. ', 'alert-danger');
-              draw($tool_content, 2);
-             }
-      } else {
-            Session::Messages($m['WorkNoSubmission'], 'alert-danger');
-            redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);
+          }
+       } else {
+         Session::Messages($m['WorkNoSubmission'], 'alert-danger');
+         redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);
        }
-
    } else {
         redirect_to_home_page('modules/work/index.php?course='.$course_code);
     }
@@ -102,21 +100,20 @@ function get_course_title() {
     return $course->title;
 }
 
-//	function show_report($id, $sid, $assign,$submissions, $auto_judge_scenarios, $auto_judge_scenarios_output) {
 function show_report($assign,$submissions) {
     //     global $course_code;
 		global $tool_content,$course_code;
            $tool_content = "
                                 <table  style=\"table-layout: fixed; width: 99%\" class='table-default'>
                                 <tr>
-                                     <td><b> Κατάταξη</b></td>
-                                     <td><b> Όνομα χρήστη</b></td>
-                                     <td><b> Βαθμός</b></td>
-                                     <td><b> Test/Περασμένα</b></td>
+                                     <td><b>Κατάταξη</b></td>
+                                     <td><b>Εκπαιδευόμενος</b></td>
+                                     <td><b>Βαθμός</b></td>
+                                     <td><b>Περασμένα Σενάρια</b></td>
                                 </tr>". get_table_content($assign,$submissions) . "
                                 
                                 </table>
-                                 <p align='left'><a href='rank_report.php?course=".$course_code."&assignment=".$assign->id."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
+                                 <p align='left'><a  class='btn btn-primary' href='rank_report.php?course=".$course_code."&assignment=".$assign->id."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
                                 <br>";
   }
 
@@ -155,10 +152,11 @@ function download_pdf_file($assign,$submissions){
     // set document information
     $pdf->SetCreator(PDF_CREATOR);
     $pdf->SetAuthor(PDF_AUTHOR);
-    $pdf->SetTitle('Auto Judge Report');
-    $pdf->SetSubject('Auto Judge Report');
+    $pdf->SetTitle('Rank Report');
+    $pdf->SetSubject('Rank Report');
     // set default header data
-    $pdf->SetHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, PDF_HEADER_TITLE, PDF_HEADER_STRING);
+    $pdfHeaderStr ='Αναφορά κατάταξης εκπαιδευόμενων για το μάθημα '. get_course_title() . ' και την εργασία ' .  $assign->title;
+    $pdf->SetHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, PDF_HEADER_TITLE, $pdfHeaderStr);
 
     // set header and footer fonts
     $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
@@ -169,7 +167,7 @@ function download_pdf_file($assign,$submissions){
 
     // set margins
     $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
-    $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+    $pdf->SetHeaderMargin(3);
     $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
 
     // set auto page breaks
@@ -197,9 +195,9 @@ function download_pdf_file($assign,$submissions){
 
     td {
         font-size: 1em;
-          border: 1px solid #000000;
+        border: 1px solid #000000;
         padding: 3px 7px 2px 7px;
-         text-align: center;
+        text-align: center;
     }
 
      th {
@@ -209,17 +207,16 @@ function download_pdf_file($assign,$submissions){
         padding-bottom: 4px;
         background-color: #3399FF;
         color: #ffffff;
-        width: 120px;
-           border: 1px solid #000000;
+        border: 1px solid #000000;
     }
     </style>
      
      <table class="first">
             <tr>
-            <th> Rank</th>
-            <th> Εκπαιδευόμενος </th>
-            <th> Βαθμός</th>
-            <th> Περασμένα Σενάρια</th> 
+            <th>Κατάταξη</th>
+            <th>Εκπαιδευόμενος</th>
+            <th>Βαθμός</th>
+            <th>Περασμένα Σενάρια</th> 
             </tr>
              '. get_table_content($assign,$submissions).'
              </table>
@@ -230,6 +227,6 @@ function download_pdf_file($assign,$submissions){
 
     $pdf->writeHTML($report_details, true, false, true, false, '');
     $pdf->Ln();     
-    $pdf->Output("C:/xampp/htdocs/openeclass/courses/TMA100/document/Rank Report for Lesson.pdf",'F');
+    $pdf->Output('Rank Report_'.get_course_title().'_'.$assign->title.'.pdf', 'D');
     
 }
