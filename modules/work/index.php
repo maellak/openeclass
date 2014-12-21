@@ -2038,6 +2038,7 @@ function show_student_assignments() {
     global $tool_content, $m, $uid, $course_id, $course_code,
     $langDaysLeft, $langDays, $langNoAssign, $urlServer,
     $course_code, $themeimg;
+    $rankreportlink = "rank_report.php?course=$course_code&amp;assignment=$id";
 
     $gids = user_group_info($uid, $course_id);
     if (!empty($gids)) {
@@ -2103,7 +2104,7 @@ function show_student_assignments() {
                 }
                 $tool_content .= "<div style='padding-bottom: 5px;padding-top:5px;'>$grade</div>";
             }
-            $tool_content .= "</td>
+            $tool_content .= "</td><td class='option-btn-cell'><div style='padding-bottom: 5px;padding-top:5px;'><a href='". $rankreportlink ."'>". icon('fa-sort-alpha-asc') ."</a></div></td></tr>
                                   </tr>";
             $k++;
         }
