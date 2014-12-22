@@ -103,14 +103,14 @@ if ($is_editor) {
                 w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
                 if(w != null) {
                     w = parseFloat(w);
-                    if(w >= 1  && w <= 10)  // 1->10 allowed
+                    if(w >= 0  && w <= max_grade)  // 0->max_grade allowed
                     {
                         /* allow 3 decimal digits */
                         weight_sum += w;
                         continue;
                     }
                     else{
-                        alert('Weights must be between 1 and 10!');
+                        alert('Weights must be between 1 and max_grade!');
                         return false;
                     }
                 }
@@ -634,7 +634,7 @@ function submit_work($id, $on_behalf_of = null) {
                 if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
                 $content = file_get_contents("$workPath/$filename");
                 // Run each scenario and count how many passed
-                $auto_judge_scenarios_output = array(
+                 $auto_judge_scenarios_output = array(
                     array(
                         'student_output'=> '',
                         'passed'=> 0,
@@ -697,6 +697,7 @@ function submit_work($id, $on_behalf_of = null) {
                         if ($assertionResult) {
                             $passed++;
                             $auto_judge_scenarios_output[$i]['passed'] = 1;
+                            $partial += $curScenario['weight'];
                         } else {
                             $num = $i+1;
                             $errorsComment = "Εργασία $num: Assertion failed! <br />";
