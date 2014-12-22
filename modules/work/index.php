@@ -757,7 +757,8 @@ function new_assignment() {
         });
     </script>";
     $workEnd = isset($_POST['WorkEnd']) ? $_POST['WorkEnd'] : "";
-
+    $hackerEarthKey = q(get_config('hackerEarthKey'));
+    
     $tool_content .= action_bar(array(
         array('title' => $langBack,
               'level' => 'primary',
@@ -873,8 +874,8 @@ function new_assignment() {
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>Auto-judge:</label>
                     <div class='col-sm-10'>
-                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' checked='1' />
-                        <table>
+                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' ". (($hackerEarthKey=="") ? "disabled='1'" : "checked='1'") ." />
+                        <table ". (($hackerEarthKey=="") ? "style='display: none;'" : "") .">
                             <thead>
                                 <tr>
                                   <th>Input</th>
@@ -926,7 +927,7 @@ function new_assignment() {
                         </table>
                     </div>
                 </div>
-                <div class='form-group'>
+                <div class='form-group' ". (($hackerEarthKey=="") ? "style='display: none;'" : "") .">
                   <label class='col-sm-2 control-label'>Programming Language:</label>
                   <div class='col-sm-10'>
                     <select id='lang' name='lang'>
