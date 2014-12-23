@@ -1853,6 +1853,7 @@ function show_assignment($id, $display_graph_results = false) {
                 //professor comments
                 $gradelink = "grade_edit.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
                 $reportlink = "work_result_rpt.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
+
                 if (trim($row->grade_comments)) {
                     $label = $m['gradecomments'] . ':';
                     $icon = 'edit.png';
@@ -1998,6 +1999,7 @@ function show_student_assignments() {
     global $tool_content, $m, $uid, $course_id, $course_code,
     $langDaysLeft, $langDays, $langNoAssign, $urlServer,
     $course_code, $themeimg;
+    
 
     $gids = user_group_info($uid, $course_id);
     if (!empty($gids)) {
@@ -2020,11 +2022,13 @@ function show_student_assignments() {
                                       <th class='text-center'>$m[deadline]</th>
                                       <th class='text-center'>$m[submitted]</th>
                                       <th>$m[grade]</th>
+                                      <th>κατάταξη</th>
                                   </tr>";
         $k = 0;
         foreach ($result as $row) {
             $title_temp = q($row->title);
             $test = (int)$row->deadline;
+            $rankreportlink = "rank_report.php?course=$course_code&amp;assignment=$row->id";
             if((int)$row->deadline){
                 $deadline = nice_format($row->deadline, true);
             }else{
@@ -2062,7 +2066,7 @@ function show_student_assignments() {
                 }
                 $tool_content .= "<div style='padding-bottom: 5px;padding-top:5px;'>$grade</div>";
             }
-            $tool_content .= "</td>
+            $tool_content .= "</td><td class='option-btn-cell'><div style='padding-bottom: 5px;padding-top:5px;'><a href='". $rankreportlink ."'>". icon('fa-sort-alpha-asc') ."</a></div></td></tr>
                                   </tr>";
             $k++;
         }
