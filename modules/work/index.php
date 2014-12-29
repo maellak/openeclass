@@ -726,27 +726,27 @@ function new_assignment() {
     $head_content .= "<script type='text/javascript'>
         $(function() {
             $('#enddatepicker').datetimepicker({
-                format: 'dd-mm-yyyy hh:ii', pickerPosition: 'bottom-left', 
+                format: 'dd-mm-yyyy hh:ii', pickerPosition: 'bottom-left',
                 language: '".$language."',
                 autoclose: true
-                });               
+                });
             $('#hidden-opt-btn').on('click', function(e) {
                 e.preventDefault();
                 $('#hidden-opt').collapse('toggle');
             });
-            $('#hidden-opt').on('shown.bs.collapse', function () {              
+            $('#hidden-opt').on('shown.bs.collapse', function () {
                 $('#hidden-opt-btn i').removeClass('fa-caret-down').addClass('fa-caret-up');
                 var caret = '<i class=\"fa fa-caret-up\"></i>';
                 $('#hidden-opt-btn').html('$langLessOptions '+caret);
             })
-            $('#hidden-opt').on('hidden.bs.collapse', function () {  
+            $('#hidden-opt').on('hidden.bs.collapse', function () {
                 var caret = '<i class=\"fa fa-caret-down\"></i>';
                 $('#hidden-opt-btn').html('$langMoreOptions '+caret);
-            })               
-        });      
+            })
+        });
     </script>";
     $workEnd = isset($_POST['WorkEnd']) ? $_POST['WorkEnd'] : "";
-    
+
     $tool_content .= action_bar(array(
         array('title' => $langBack,
               'level' => 'primary',
@@ -761,8 +761,8 @@ function new_assignment() {
             <div class='form-group ".($title_error ? "has-error" : "")."'>
                 <label for='title' class='col-sm-2 control-label'>$m[title]:</label>
                 <div class='col-sm-10'>
-                  <input name='title' type='text' class='form-control' id='title' placeholder='$m[title]'>
-                  <span class='help-block'>$title_error</span>
+                    <input name='title' type='text' class='form-control' id='title' placeholder='$m[title]'>
+                    <span class='help-block'>$title_error</span>
                 </div>
             </div>
             <div class='form-group'>
@@ -777,85 +777,85 @@ function new_assignment() {
             <div class='collapse ".(Session::hasErrors() ? "in" : "")."' id='hidden-opt'>
                 <div class='form-group'>
                     <label for='userfile' class='col-sm-2 control-label'>$langWorkFile:</label>
-                    <div class='col-sm-10'>    
-                      <input type='file' id='userfile' name='userfile'>
+                    <div class='col-sm-10'>
+                        <input type='file' id='userfile' name='userfile'>
                     </div>
                 </div>
                 <div class='form-group ".($max_grade_error ? "has-error" : "")."'>
                     <label for='title' class='col-sm-2 control-label'>$m[max_grade]:</label>
                     <div class='col-sm-10'>
-                      <input name='max_grade' type='text' class='form-control' id='max_grade' placeholder='$m[max_grade]' value='". ((isset($_POST['max_grade'])) ? $_POST['max_grade'] : "10") ."'>
-                      <span class='help-block'>$max_grade_error</span>    
+                        <input name='max_grade' type='text' class='form-control' id='max_grade' placeholder='$m[max_grade]' value='". ((isset($_POST['max_grade'])) ? $_POST['max_grade'] : "10") ."'>
+                        <span class='help-block'>$max_grade_error</span>
                     </div>
                 </div>
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>$m[deadline]:</label>
-                    <div class='col-sm-10'>            
+                    <div class='col-sm-10'>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' name='is_deadline' value='0' ". ((isset($_POST['WorkEnd'])) ? "" : "checked") ." onclick='$(\"#enddatepicker, #late_sub_row\").addClass(\"hide\");$(\"#deadline\").val(\"\");'>
-                            $m[no_deadline]
-                          </label>
+                            <label>
+                                <input type='radio' name='is_deadline' value='0' ". ((isset($_POST['WorkEnd'])) ? "" : "checked") ." onclick='$(\"#enddatepicker, #late_sub_row\").addClass(\"hide\");$(\"#deadline\").val(\"\");'>
+                                $m[no_deadline]
+                            </label>
                         </div>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' name='is_deadline' value='1' ". ((isset($_POST['WorkEnd'])) ? "checked" : "") ." onclick='$(\"#enddatepicker, #late_sub_row\").removeClass(\"hide\")'>
-                            $m[with_deadline]
-                          </label>
+                            <label>
+                                <input type='radio' name='is_deadline' value='1' ". ((isset($_POST['WorkEnd'])) ? "checked" : "") ." onclick='$(\"#enddatepicker, #late_sub_row\").removeClass(\"hide\")'>
+                                $m[with_deadline]
+                            </label>
                         </div>
                     </div>
                 </div>
                 <div class='input-append date form-group ". ((isset($_POST['WorkEnd'])) ? "" : "hide") ."' id='enddatepicker' data-date='$workEnd' data-date-format='dd-mm-yyyy'>
-                    <div class='col-xs-8 col-xs-offset-2'>        
+                    <div class='col-xs-8 col-xs-offset-2'>
                         <input name='WorkEnd' id='deadline' type='text' value='$workEnd'>
                     </div>
-                    <div class='col-xs-2'>  
+                    <div class='col-xs-2'>
                         <span class='add-on'><i class='fa fa-times'></i></span>
                         <span class='add-on'><i class='fa fa-calendar'></i></span>
                     </div>
                     <div class='col-xs-10 col-xs-offset-2'>$m[deadline_notif]</div>
                 </div>
                 <div class='form-group ". ((isset($_POST['WorkEnd'])) ? "" : "hide") ."' id='late_sub_row'>
-                    <div class='col-xs-10 col-xs-offset-2'>             
+                    <div class='col-xs-10 col-xs-offset-2'>
                         <div class='checkbox'>
-                          <label>
-                            <input type='checkbox' name='late_submission' value='1'>
-                            $m[late_submission_enable]
-                          </label>
+                            <label>
+                                <input type='checkbox' name='late_submission' value='1'>
+                                $m[late_submission_enable]
+                            </label>
                         </div>
                     </div>
                 </div>
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>$m[group_or_user]:</label>
-                    <div class='col-sm-10'>            
+                    <div class='col-sm-10'>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' id='user_button' name='group_submissions' value='0' checked>
-                            $m[user_work]
-                          </label>
+                            <label>
+                                <input type='radio' id='user_button' name='group_submissions' value='0' checked>
+                                $m[user_work]
+                            </label>
                         </div>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' id='group_button' name='group_submissions' value='1'>
-                            $m[group_work]
-                          </label>
+                            <label>
+                                <input type='radio' id='group_button' name='group_submissions' value='1'>
+                                $m[group_work]
+                            </label>
                         </div>
                     </div>
                 </div>
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>$m[WorkAssignTo]:</label>
-                    <div class='col-sm-10'>            
+                    <div class='col-sm-10'>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' id='assign_button_all' name='assign_to_specific' value='0' checked>
-                            <span id='assign_button_all_text'>$m[WorkToAllUsers]</span>                      
-                          </label>
+                            <label>
+                                <input type='radio' id='assign_button_all' name='assign_to_specific' value='0' checked>
+                                <span id='assign_button_all_text'>$m[WorkToAllUsers]</span>
+                            </label>
                         </div>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' id='assign_button_some' name='assign_to_specific' value='1'>
-                            <span id='assign_button_some_text'>$m[WorkToUser]</span>
-                          </label>
+                            <label>
+                                <input type='radio' id='assign_button_some' name='assign_to_specific' value='1'>
+                                <span id='assign_button_some_text'>$m[WorkToUser]</span>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -875,108 +875,108 @@ function new_assignment() {
                             </thead>
                             <tbody>
                                 <tr>
-                                  <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
-                                  <td>
-                                    <select name='auto_judge_scenarios[0][assertion]' class='auto_judge_assertion'>
-                                        <option value='eq'>is equal to</option>
-                                        <option value='same'>is same to</option>
-                                        <option value='notEq'>is not equal to</option>
-                                        <option value='notSame'>is not same to</option>
-                                        <option value='integer'>is int</option>
-                                        <option value='float'>is float</option>
-                                        <option value='digit'>is digit</option>
-                                        <option value='boolean'>is boolean</option>
-                                        <option value='notEmpty'>is not empty</option>
-                                        <option value='notNull'>is not null</option>
-                                        <option value='string'>is string</option>
-                                        <option value='startsWith'>starts with</option>
-                                        <option value='endsWith'>ends with</option>
-                                        <option value='contains'>contains</option>
-                                        <option value='numeric'>is numeric</option>
-                                        <option value='isArray'>is array</option>
-                                        <option value='true'>is true</option>
-                                        <option value='false'>is false</option>
-                                        <option value='isJsonString'>is json string</option>
-                                        <option value='isObject'>is object</option>
-                                    </select>
-                                  </td>
-                                  <td><input type='text' name='auto_judge_scenarios[0][output]' class='auto_judge_output' /></td>
-				                  <td><input type='text' name='auto_judge_scenarios[0][weight]' class='auto_judge_weight'/></td>
-                                  <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
+                                    <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
+                                    <td>
+                                        <select name='auto_judge_scenarios[0][assertion]' class='auto_judge_assertion'>
+                                            <option value='eq'>is equal to</option>
+                                            <option value='same'>is same to</option>
+                                            <option value='notEq'>is not equal to</option>
+                                            <option value='notSame'>is not same to</option>
+                                            <option value='integer'>is int</option>
+                                            <option value='float'>is float</option>
+                                            <option value='digit'>is digit</option>
+                                            <option value='boolean'>is boolean</option>
+                                            <option value='notEmpty'>is not empty</option>
+                                            <option value='notNull'>is not null</option>
+                                            <option value='string'>is string</option>
+                                            <option value='startsWith'>starts with</option>
+                                            <option value='endsWith'>ends with</option>
+                                            <option value='contains'>contains</option>
+                                            <option value='numeric'>is numeric</option>
+                                            <option value='isArray'>is array</option>
+                                            <option value='true'>is true</option>
+                                            <option value='false'>is false</option>
+                                            <option value='isJsonString'>is json string</option>
+                                            <option value='isObject'>is object</option>
+                                        </select>
+                                    </td>
+                                    <td><input type='text' name='auto_judge_scenarios[0][output]' class='auto_judge_output' /></td>
+				                    <td><input type='text' name='auto_judge_scenarios[0][weight]' class='auto_judge_weight'/></td>
+                                    <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
                                 </tr>
                                 <tr>
-                                  <td> </td>
-                                  <td> </td>
-                                  <td> </td>
-                                  <td> </td>
-                                  <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
+                                    <td> </td>
+                                    <td> </td>
+                                    <td> </td>
+                                    <td> </td>
+                                    <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
                 <div class='form-group'>
-                  <label class='col-sm-2 control-label'>Programming Language:</label>
-                  <div class='col-sm-10'>
-                    <select id='lang' name='lang'>
-                      <option value='C'>C</option>
-                      <option value='CPP'>C++</option>
-                      <option value='CPP11'>C++11</option>
-                      <option value='CLOJURE'>Clojure</option>
-                      <option value='CSHARP'>C#</option>
-                      <option value='JAVA'>Java</option>
-                      <option value='JAVASCRIPT'>Javascript</option>
-                      <option value='HASKELL'>Haskell</option>
-                      <option value='PERL'>Perl</option>
-                      <option value='PHP'>PHP</option>
-                      <option value='PYTHON'>Python</option>
-                      <option value='RUBY'>Ruby</option>
-                    </select>
-                  </div>
+                    <label class='col-sm-2 control-label'>Programming Language:</label>
+                    <div class='col-sm-10'>
+                        <select id='lang' name='lang'>
+                            <option value='C'>C</option>
+                            <option value='CPP'>C++</option>
+                            <option value='CPP11'>C++11</option>
+                            <option value='CLOJURE'>Clojure</option>
+                            <option value='CSHARP'>C#</option>
+                            <option value='JAVA'>Java</option>
+                            <option value='JAVASCRIPT'>Javascript</option>
+                            <option value='HASKELL'>Haskell</option>
+                            <option value='PERL'>Perl</option>
+                            <option value='PHP'>PHP</option>
+                            <option value='PYTHON'>Python</option>
+                            <option value='RUBY'>Ruby</option>
+                        </select>
+                    </div>
                 </div>
                 <table id='assignees_tbl' class='table hide'>
                     <tr class='title1'>
-                      <td id='assignees'>$langStudents</td>
-                      <td class='text-center'>$langMove</td>
-                      <td>$m[WorkAssignTo]</td>
+                        <td id='assignees'>$langStudents</td>
+                        <td class='text-center'>$langMove</td>
+                        <td>$m[WorkAssignTo]</td>
                     </tr>
                     <tr>
-                      <td>
-                        <select id='assign_box' size='15' multiple>
-                        </select>
-                      </td>
-                      <td class='text-center'>
-                        <input type='button' onClick=\"move('assign_box','assignee_box')\" value='   &gt;&gt;   ' /><br /><input type='button' onClick=\"move('assignee_box','assign_box')\" value='   &lt;&lt;   ' />
-                      </td>
-                      <td width='40%'>
-                        <select id='assignee_box' name='ingroup[]' size='15' multiple>
+                        <td>
+                            <select id='assign_box' size='15' multiple>
+                            </select>
+                        </td>
+                        <td class='text-center'>
+                            <input type='button' onClick=\"move('assign_box','assignee_box')\" value='   &gt;&gt;   ' /><br /><input type='button' onClick=\"move('assignee_box','assign_box')\" value='   &lt;&lt;   ' />
+                        </td>
+                        <td width='40%'>
+                            <select id='assignee_box' name='ingroup[]' size='15' multiple>
 
-                        </select>
-                      </td>
+                            </select>
+                        </td>
                     </tr>
                 </table>
             </div>
             <div class='col-sm-offset-2 col-sm-10'>
                 <input type='submit' class='btn btn-primary' name='new_assign' value='$langAdd' onclick=\"selectAll('assignee_box',true)\" />
-                <a href='$_SERVER[SCRIPT_NAME]?course=$course_code' class='btn btn-default'>$langCancel</a>    
-            </div>                   
+                <a href='$_SERVER[SCRIPT_NAME]?course=$course_code' class='btn btn-default'>$langCancel</a>
+            </div>
         </fieldset>
-        </form></div>";    
+        </form></div>";
 }
 
 //form for editing
 function show_edit_assignment($id) {
-    
+
     global $tool_content, $m, $langEdit, $langBack, $course_code, $langCancel,
-        $urlAppend, $works_url, $end_cal_Work_db, $course_id, $head_content, $language, 
+        $urlAppend, $works_url, $end_cal_Work_db, $course_id, $head_content, $language,
         $langStudents, $langMove, $langWorkFile, $themeimg, $langDelWarnUserAssignment,
         $langLessOptions, $langMoreOptions;
-    
+
     load_js('bootstrap-datetimepicker');
     $head_content .= "<script type='text/javascript'>
         $(function() {
             $('#enddatepicker').datetimepicker({
-                format: 'dd-mm-yyyy hh:ii', 
+                format: 'dd-mm-yyyy hh:ii',
                 pickerPosition: 'bottom-left', language: '".$language."',
                 autoclose: true
             });
@@ -984,18 +984,18 @@ function show_edit_assignment($id) {
                 e.preventDefault();
                 $('#hidden-opt').collapse('toggle');
             });
-            $('#hidden-opt').on('shown.bs.collapse', function () {              
+            $('#hidden-opt').on('shown.bs.collapse', function () {
                 $('#hidden-opt-btn i').removeClass('fa-caret-down').addClass('fa-caret-up');
                 var caret = '<i class=\"fa fa-caret-up\"></i>';
                 $('#hidden-opt-btn').html('$langLessOptions '+caret);
             })
-            $('#hidden-opt').on('hidden.bs.collapse', function () {  
+            $('#hidden-opt').on('hidden.bs.collapse', function () {
                 var caret = '<i class=\"fa fa-caret-down\"></i>';
                 $('#hidden-opt-btn').html('$langMoreOptions '+caret);
-            })            
+            })
         });
     </script>";
-    
+
     $row = Database::get()->querySingle("SELECT * FROM assignment WHERE id = ?d", $id);
     if ($row->assign_to_specific) {
         //preparing options in select boxes for assigning to speficic users/groups
@@ -1003,8 +1003,8 @@ function show_edit_assignment($id) {
         $unassigned_options='';
         if ($row->group_submissions) {
             $assignees = Database::get()->queryArray("SELECT `group`.id AS id, `group`.name
-                                   FROM assignment_to_specific, `group` 
-                                   WHERE `group`.id = assignment_to_specific.group_id AND assignment_to_specific.assignment_id = ?d", $id);
+                                    FROM assignment_to_specific, `group`
+                                    WHERE `group`.id = assignment_to_specific.group_id AND assignment_to_specific.assignment_id = ?d", $id);
             $all_groups = Database::get()->queryArray("SELECT name,id FROM `group` WHERE course_id = ?d", $course_id);
             foreach ($assignees as $assignee_row) {
                 $assignee_options .= "<option value='".$assignee_row->id."'>".$assignee_row->name."</option>";
@@ -1016,19 +1016,19 @@ function show_edit_assignment($id) {
             );
             foreach ($unassigned as $unassigned_row) {
                 $unassigned_options .= "<option value='$unassigned_row->id'>$unassigned_row->name</option>";
-            }           
+            }
         } else {
             $assignees = Database::get()->queryArray("SELECT user.id AS id, surname, givenname
-                                   FROM assignment_to_specific, user 
-                                   WHERE user.id = assignment_to_specific.user_id AND assignment_to_specific.assignment_id = ?d", $id);
+                                    FROM assignment_to_specific, user
+                                    WHERE user.id = assignment_to_specific.user_id AND assignment_to_specific.assignment_id = ?d", $id);
             $all_users = Database::get()->queryArray("SELECT user.id AS id, user.givenname, user.surname
                                     FROM user, course_user
-                                    WHERE user.id = course_user.user_id 
-                                    AND course_user.course_id = ?d AND course_user.status = 5 
+                                    WHERE user.id = course_user.user_id
+                                    AND course_user.course_id = ?d AND course_user.status = 5
                                     AND user.id", $course_id);
             foreach ($assignees as $assignee_row) {
                 $assignee_options .= "<option value='$assignee_row->id'>$assignee_row->surname $assignee_row->givenname</option>";
-            }         
+            }
             $unassigned = array_udiff($all_users, $assignees,
               function ($obj_a, $obj_b) {
                 return $obj_a->id - $obj_b->id;
@@ -1037,24 +1037,24 @@ function show_edit_assignment($id) {
             foreach ($unassigned as $unassigned_row) {
                 $unassigned_options .= "<option value='$unassigned_row->id'>$unassigned_row->surname $unassigned_row->givenname</option>";
             }
-        }      
+        }
     }
     if ((int)$row->deadline) {
         $deadline = date('d-m-Y H:i',strtotime($row->deadline));
     } else {
         $deadline = '';
     }
-    $comments = trim($row->comments);    
+    $comments = trim($row->comments);
     $tool_content .= action_bar(array(
         array('title' => $langBack,
               'level' => 'primary-label',
-              'url' => "$_SERVER[PHP_SELF]?course=$course_code",
-              'icon' => 'fa-reply')));
-    
+              'url'   => "$_SERVER[PHP_SELF]?course=$course_code",
+              'icon'  => 'fa-reply')));
+
     //Get possible validation errors
     $title_error = Session::getError('title');
-    $max_grade_error = Session::getError('max_grade');  
-    
+    $max_grade_error = Session::getError('max_grade');
+
     $tool_content .= "
     <div class='form-wrapper'>
     <form class='form-horizontal' role='form' enctype='multipart/form-data' action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post'>
@@ -1075,14 +1075,14 @@ function show_edit_assignment($id) {
                 </div>
             </div>";
     if (!empty($comments)) {
-    $tool_content .= "<div class='form-group'>
+        $tool_content .= "<div class='form-group'>
                 <label for='desc' class='col-sm-2 control-label'>$m[comments]:</label>
                 <div class='col-sm-10'>
                 " . rich_text_editor('comments', 5, 65, $comments) . "
                 </div>
             </div>";
     }
-    
+
     $tool_content .= "
             <div class='col-sm-10 col-sm-offset-2 margin-top-fat margin-bottom-fat'>
                 <a id='hidden-opt-btn' class='btn btn-success btn-xs' href='#' style='text-decoration:none;'>$langMoreOptions <i class='fa fa-caret-down'></i></a>
@@ -1090,7 +1090,7 @@ function show_edit_assignment($id) {
             <div class='collapse ".(Session::hasErrors() ? "in" : "")."' id='hidden-opt'>
                 <div class='form-group'>
                     <label for='userfile' class='col-sm-2 control-label'>$langWorkFile:</label>
-                    <div class='col-sm-10'>    
+                    <div class='col-sm-10'>
                       ".(($row->file_name)? "<a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;get=$row->id&amp;file_type=1'>".q($row->file_name)."</a>"
                 . "<a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id&amp;choice=do_delete_file' onClick='return confirmation(\"$m[WorkDeleteAssignmentFileConfirm]\");'>
                                      <img src='$themeimg/delete.png' title='$m[WorkDeleteAssignmentFile]' /></a>" : "<input type='file' id='userfile' name='userfile' />")."
@@ -1105,102 +1105,215 @@ function show_edit_assignment($id) {
                 </div>
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>$m[deadline]:</label>
-                    <div class='col-sm-10'>            
+                    <div class='col-sm-10'>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' name='is_deadline' value='0' ". ((!empty($deadline)) ? "" : "checked") ." onclick='$(\"#enddatepicker, #late_sub_row\").addClass(\"hide\");$(\"#deadline\").val(\"\");'>
-                            $m[no_deadline]
-                          </label>
+                            <label>
+                                <input type='radio' name='is_deadline' value='0' ". ((!empty($deadline)) ? "" : "checked") ." onclick='$(\"#enddatepicker, #late_sub_row\").addClass(\"hide\");$(\"#deadline\").val(\"\");'>
+                                $m[no_deadline]
+                            </label>
                         </div>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' name='is_deadline' value='1' ". ((!empty($deadline)) ? "checked" : "") ." onclick='$(\"#enddatepicker, #late_sub_row\").removeClass(\"hide\")'>
-                            $m[with_deadline]
-                          </label>
+                            <label>
+                                <input type='radio' name='is_deadline' value='1' ". ((!empty($deadline)) ? "checked" : "") ." onclick='$(\"#enddatepicker, #late_sub_row\").removeClass(\"hide\")'>
+                                $m[with_deadline]
+                            </label>
                         </div>
                     </div>
                 </div>
                 <div class='input-append date form-group ". (!empty($deadline) ? "" : "hide") ."' id='enddatepicker' data-date='$deadline' data-date-format='dd-mm-yyyy'>
-                    <div class='col-xs-8 col-xs-offset-2'>        
+                    <div class='col-xs-8 col-xs-offset-2'>
                         <input name='WorkEnd' id='deadline' type='text' value='$deadline'>
                     </div>
-                    <div class='col-xs-2'>  
+                    <div class='col-xs-2'>
                         <span class='add-on'><i class='fa fa-times'></i></span>
                         <span class='add-on'><i class='fa fa-calendar'></i></span>
                     </div>
                     <div class='col-xs-10 col-xs-offset-2'>$m[deadline_notif]</div>
                 </div>
                 <div class='form-group ". (!empty($deadline) ? "" : "hide") ."' id='late_sub_row'>
-                    <div class='col-xs-10 col-xs-offset-2'>             
+                    <div class='col-xs-10 col-xs-offset-2'>
                         <div class='checkbox'>
-                          <label>
-                            <input type='checkbox' name='late_submission' value='1' ".(($row->late_submission)? 'checked' : '').">
-                            $m[late_submission_enable]
-                          </label>
+                            <label>
+                                <input type='checkbox' name='late_submission' value='1' ".(($row->late_submission)? 'checked' : '').">
+                                $m[late_submission_enable]
+                            </label>
                         </div>
                     </div>
                 </div>
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>$m[group_or_user]:</label>
-                    <div class='col-sm-10'>            
+                    <div class='col-sm-10'>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' id='user_button' name='group_submissions' value='0' ".(($row->group_submissions==1) ? '' : 'checked').">
-                            $m[user_work]
-                          </label>
+                            <label>
+                                <input type='radio' id='user_button' name='group_submissions' value='0' ".(($row->group_submissions==1) ? '' : 'checked').">
+                                $m[user_work]
+                            </label>
                         </div>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' id='group_button' name='group_submissions' value='1' ".(($row->group_submissions==1) ? 'checked' : '').">
-                            $m[group_work]
-                          </label>
+                            <label>
+                                <input type='radio' id='group_button' name='group_submissions' value='1' ".(($row->group_submissions==1) ? 'checked' : '').">
+                                $m[group_work]
+                            </label>
                         </div>
                     </div>
                 </div>
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>$m[WorkAssignTo]:</label>
-                    <div class='col-sm-10'>            
+                    <div class='col-sm-10'>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' id='assign_button_all' name='assign_to_specific' value='0' ".(($row->assign_to_specific==1) ? '' : 'checked').">
-                            <span id='assign_button_all_text'>$m[WorkToAllUsers]</span>                      
-                          </label>
+                            <label>
+                                <input type='radio' id='assign_button_all' name='assign_to_specific' value='0' ".(($row->assign_to_specific==1) ? '' : 'checked').">
+                                <span id='assign_button_all_text'>$m[WorkToAllUsers]</span>
+                            </label>
                         </div>
                         <div class='radio'>
-                          <label>
-                            <input type='radio' id='assign_button_some' name='assign_to_specific' value='1' ".(($row->assign_to_specific==1) ? 'checked' : '').">
-                            <span id='assign_button_some_text'>$m[WorkToUser]</span>
-                          </label>
+                            <label>
+                                <input type='radio' id='assign_button_some' name='assign_to_specific' value='1' ".(($row->assign_to_specific==1) ? 'checked' : '').">
+                                <span id='assign_button_some_text'>$m[WorkToUser]</span>
+                            </label>
                         </div>
                     </div>
                 </div>
                 <table id='assignees_tbl' class='table ".(($row->assign_to_specific==1) ? '' : 'hide')."'>
-                <tr class='title1'>
-                  <td id='assignees'>$langStudents</td>
-                  <td class='text-center'>$langMove</td>
-                  <td>$m[WorkAssignTo]</td>
-                </tr>
-                <tr>
-                  <td>
-                    <select id='assign_box' size='15' multiple>
-                    ".((isset($unassigned_options)) ? $unassigned_options : '')."
-                    </select>
-                  </td>
-                  <td class='text-center'>
-                    <input type='button' onClick=\"move('assign_box','assignee_box')\" value='   &gt;&gt;   ' /><br /><input type='button' onClick=\"move('assignee_box','assign_box')\" value='   &lt;&lt;   ' />
-                  </td>
-                  <td width='40%'>
-                    <select id='assignee_box' name='ingroup[]' size='15' multiple>
-                    ".((isset($assignee_options)) ? $assignee_options : '')."
-                    </select>
-                  </td>
-                </tr>
+                    <tr class='title1'>
+                        <td id='assignees'>$langStudents</td>
+                        <td class='text-center'>$langMove</td>
+                        <td>$m[WorkAssignTo]</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select id='assign_box' size='15' multiple>
+                            ".((isset($unassigned_options)) ? $unassigned_options : '')."
+                            </select>
+                        </td>
+                        <td class='text-center'>
+                            <input type='button' onClick=\"move('assign_box','assignee_box')\" value='   &gt;&gt;   ' /><br /><input type='button' onClick=\"move('assignee_box','assign_box')\" value='   &lt;&lt;   ' />
+                        </td>
+                        <td width='40%'>
+                            <select id='assignee_box' name='ingroup[]' size='15' multiple>
+                            ".((isset($assignee_options)) ? $assignee_options : '')."
+                            </select>
+                        </td>
+                    </tr>
                 </table>
             </div>
+
+            <div class='form-group'>
+                <label class='col-sm-2 control-label'>Auto-judge:</label>
+                <div class='col-sm-10'>
+                    <input type='checkbox' id='auto_judge' name='auto_judge' value='1' checked='1' />
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Input</th>
+                                <th> </th>
+                                <th>Expected Output</th>
+                                <th>Weight</th>
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>";
+                        $auto_judge           = $row->auto_judge;
+                        $auto_judge_scenarios = $auto_judge == true ? unserialize($row->auto_judge_scenarios) : null;
+                        $rows    = 0;
+                        $display = 'visible';
+                        if ($auto_judge_scenarios != null) {
+                            $scenariosCount = count($auto_judge_scenarios);
+                            foreach ($auto_judge_scenarios as $aajudge) {
+                                $tool_content .=
+                                "<tr>
+                                    <td><input type='text' value='$aajudge[input]' name='auto_judge_scenarios[$rows][input]' /></td>";
+
+                                $tool_content .=
+                                "<td>
+                                    <select name='auto_judge_scenarios[$rows][assertion]' class='auto_judge_assertion'>
+                                        <option value='eq'"; if ($aajudge['assertion'] === 'eq') {$tool_content .= "selected='selected'";} $tool_content .=">is equal to</option>
+                                        <option value='same'"; if ($aajudge['assertion'] === 'same') {$tool_content .= "selected='selected'";} $tool_content .=">is same to</option>
+                                        <option value='notEq'"; if ($aajudge['assertion'] === 'notEq') {$tool_content .= "selected='selected'";} $tool_content .=">is not equal to</option>
+                                        <option value='notSame'"; if ($aajudge['assertion'] === 'notSame') {$tool_content .= "selected='selected'";} $tool_content .=">is not same to</option>
+                                        <option value='integer'"; if ($aajudge['assertion'] === 'integer') {$tool_content .= "selected='selected'";} $tool_content .=">is int</option>
+                                        <option value='float'"; if ($aajudge['assertion'] === 'float') {$tool_content .= "selected='selected'";} $tool_content .=">is float</option>
+                                        <option value='digit'"; if ($aajudge['assertion'] === 'digit') {$tool_content .= "selected='selected'";} $tool_content .=">is digit</option>
+                                        <option value='boolean'"; if ($aajudge['assertion'] === 'boolean') {$tool_content .= "selected='selected'";} $tool_content .=">is boolean</option>
+                                        <option value='notEmpty'"; if ($aajudge['assertion'] === 'notEmpty') {$tool_content .= "selected='selected'";} $tool_content .=">is not empty</option>
+                                        <option value='notNull'"; if ($aajudge['assertion'] === 'notNull') {$tool_content .= "selected='selected'";} $tool_content .=">is not null</option>
+                                        <option value='string'"; if ($aajudge['assertion'] === 'string') {$tool_content .= "selected='selected'";} $tool_content .=">is string</option>
+                                        <option value='startsWith'"; if ($aajudge['assertion'] === 'startsWith') {$tool_content .= "selected='selected'";} $tool_content .=">starts with</option>
+                                        <option value='endsWith'"; if ($aajudge['assertion'] === 'endsWith') {$tool_content .= "selected='selected'";} $tool_content .=">ends with</option>
+                                        <option value='contains'"; if ($aajudge['assertion'] === 'contains') {$tool_content .= "selected='selected'";} $tool_content .=">contains</option>
+                                        <option value='numeric'"; if ($aajudge['assertion'] === 'numeric') {$tool_content .= "selected='selected'";} $tool_content .=">is numeric</option>
+                                        <option value='isArray'"; if ($aajudge['assertion'] === 'isArray') {$tool_content .= "selected='selected'";} $tool_content .=">is array</option>
+                                        <option value='true'"; if ($aajudge['assertion'] === 'true') {$tool_content .= "selected='selected'";} $tool_content .=">is true</option>
+                                        <option value='false'"; if ($aajudge['assertion'] === 'false') {$tool_content .= "selected='selected'";} $tool_content .=">is false</option>
+                                        <option value='isJsonString'"; if ($aajudge['assertion'] === 'isJsonString') {$tool_content .= "selected='selected'";} $tool_content .=">is json string</option>
+                                        <option value='isObject'"; if ($aajudge['assertion'] === 'isObject') {$tool_content .= "selected='selected'";} $tool_content .=">is object</option>
+                                    </select>
+                                </td>";
+
+                                if (isset($aajudge['output'])) {
+                                    $tool_content .= "<td><input type='text' value='$aajudge[output]' name='auto_judge_scenarios[$rows][output]' class='auto_judge_output' /></td>";
+                                } else {
+                                    $tool_content .= "<td><input type='text' value='' name='auto_judge_scenarios[$rows][output]' disabled='disabled' class='auto_judge_output' /></td>";
+                                }
+
+                                $tool_content .=
+                                    "<td><input type='text' value='$aajudge[weight]' name='auto_judge_scenarios[$rows][weight]' class='auto_judge_weight'/></td>
+                                    <td><a href='#' class='autojudge_remove_scenario' style='display: visible;'>X</a></td>
+                                </tr>";
+
+                                $rows++;
+                                if ($rows == $scenariosCount) {
+                                    $tool_content .=
+                                    "<tr>
+                                        <td><input type='text' name='auto_judge_scenarios[$rows][input]' /></td>
+                                        <td>
+                                            <select name='auto_judge_scenarios[$rows][assertion]' class='auto_judge_assertion'>
+                                                <option value='eq'>is equal to</option>
+                                                <option value='same'>is same to</option>
+                                                <option value='notEq'>is not equal to</option>
+                                                <option value='notSame'>is not same to</option>
+                                                <option value='integer'>is int</option>
+                                                <option value='float'>is float</option>
+                                                <option value='digit'>is digit</option>
+                                                <option value='boolean'>is boolean</option>
+                                                <option value='notEmpty'>is not empty</option>
+                                                <option value='notNull'>is not null</option>
+                                                <option value='string'>is string</option>
+                                                <option value='startsWith'>starts with</option>
+                                                <option value='endsWith'>ends with</option>
+                                                <option value='contains'>contains</option>
+                                                <option value='numeric'>is numeric</option>
+                                                <option value='isArray'>is array</option>
+                                                <option value='true'>is true</option>
+                                                <option value='false'>is false</option>
+                                                <option value='isJsonString'>is json string</option>
+                                                <option value='isObject'>is object</option>
+                                            </select>
+                                        </td>
+                                        <td><input type='text' name='auto_judge_scenarios[$rows][output]' class='auto_judge_output' /></td>
+                                        <td><input type='text' name='auto_judge_scenarios[$rows][weight]' class='auto_judge_weight'/></td>
+                                        <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
+                                    </tr>";
+                                }
+                            }
+                        }
+                        $tool_content .=
+                        "</tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class='col-sm-offset-2 col-sm-10'>
                 <input type='submit' class='btn btn-primary' name='do_edit' value='$langEdit' onclick=\"selectAll('assignee_box',true)\" />
-                <a href='$_SERVER[SCRIPT_NAME]?course=$course_code' class='btn btn-default'>$langCancel</a>    
-            </div>                             
+                <a href='$_SERVER[SCRIPT_NAME]?course=$course_code' class='btn btn-default'>$langCancel</a>
+            </div>
     </fieldset>
     </form></div>";
 }
@@ -1210,25 +1323,28 @@ function edit_assignment($id) {
 
     global $tool_content, $langBackAssignment, $langEditSuccess, $m, $langTheField,
     $langEditError, $course_code, $works_url, $course_id, $uid, $workPath, $langFormErrors;
-    
+
     $v = new Valitron\Validator($_POST);
     $v->rule('required', ['title', 'max_grade']);
     $v->rule('numeric', ['max_grade']);
     $v->labels(array(
-        'title' => "$langTheField $m[title]",
+        'title'     => "$langTheField $m[title]",
         'max_grade' => "$langTheField $m[max_grade]"
     ));
     if($v->validate()) {
         $row = Database::get()->querySingle("SELECT * FROM assignment WHERE id = ?d", $id);
-        $title = $_POST['title'];
-        $desc = purify($_POST['desc']);
-        $deadline = trim($_POST['WorkEnd']) == FALSE ? '0000-00-00 00:00': date('Y-m-d H:i', strtotime($_POST['WorkEnd']));
-        $late_submission = ((isset($_POST['late_submission']) && trim($_POST['WorkEnd']) != FALSE) ? 1 : 0);
-        $group_submissions = $_POST['group_submissions'];
-        $max_grade = filter_input(INPUT_POST, 'max_grade', FILTER_VALIDATE_FLOAT);
-        $assign_to_specific = filter_input(INPUT_POST, 'assign_to_specific', FILTER_VALIDATE_INT);
-        $assigned_to = filter_input(INPUT_POST, 'ingroup', FILTER_VALIDATE_INT, FILTER_REQUIRE_ARRAY); 
-       
+        $title                = $_POST['title'];
+        $desc                 = purify($_POST['desc']);
+        $deadline             = trim($_POST['WorkEnd']) == FALSE ? '0000-00-00 00:00': date('Y-m-d H:i', strtotime($_POST['WorkEnd']));
+        $late_submission      = ((isset($_POST['late_submission']) && trim($_POST['WorkEnd']) != FALSE) ? 1 : 0);
+        $group_submissions    = $_POST['group_submissions'];
+        $max_grade            = filter_input(INPUT_POST, 'max_grade', FILTER_VALIDATE_FLOAT);
+        $assign_to_specific   = filter_input(INPUT_POST, 'assign_to_specific', FILTER_VALIDATE_INT);
+        $assigned_to          = filter_input(INPUT_POST, 'ingroup', FILTER_VALIDATE_INT, FILTER_REQUIRE_ARRAY);
+        $auto_judge           = filter_input(INPUT_POST, 'auto_judge', FILTER_VALIDATE_INT);
+        $auto_judge_scenarios = serialize($_POST['auto_judge_scenarios']);
+        $lang                 = filter_input(INPUT_POST, 'lang');
+
         if ($assign_to_specific == 1 && empty($assigned_to)) {
              $assign_to_specific = 0;
          }
@@ -1240,66 +1356,65 @@ function edit_assignment($id) {
          }
 
          if (!isset($_FILES) || !$_FILES['userfile']['size']) {
-             $_FILES['userfile']['name'] = '';
+             $_FILES['userfile']['name']     = '';
              $_FILES['userfile']['tmp_name'] = '';
-             $filename = $row->file_path;
+             $filename  = $row->file_path;
              $file_name = $row->file_name;
          } else {
-             validateUploadedFile($_FILES['userfile']['name'], 2);
-             if (preg_match('/\.(ade|adp|bas|bat|chm|cmd|com|cpl|crt|exe|hlp|hta|' .
-                                'inf|ins|isp|jse|lnk|mdb|mde|msc|msi|msp|mst|pcd|pif|reg|scr|sct|shs|' .
-                                'shb|url|vbe|vbs|wsc|wsf|wsh)$/', $_FILES['userfile']['name'])) {
-                 $tool_content .= "<p class=\"caution\">$langUnwantedFiletype: {$_FILES['userfile']['name']}<br />";
-                 $tool_content .= "<a href=\"$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id\">$langBack</a></p><br />";
-                 return;
-             }
-             $local_name = uid_to_name($uid);
-             $am = Database::get()->querySingle("SELECT am FROM user WHERE id = ?d", $uid)->am;
-             if (!empty($am)) {
-                 $local_name .= $am;
-             }                
-             $local_name = greek_to_latin($local_name);
-             $local_name = replace_dangerous_char($local_name);
-             $secret = $row->secret_directory;
-             $ext = get_file_extension($_FILES['userfile']['name']);
-             $filename = "$secret/$local_name" . (empty($ext) ? '' : '.' . $ext);                
-             if (move_uploaded_file($_FILES['userfile']['tmp_name'], "$workPath/admin_files/$filename")) {
-                 @chmod("$workPath/admin_files/$filename", 0644);
-                 $file_name = $_FILES['userfile']['name'];
-             }        
-         }   
-         Database::get()->query("UPDATE assignment SET title = ?s, description = ?s, 
-             group_submissions = ?d, comments = ?s, deadline = ?t, late_submission = ?d, max_grade = ?d, 
-             assign_to_specific = ?d, file_path = ?s, file_name = ?s
-             WHERE course_id = ?d AND id = ?d", $title, $desc, $group_submissions, 
-             $comments, $deadline, $late_submission, $max_grade, $assign_to_specific, $filename, $file_name, $course_id, $id);
+            validateUploadedFile($_FILES['userfile']['name'], 2);
+            if (preg_match('/\.(ade|adp|bas|bat|chm|cmd|com|cpl|crt|exe|hlp|hta|' .
+                               'inf|ins|isp|jse|lnk|mdb|mde|msc|msi|msp|mst|pcd|pif|reg|scr|sct|shs|' .
+                               'shb|url|vbe|vbs|wsc|wsf|wsh)$/', $_FILES['userfile']['name'])) {
+                $tool_content .= "<p class=\"caution\">$langUnwantedFiletype: {$_FILES['userfile']['name']}<br />";
+                $tool_content .= "<a href=\"$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id\">$langBack</a></p><br />";
+                return;
+            }
+            $local_name = uid_to_name($uid);
+            $am = Database::get()->querySingle("SELECT am FROM user WHERE id = ?d", $uid)->am;
+            if (!empty($am)) {
+                $local_name .= $am;
+            }
+            $local_name = greek_to_latin($local_name);
+            $local_name = replace_dangerous_char($local_name);
+            $secret     = $row->secret_directory;
+            $ext        = get_file_extension($_FILES['userfile']['name']);
+            $filename   = "$secret/$local_name" . (empty($ext) ? '' : '.' . $ext);
+            if (move_uploaded_file($_FILES['userfile']['tmp_name'], "$workPath/admin_files/$filename")) {
+                @chmod("$workPath/admin_files/$filename", 0644);
+                $file_name = $_FILES['userfile']['name'];
+            }
+        }
 
-         Database::get()->query("DELETE FROM assignment_to_specific WHERE assignment_id = ?d", $id);
+        Database::get()->query(
+            "UPDATE assignment SET title = ?s, description = ?s, deadline = ?t, late_submission = ?d, comments = ?s, group_submissions = ?d, max_grade = ?d, assign_to_specific = ?d, file_path = ?s, file_name = ?s, auto_judge = ?d, auto_judge_scenarios = ?s, lang = ?s WHERE course_id = ?d AND id = ?d",
+            $title, $desc, $deadline, $late_submission, $comments, $group_submissions, $max_grade, $assign_to_specific, $filename, $file_name, $auto_judge, $auto_judge_scenarios, $lang, $course_id, $id
+        );
 
-         if ($assign_to_specific && !empty($assigned_to)) {
-             if ($group_submissions == 1) {
-                 $column = 'group_id';
-                 $other_column = 'user_id';
-             } else {
-                 $column = 'user_id';
-                 $other_column = 'group_id';
-             }
-             foreach ($assigned_to as $assignee_id) {
-                 Database::get()->query("INSERT INTO assignment_to_specific ({$column}, {$other_column}, assignment_id) VALUES (?d, ?d, ?d)", $assignee_id, 0, $id);
-             }
-         }    
-         Log::record($course_id, MODULE_ID_ASSIGN, LOG_MODIFY, array('id' => $id,
-                 'title' => $title,
-                 'description' => $desc,
-                 'deadline' => $deadline,
-                 'group' => $group_submissions));   \
-         
-        Session::Messages($langEditSuccess,'alert-success');         
+        Database::get()->query("DELETE FROM assignment_to_specific WHERE assignment_id = ?d", $id);
+
+        if ($assign_to_specific && !empty($assigned_to)) {
+            if ($group_submissions == 1) {
+                $column       = 'group_id';
+                $other_column = 'user_id';
+            } else {
+                $column       = 'user_id';
+                $other_column = 'group_id';
+            }
+            foreach ($assigned_to as $assignee_id) {
+                Database::get()->query("INSERT INTO assignment_to_specific ({$column}, {$other_column}, assignment_id) VALUES (?d, ?d, ?d)", $assignee_id, 0, $id);
+            }
+        }
+        Log::record($course_id, MODULE_ID_ASSIGN, LOG_MODIFY, array('id' => $id,
+                'title'       => $title,
+                'description' => $desc,
+                'deadline'    => $deadline,
+                'group'       => $group_submissions));
+        Session::Messages($langEditSuccess,'alert-success');
         redirect_to_home_page("modules/work/index.php?course=$course_code");
     } else {
-//        $new_or_modify = isset($_GET['NewExercise']) ? "&NewExercise=Yes" : "&exerciseId=$_GET[exerciseId]&modifyExercise=yes";
+        // $new_or_modify = isset($_GET['NewExercise']) ? "&NewExercise=Yes" : "&exerciseId=$_GET[exerciseId]&modifyExercise=yes";
         Session::flashPost()->Messages($langFormErrors)->Errors($v->errors());
-        redirect_to_home_page("modules/work/index.php?course=$course_code&id=$id&choice=edit");        
+        redirect_to_home_page("modules/work/index.php?course=$course_code&id=$id&choice=edit");
     }
 }
 
