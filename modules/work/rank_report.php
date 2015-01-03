@@ -97,7 +97,6 @@ function get_course_title() {
 }
 
 function show_report($assign,$submissions) {
-    //     global $course_code;
 		global $tool_content,$course_code;
            $tool_content = "
                                 <table  style=\"table-layout: fixed; width: 99%\" class='table-default'>
@@ -119,10 +118,10 @@ function get_table_content($assign,$submissions) {
     $i=1;
        
        // Condition about rank position and color of medal
-        
-if ($i==1 or $i == 2) {$i.=" <img src='../../images/work_medals/Gold_medal_with_cup.svg'  width='30px' height='30px'>";}                                        
-if ($i==3 or $i == 4) {$i.=" <img src='../../images/work_medals/Silver_medal_with_cup.svg'  width='30px' height='30px'>";}     
-if ($i==5 or $i == 6) {$i.=" <img src='../../images/work_medals/Bronze_medal_with_cup.svg'  width='30px' height='30px'>";} 
+
+if ($i==1 or $i == 2) {$i.=" <img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/work_medals/Gold_medal_with_cup.svg\" width='30px' height='30px'>";}                                        
+if ($i==3 or $i == 4) {$i.=" <img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/work_medals/Silver_medal_with_cup.svg\"  width='30px' height='30px'>";}     
+if ($i==5 or $i == 6) {$i.=" <img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/work_medals/Bronze_medal_with_cup.svg\" width='30px' height='30px'>";} 
 
  // End of Condition about rank position and color of medal    
     
