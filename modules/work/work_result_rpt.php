@@ -250,13 +250,13 @@ function download_pdf_file($assign, $sub, $auto_judge_scenarios, $auto_judge_sce
     }
 
      th {
-        font-size: 1.1em;
+        font-size: 1.0em;
         text-align: left;
         padding-top: 5px;
         padding-bottom: 4px;
         background-color: #3399FF;
         color: #ffffff;
-        width: 130px;
+        width: 120px;
            border: 1px solid #000000;
     }
     </style>
