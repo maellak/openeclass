@@ -269,7 +269,7 @@ function download_pdf_file($assign, $sub, $auto_judge_scenarios, $auto_judge_sce
             <th> Εργασία</th> <td> '.$assign->title.'</td>
             </tr>
              <tr>
-            <th> Εκπαιδεύομενος</th><td> '.q(uid_to_name($sub->uid)).'</td>
+            <th> Εκπαιδευόμενος</th><td> '.q(uid_to_name($sub->uid)).'</td>
             </tr>
              <tr>
             <th> Βαθμός</th> <td>'.$sub->grade.'/'.$assign->max_grade.' </td>
