@@ -256,7 +256,7 @@ function download_pdf_file($assign, $sub, $auto_judge_scenarios, $auto_judge_sce
         padding-bottom: 4px;
         background-color: #3399FF;
         color: #ffffff;
-        width: 125px;
+        width: 130px;
            border: 1px solid #000000;
     }
     </style>
