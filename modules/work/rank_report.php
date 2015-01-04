@@ -39,11 +39,7 @@ require_once __DIR__.'/../../include/tcpdf/tcpdf_include.php';
 require_once __DIR__.'/../../include/tcpdf/tcpdf.php';
 
 require_once 'work_functions.php';
-//	require_once 'modules/group/group_functions.php';
-// require_once 'modules/document/doc_init.php';
-// require_once 'include/lib/fileDisplayLib.inc.php';
-// require_once 'include/lib/fileManageLib.inc.php';
-// require_once 'include/lib/fileUploadLib.inc.php';
+
 
 
 
@@ -101,7 +97,6 @@ function get_course_title() {
 }
 
 function show_report($assign,$submissions) {
-    //     global $course_code;
 		global $tool_content,$course_code;
            $tool_content = "
                                 <table  style=\"table-layout: fixed; width: 99%\" class='table-default'>
@@ -123,10 +118,10 @@ function get_table_content($assign,$submissions) {
     $i=1;
        
        // Condition about rank position and color of medal
-        
-if ($i==1 or $i == 2) {$i.=" <img src='../../images/work_medals/Gold_medal_with_cup.svg'  width='30px' height='30px'>";}                                        
-if ($i==3 or $i == 4) {$i.=" <img src='../../images/work_medals/Silver_medal_with_cup.svg'  width='30px' height='30px'>";}     
-if ($i==5 or $i == 6) {$i.=" <img src='../../images/work_medals/Bronze_medal_with_cup.svg'  width='30px' height='30px'>";} 
+
+if ($i==1 or $i == 2) {$i.=" <img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/work_medals/Gold_medal_with_cup.png\" width='30px' height='30px'>";}                                        
+if ($i==3 or $i == 4) {$i.=" <img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/work_medals/Silver_medal_with_cup.png\"  width='30px' height='30px'>";}     
+if ($i==5 or $i == 6) {$i.=" <img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/work_medals/Bronze_medal_with_cup.png\" width='30px' height='30px'>";} 
 
  // End of Condition about rank position and color of medal    
     
@@ -142,6 +137,16 @@ if ($i==5 or $i == 6) {$i.=" <img src='../../images/work_medals/Bronze_medal_wit
                 }
     return $table_content;
   }
+
+// help function convert greek chars to english 
+function greeklish($Name)
+{ 
+$greek   = array('α','ά','Ά','Α','β','Β','γ', 'Γ', 'δ','Δ','ε','έ','Ε','Έ','ζ','Ζ','η','ή','Η','θ','Θ','ι','ί','ϊ','ΐ','Ι','Ί', 'κ','Κ','λ','Λ','μ','Μ','ν','Ν','ξ','Ξ','ο','ό','Ο','Ό','π','Π','ρ','Ρ','σ','ς', 'Σ','τ','Τ','υ','ύ','Υ','Ύ','φ','Φ','χ','Χ','ψ','Ψ','ω','ώ','Ω','Ώ',' ',"'","'",',');
+$english = array('a', 'a','A','A','b','B','g','G','d','D','e','e','E','E','z','Z','i','i','I','th','Th', 'i','i','i','i','I','I','k','K','l','L','m','M','n','N','x','X','o','o','O','O','p','P' ,'r','R','s','s','S','t','T','u','u','Y','Y','f','F','ch','Ch','ps','Ps','o','o','O','O','_','_','_','_');
+$string  = str_replace($greek, $english, $Name);
+return $string;
+}
+
   
 //function download_pdf_file($assign_title, $course_title,  $username, $grade, $auto_judge_scenarios, $auto_judge_scenarios_output){ 
 
@@ -227,6 +232,6 @@ function download_pdf_file($assign,$submissions){
 
     $pdf->writeHTML($report_details, true, false, true, false, '');
     $pdf->Ln();     
-    $pdf->Output('Rank Report_'.get_course_title().'_'.$assign->title.'.pdf', 'D');
+    $pdf->Output('Rank Report_'. greeklish(get_course_title().'_'.$assign->title).'.pdf', 'D');
     
 }

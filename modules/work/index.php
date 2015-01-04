@@ -2066,7 +2066,7 @@ function show_student_assignments() {
                 }
                 $tool_content .= "<div style='padding-bottom: 5px;padding-top:5px;'>$grade</div>";
             }
-            $tool_content .= "</td><td class='option-btn-cell'><div style='padding-bottom: 5px;padding-top:5px;'><a href='". $rankreportlink ."'>". icon('fa-sort-alpha-asc') ."</a></div></td></tr>
+            $tool_content .= "</td><td class='option-btn-cell' align='center'><div style='padding-bottom: 5px;padding-top:10px;'><a href='". $rankreportlink ."'>". icon('fa-sort-alpha-asc') ."</a></div></td></tr>
                                   </tr>";
             $k++;
         }
