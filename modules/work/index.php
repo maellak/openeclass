@@ -58,7 +58,7 @@ $nameTools = $langWorks;
 // main program
 //-------------------------------------------
 
-//Gets the student's assignment file ($file_type=NULL) 
+//Gets the student's assignment file ($file_type=NULL)
 //or the teacher's assignment ($file_type=1)
 if (isset($_GET['get'])) {
     if (isset($_GET['file_type']) && $_GET['file_type']==1) {
@@ -72,13 +72,13 @@ if (isset($_GET['get'])) {
 }
 
 // Only course admins can download all assignments in a zip file
-if ($is_editor) {    
+if ($is_editor) {
     if (isset($_GET['download'])) {
         include 'include/pclzip/pclzip.lib.php';
         $as_id = intval($_GET['download']);
         // Allow unlimited time for creating the archive
         set_time_limit(0);
-        if (!download_assignments($as_id)) {          
+        if (!download_assignments($as_id)) {
             Session::Messages($langNoAssignmentsExist, 'alert-danger');
             redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$as_id);
         }
@@ -92,46 +92,50 @@ if ($is_editor) {
     <script type='text/javascript'>
     function check_weights() {
         /* function to check weight validity */
-        var weights = document.getElementsByClassName('auto_judge_weight');
-        var weight_sum = 0;
-        var max_grade = parseFloat(document.getElementById('max_grade').value);
-        max_grade = Math.round(max_grade * 1000) / 1000;
+        if($('#hidden-opt').is(':visible') && $('#auto_judge').is(':checked')) {
+            var weights = document.getElementsByClassName('auto_judge_weight');
+            var weight_sum = 0;
+            var max_grade = parseFloat(document.getElementById('max_grade').value);
+            max_grade = Math.round(max_grade * 1000) / 1000;
 
-        for (i = 0; i < weights.length; i++) {
-            // match ints or floats
-            w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
-            if(w != null) {
-                w = parseFloat(w);
-                if(w >= 1  && w <= 10)  // 1->10 allowed
-                {
-                    /* allow 3 decimal digits */
-                    weight_sum += w;
-                    continue;
+            for (i = 0; i < weights.length; i++) {
+                // match ints or floats
+                w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
+                if(w != null) {
+                    w = parseFloat(w);
+                    if(w >= 0  && w <= max_grade)  // 0->max_grade allowed
+                    {
+                        /* allow 3 decimal digits */
+                        weight_sum += w;
+                        continue;
+                    }
+                    else{
+                        alert('Weights must be between 1 and max_grade!');
+                        return false;
+                    }
                 }
-                else{
-                    alert('Weights must be between 1 and 10!');
+                else {
+                    alert('Only numbers as weights!');
                     return false;
                 }
             }
+            diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
+            if (diff >= 0 && diff <= 0.001) {
+                return true;
+            }
             else {
-                alert('Only numbers as weights!');
+                alert('Weights do not sum up to ' + max_grade +
+                    '!\\n(Remember, 3 decimal digits precision)');
                 return false;
             }
         }
-        diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
-        if (diff >= 0 && diff <= 0.001) {
+        else
             return true;
-        }
-        else {
-            alert('Weights do not sum up to ' + max_grade +
-                  '!\\n(Remember, 3 decimal digits precision)');
-            return false;
-        }
     }
 
-    $(function() {        
+    $(function() {
         $('input[name=group_submissions]').click(changeAssignLabel);
-        $('input[id=assign_button_some]').click(ajaxAssignees);        
+        $('input[id=assign_button_some]').click(ajaxAssignees);
         $('input[id=assign_button_all]').click(hideAssignees);
         $('input[name=auto_judge]').click(changeAutojudgeScenariosVisibility);
         function hideAssignees()
@@ -144,17 +148,17 @@ if ($is_editor) {
             var assign_to_specific = $('input:radio[name=assign_to_specific]:checked').val();
             if(assign_to_specific==1){
                ajaxAssignees();
-            }         
+            }
             if (this.id=='group_button') {
                $('#assign_button_all_text').text('$m[WorkToAllGroups]');
                $('#assign_button_some_text').text('$m[WorkToGroup]');
-               $('#assignees').text('$langGroups');    
+               $('#assignees').text('$langGroups');
             } else {
                $('#assign_button_all_text').text('$m[WorkToAllUsers]');
                $('#assign_button_some_text').text('$m[WorkToUser]');
-               $('#assignees').text('$langStudents');    
-            }        
-        }        
+               $('#assignees').text('$langStudents');
+            }
+        }
         function ajaxAssignees()
         {
             $('#assignees_tbl').removeClass('hide');
@@ -174,7 +178,7 @@ if ($is_editor) {
                 } else {
                     for (index = 0; index < parsed_data.length; ++index) {
                         select_content += '<option value=\"' + parsed_data[index]['id'] + '\">' + parsed_data[index]['name'] + '<\/option>';
-                    }            
+                    }
                 }
                 $('#assignee_box').find('option').remove();
                 $('#assign_box').find('option').remove().end().append(select_content);
@@ -183,14 +187,16 @@ if ($is_editor) {
         function changeAutojudgeScenariosVisibility() {
             if($(this).is(':checked')) {
                 $(this).parent().find('table').show();
+                $('#lang').parent().parent().show();
             } else {
                 $(this).parent().find('table').hide();
+                $('#lang').parent().parent().hide();
             }
         }
         $('#autojudge_new_scenario').click(function(e) {
             var rows = $(this).parent().parent().parent().find('tr').size()-1;
             // Clone the first line
-            var newLine = $(this).parent().parent().parent().find('tr:first').clone();
+            var newLine = $(this).parent().parent().parent().find('tr:last').prev('tr').clone();
             // Replace 0 wth the line number
             newLine.html(newLine.html().replace(/auto_judge_scenarios\[0\]/g, 'auto_judge_scenarios['+rows+']'));
             // Initialize the remove event and show the button
@@ -211,9 +217,19 @@ if ($is_editor) {
         $(document).on('change', 'select.auto_judge_assertion', function(e) {
             e.preventDefault();
             var value = $(this).val();
-            var row = $(this).parent().parent();
+
+            // Change selected attr.
+            $(this).find('option').each(function() {
+                if ($(this).attr('selected') == 'selected') {
+                    $(this).removeAttr('selected');
+                } else if ($(this).attr('value') == value) {
+                    $(this).attr('selected', true);
+                }
+            });
+            var row       = $(this).parent().parent();
             var tableBody = $(this).parent().parent().parent();
-            var indexNum = row.index() + 1;
+            var indexNum  = row.index() + 1;
+
             if (value === 'eq' ||
                 value === 'same' ||
                 value === 'notEq' ||
@@ -230,8 +246,8 @@ if ($is_editor) {
             return false;
         });
     });
-    
-    </script>";    
+
+    </script>";
 
     $email_notify = (isset($_POST['email']) && $_POST['email']);
     if (isset($_POST['grade_comments'])) {
@@ -241,21 +257,21 @@ if ($is_editor) {
         submit_grade_comments($_POST['assignment'], $_POST['submission'], $_POST['grade'], $_POST['comments'], $email_notify, null);
     } elseif (isset($_GET['add'])) {
         $nameTools = $langNewAssign;
-        $navigation[] = $works_url;        
+        $navigation[] = $works_url;
         new_assignment();
     } elseif (isset($_POST['assign_type'])) {
         if ($_POST['assign_type']) {
-            $data = Database::get()->queryArray("SELECT name,id FROM `group` WHERE course_id = ?d", $course_id);                
+            $data = Database::get()->queryArray("SELECT name,id FROM `group` WHERE course_id = ?d", $course_id);
         } else {
             $data = Database::get()->queryArray("SELECT user.id AS id, surname, givenname
                                     FROM user, course_user
-                                    WHERE user.id = course_user.user_id 
-                                    AND course_user.course_id = ?d AND course_user.status = 5 
-                                    AND user.id", $course_id);                
-               
+                                    WHERE user.id = course_user.user_id
+                                    AND course_user.course_id = ?d AND course_user.status = 5
+                                    AND user.id", $course_id);
+
         }
         echo json_encode($data);
-        exit;      
+        exit;
     } elseif (isset($_POST['new_assign'])) {
         add_assignment();
     } elseif (isset($_GET['as_id'])) {
@@ -326,7 +342,7 @@ if ($is_editor) {
                 $nameTools = $langWorks;
                 $navigation[] = $works_url;
                 $navigation[] = $work_id_url;
-                edit_assignment($id);       
+                edit_assignment($id);
             } elseif ($choice == 'add') {
                 $nameTools = $langAddGrade;
                 $navigation[] = $works_url;
@@ -378,8 +394,8 @@ draw($tool_content, 2, null, $head_content);
 
 // insert the assignment into the database
 function add_assignment() {
-    global $tool_content, $workPath, $course_id, $uid, $langTheField, $m, 
-    $course_code, $langFormErrors;
+    global $tool_content, $workPath, $course_id, $uid, $langTheField, $m,
+    $course_code, $langFormErrors, $langNewAssignSuccess;
     $v = new Valitron\Validator($_POST);
     $v->rule('required', ['title', 'max_grade']);
     $v->rule('numeric', ['max_grade']);
@@ -387,7 +403,7 @@ function add_assignment() {
         'title' => "$langTheField $m[title]",
         'max_grade' => "$langTheField $m[max_grade]"
     ));
-    if($v->validate()) {      
+    if($v->validate()) {
         $title = $_POST['title'];
         $desc = $_POST['desc'];
         $deadline = (trim($_POST['WorkEnd'])!=FALSE) ? date('Y-m-d H:i', strtotime($_POST['WorkEnd'])) : '0000-00-00 00:00:00';
@@ -404,7 +420,7 @@ function add_assignment() {
         if ($assign_to_specific == 1 && empty($assigned_to)) {
             $assign_to_specific = 0;
         }
-        if (@mkdir("$workPath/$secret", 0777) && @mkdir("$workPath/admin_files/$secret", 0777, true)) {       
+        if (@mkdir("$workPath/$secret", 0777) && @mkdir("$workPath/admin_files/$secret", 0777, true)) {
 
             $id = Database::get()->query("INSERT INTO assignment (course_id, title, description, deadline, late_submission, comments, submission_date, secret_directory, group_submissions, max_grade, assign_to_specific, auto_judge, auto_judge_scenarios, lang) ". "VALUES (?d, ?s, ?s, ?t, ?d, ?s, ?t, ?s, ?d, ?d, ?d, ?d, ?s, ?s)", $course_id, $title, $desc, $deadline, $late_submission, '', date("Y-m-d H:i:s"), $secret, $group_submissions, $max_grade, $assign_to_specific, $auto_judge, $auto_judge_scenarios, $lang)->lastInsertID;
 
@@ -416,7 +432,7 @@ function add_assignment() {
                     $local_name .= $am;
                 }
                 $local_name = greek_to_latin($local_name);
-                $local_name = replace_dangerous_char($local_name);            
+                $local_name = replace_dangerous_char($local_name);
                 if (!isset($_FILES) || !$_FILES['userfile']['size']) {
                     $_FILES['userfile']['name'] = '';
                     $_FILES['userfile']['tmp_name'] = '';
@@ -433,8 +449,8 @@ function add_assignment() {
                         @chmod("$workPath/admin_files/$filename", 0644);
                         $file_name = $_FILES['userfile']['name'];
                         Database::get()->query("UPDATE assignment SET file_path = ?s, file_name = ?s WHERE id = ?d", $filename, $file_name, $id);
-                    }                
-                }                    
+                    }
+                }
                 if ($assign_to_specific && !empty($assigned_to)) {
                     if ($group_submissions == 1) {
                         $column = 'group_id';
@@ -446,13 +462,13 @@ function add_assignment() {
                     foreach ($assigned_to as $assignee_id) {
                         Database::get()->query("INSERT INTO assignment_to_specific ({$column}, {$other_column}, assignment_id) VALUES (?d, ?d, ?d)", $assignee_id, 0, $id);
                     }
-                }    
+                }
                 Log::record($course_id, MODULE_ID_ASSIGN, LOG_INSERT, array('id' => $id,
                     'title' => $title,
                     'description' => $desc,
                     'deadline' => $deadline,
                     'secret' => $secret,
-                    'group' => $group_submissions));  
+                    'group' => $group_submissions));
                 Session::Messages($langNewAssignSuccess,'alert-success');
                 redirect_to_home_page("modules/work/index.php?course=$course_code");
             } else {
@@ -472,18 +488,18 @@ function submit_work($id, $on_behalf_of = null) {
     $langExerciseNotPermit, $langUnwantedFiletype, $course_code,
     $langOnBehalfOfUserComment, $langOnBehalfOfGroupComment, $course_id;
     $langExt = array(
-        'C' => 'c',
-        'CPP' => 'cpp',
-        'CPP11' => 'cpp11',
-        'CLOJURE' => 'clj',
-        'CSHARP' => 'cs',
-        'JAVA' => 'java',
+        'C'          => 'c',
+        'CPP'        => 'cpp',
+        'CPP11'      => 'cpp11',
+        'CLOJURE'    => 'clj',
+        'CSHARP'     => 'cs',
+        'JAVA'       => 'java',
         'JAVASCRIPT' => 'js',
-        'HASKELL' => 'hs',
-        'PERL' => 'pl',
-        'PHP' => 'php',
-        'PYTHON' => 'py',
-        'RUBY' => 'rb',
+        'HASKELL'    => 'hs',
+        'PERL'       => 'pl',
+        'PHP'        => 'php',
+        'PYTHON'     => 'py',
+        'RUBY'       => 'rb',
     );
 
     if (isset($on_behalf_of)) {
@@ -511,7 +527,7 @@ function submit_work($id, $on_behalf_of = null) {
             }
         }
     } //checks for submission validity end here
-    
+
     $row = Database::get()->querySingle("SELECT title, group_submissions, auto_judge, auto_judge_scenarios, lang, max_grade FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $id);
     $title = q($row->title);
     $group_sub = $row->group_submissions;
@@ -556,7 +572,7 @@ function submit_work($id, $on_behalf_of = null) {
         $secret = work_secret($id);
         $ext = get_file_extension($_FILES['userfile']['name']);
         $filename = "$secret/$local_name" . (empty($ext) ? '' : '.' . $ext);
-        
+
         if (!isset($on_behalf_of)) {
             $msg1 = delete_submissions_by_uid($user_id, -1, $id);
             if ($group_sub) {
@@ -568,69 +584,67 @@ function submit_work($id, $on_behalf_of = null) {
             $msg1 = '';
         }
         if ($no_files or move_uploaded_file($_FILES['userfile']['tmp_name'], "$workPath/$filename")) {
-            if ($no_files) {
-                $filename = '';
-            } else {
-                @chmod("$workPath/$filename", 0644);
-            }
-            $msg2 = $langUploadSuccess;
-            $submit_ip = $_SERVER['REMOTE_ADDR'];
-            if (isset($on_behalf_of)) {
-                if ($group_sub) {
-                    $auto_comments = sprintf($langOnBehalfOfGroupComment, uid_to_name($uid), $gids[$group_id]);
+            if(file_get_contents("$workPath/$filename") != false){
+                if ($no_files) {
+                    $filename = '';
                 } else {
-                    $auto_comments = sprintf($langOnBehalfOfUserComment, uid_to_name($uid), uid_to_name($user_id));
+                    @chmod("$workPath/$filename", 0644);
                 }
-                $stud_comments = $auto_comments;
-                $grade_comments = $_POST['stud_comments'];
-                
-                $grade_valid = filter_input(INPUT_POST, 'grade', FILTER_VALIDATE_FLOAT);
-                (isset($_POST['grade']) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
-             
-                $grade_ip = $submit_ip;
-            } else {
-                $stud_comments = $_POST['stud_comments'];
-                $grade = NULL;
-                $grade_comments = $grade_ip = "";            
-            }
-            if (!$group_sub or array_key_exists($group_id, $gids)) {
-                $file_name = $_FILES['userfile']['name'];
-                $sid = Database::get()->query("INSERT INTO assignment_submit
-                                        (uid, assignment_id, submission_date, submission_ip, file_path,
-                                         file_name, comments, grade, grade_comments, grade_submission_ip,
-                                         grade_submission_date, group_id)
-                                         VALUES (?d, ?d, NOW(), ?s, ?s, ?s, ?s, ?f, ?s, ?s, NOW(), ?d)", $user_id, $id, $submit_ip, $filename, $file_name, $stud_comments, $grade, $grade_comments, $grade_ip, $group_id)->lastInsertID;
-                Log::record($course_id, MODULE_ID_ASSIGN, LOG_INSERT, array('id' => $sid,
-                    'title' => $title,
-                    'assignment_id' => $id,
-                    'filepath' => $filename,
-                    'filename' => $file_name,
-                    'comments' => $stud_comments,
-                    'group_id' => $group_id));
-                if ($on_behalf_of and isset($_POST['email'])) {
-                    $email_grade = $_POST['grade'];
-                    $email_comments = "\n$auto_comments\n\n" . $_POST['stud_comments'];
-                    grade_email_notify($id, $sid, $email_grade, $email_comments);
+                $msg2 = $langUploadSuccess;
+                $submit_ip = $_SERVER['REMOTE_ADDR'];
+                if (isset($on_behalf_of)) {
+                    if ($group_sub) {
+                        $auto_comments = sprintf($langOnBehalfOfGroupComment, uid_to_name($uid), $gids[$group_id]);
+                    } else {
+                        $auto_comments = sprintf($langOnBehalfOfUserComment, uid_to_name($uid), uid_to_name($user_id));
+                    }
+                    $stud_comments = $auto_comments;
+                    $grade_comments = $_POST['stud_comments'];
+
+                    $grade_valid = filter_input(INPUT_POST, 'grade', FILTER_VALIDATE_FLOAT);
+                    (isset($_POST['grade']) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
+
+                    $grade_ip = $submit_ip;
+                } else {
+                    $stud_comments = $_POST['stud_comments'];
+                    $grade = NULL;
+                    $grade_comments = $grade_ip = "";
                 }
+                if (!$group_sub or array_key_exists($group_id, $gids)) {
+                    $file_name = $_FILES['userfile']['name'];
+                    $sid = Database::get()->query("INSERT INTO assignment_submit
+                                            (uid, assignment_id, submission_date, submission_ip, file_path,
+                                             file_name, comments, grade, grade_comments, grade_submission_ip,
+                                             grade_submission_date, group_id)
+                                             VALUES (?d, ?d, NOW(), ?s, ?s, ?s, ?s, ?f, ?s, ?s, NOW(), ?d)", $user_id, $id, $submit_ip, $filename, $file_name, $stud_comments, $grade, $grade_comments, $grade_ip, $group_id)->lastInsertID;
+                    Log::record($course_id, MODULE_ID_ASSIGN, LOG_INSERT, array('id' => $sid,
+                        'title' => $title,
+                        'assignment_id' => $id,
+                        'filepath' => $filename,
+                        'filename' => $file_name,
+                        'comments' => $stud_comments,
+                        'group_id' => $group_id));
+                    if ($on_behalf_of and isset($_POST['email'])) {
+                        $email_grade = $_POST['grade'];
+                        $email_comments = "\n$auto_comments\n\n" . $_POST['stud_comments'];
+                        grade_email_notify($id, $sid, $email_grade, $email_comments);
+                    }
+                }
+                $tool_content .= "<div class='alert alert-success'>$msg2<br>$msg1<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id'>$langBack</a></div><br>";
+            } else{
+                $tool_content .= "<div class='alert alert-danger'>Το αρχείο που επιχειρείτε να ανεβάσετε είναι κενό. Η εργασία δεν υποβλήθηκε.<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
             }
-            $tool_content .= "<div class='alert alert-success'>$msg2<br>$msg1<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id'>$langBack</a></div><br>";
         } else {
             $tool_content .= "<div class='alert alert-danger'>$langUploadError<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
         }
 
         // Auto-judge: Send file to hackearth
         if ($auto_judge && $ext === $langExt[$lang]) {
-
-                global $hackerEarthKey;
-
-                if (!isset($hackerEarthKey)) {
-                    echo 'Hacker Earth Key is not specified in config.php!';
-                    die();
-                }
-
+                $hackerEarthKey = q(get_config('hackerEarthKey'));
+                if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
                 $content = file_get_contents("$workPath/$filename");
                 // Run each scenario and count how many passed
-                $auto_judge_scenarios_output = array(
+                 $auto_judge_scenarios_output = array(
                     array(
                         'student_output'=> '',
                         'passed'=> 0,
@@ -638,10 +652,12 @@ function submit_work($id, $on_behalf_of = null) {
                 );
 
                 $passed = 0;
-                $i      = 0;
+                $i = 0;
+                $partial = 0;
                 $errorsComment = '';
-                foreach ($auto_judge_scenarios as $curScenario) {
-                    // Set POST variables
+                $weight_sum = 0;
+                foreach($auto_judge_scenarios as $curScenario) {
+                    //set POST variables
                     $url           = 'http://api.hackerearth.com/code/run/';
                     $fields_string = null;
                     $fields        = array(
@@ -691,6 +707,7 @@ function submit_work($id, $on_behalf_of = null) {
                         if ($assertionResult) {
                             $passed++;
                             $auto_judge_scenarios_output[$i]['passed'] = 1;
+                            $partial += $curScenario['weight'];
                         } else {
                             $num = $i+1;
                             $errorsComment = "Εργασία $num: Assertion failed! <br />";
@@ -698,9 +715,14 @@ function submit_work($id, $on_behalf_of = null) {
                         }
                     }
 
+                    $weight_sum += $curScenario['weight'];
                     $i++;
                 }
-                $grade = round($passed / count($auto_judge_scenarios) * 10);
+                // 3 decimal digits precision
+                $grade = round($partial / $weight_sum * $max_grade, 3);
+                // allow an error of 0.001
+                if($max_grade - $grade <= 0.001)
+                    $grade = $max_grade;
                 // Add the output as a comment
                 $comment = 'Passed: '.$passed.'/'.count($auto_judge_scenarios);
                 rtrim($errorsComment, '<br />');
@@ -746,6 +768,7 @@ function new_assignment() {
         });
     </script>";
     $workEnd = isset($_POST['WorkEnd']) ? $_POST['WorkEnd'] : "";
+    $hackerEarthKey = q(get_config('hackerEarthKey'));
 
     $tool_content .= action_bar(array(
         array('title' => $langBack,
@@ -761,7 +784,7 @@ function new_assignment() {
             <div class='form-group ".($title_error ? "has-error" : "")."'>
                 <label for='title' class='col-sm-2 control-label'>$m[title]:</label>
                 <div class='col-sm-10'>
-                    <input name='title' type='text' class='form-control' id='title' placeholder='$m[title]'>
+                    <input name='title' type='text' class='form-control' required='required' id='title' placeholder='$m[title]'>
                     <span class='help-block'>$title_error</span>
                 </div>
             </div>
@@ -862,8 +885,8 @@ function new_assignment() {
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>Auto-judge:</label>
                     <div class='col-sm-10'>
-                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' checked='1' />
-                        <table>
+                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' ". (($hackerEarthKey=="") ? "disabled='1'" : "checked='1'") ." />
+                        <table ". (($hackerEarthKey=="") ? "style='display: none;'" : "") .">
                             <thead>
                                 <tr>
                                   <th>Input</th>
@@ -878,7 +901,7 @@ function new_assignment() {
                                     <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
                                     <td>
                                         <select name='auto_judge_scenarios[0][assertion]' class='auto_judge_assertion'>
-                                            <option value='eq'>is equal to</option>
+                                            <option value='eq' selected='selected'>is equal to</option>
                                             <option value='same'>is same to</option>
                                             <option value='notEq'>is not equal to</option>
                                             <option value='notSame'>is not same to</option>
@@ -915,7 +938,7 @@ function new_assignment() {
                         </table>
                     </div>
                 </div>
-                <div class='form-group'>
+                <div class='form-group' ". (($hackerEarthKey=="") ? "style='display: none;'" : "") .">
                     <label class='col-sm-2 control-label'>Programming Language:</label>
                     <div class='col-sm-10'>
                         <select id='lang' name='lang'>
@@ -1057,7 +1080,7 @@ function show_edit_assignment($id) {
 
     $tool_content .= "
     <div class='form-wrapper'>
-    <form class='form-horizontal' role='form' enctype='multipart/form-data' action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post'>
+    <form class='form-horizontal' role='form' enctype='multipart/form-data' action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post' onsubmit='return check_weights();'>
     <input type='hidden' name='id' value='$id' />
     <input type='hidden' name='choice' value='do_edit' />
     <fieldset>
@@ -1268,7 +1291,7 @@ function show_edit_assignment($id) {
                                         <td><input type='text' name='auto_judge_scenarios[$rows][input]' /></td>
                                         <td>
                                             <select name='auto_judge_scenarios[$rows][assertion]' class='auto_judge_assertion'>
-                                                <option value='eq'>is equal to</option>
+                                                <option value='eq' selected='selected'>is equal to</option>
                                                 <option value='same'>is same to</option>
                                                 <option value='notEq'>is not equal to</option>
                                                 <option value='notSame'>is not same to</option>
@@ -1361,6 +1384,7 @@ function edit_assignment($id) {
              $filename  = $row->file_path;
              $file_name = $row->file_name;
          } else {
+
             validateUploadedFile($_FILES['userfile']['name'], 2);
             if (preg_match('/\.(ade|adp|bas|bat|chm|cmd|com|cpl|crt|exe|hlp|hta|' .
                                'inf|ins|isp|jse|lnk|mdb|mde|msc|msi|msp|mst|pcd|pif|reg|scr|sct|shs|' .
@@ -1409,6 +1433,7 @@ function edit_assignment($id) {
                 'description' => $desc,
                 'deadline'    => $deadline,
                 'group'       => $group_submissions));
+
         Session::Messages($langEditSuccess,'alert-success');
         redirect_to_home_page("modules/work/index.php?course=$course_code");
     } else {
@@ -1466,10 +1491,10 @@ function delete_assignment($id) {
 function purge_assignment_subs($id) {
 
 	global $tool_content, $workPath, $webDir, $langBack, $langDeleted, $langAssignmentSubsDeleted, $course_code, $course_id;
-        
+
 	$secret = work_secret($id);
         $row = Database::get()->querySingle("SELECT title,assign_to_specific FROM assignment WHERE course_id = ?d
-                                        AND id = ?d", $course_id, $id);        
+                                        AND id = ?d", $course_id, $id);
         if (Database::get()->query("DELETE FROM assignment_submit WHERE assignment_id = ?d", $id)->affectedRows > 0) {
             if ($row->assign_to_specific) {
                 Database::get()->query("DELETE FROM assignment_to_specific WHERE assignment_id = ?d", $id);
@@ -1554,7 +1579,7 @@ function show_student_assignment($id) {
         foreach (find_submissions($row->group_submissions, $uid, $id, $user_group_info) as $sub) {
             if ($sub->grade != '') {
                 $submit_ok = false;
-            
+
             }
             show_submission_details($sub->id);
         }
@@ -1602,10 +1627,10 @@ function show_submission_form($id, $user_group_info, $on_behalf_of = false) {
                             <div class='col-sm-10'>
                               " . selection($groups_with_no_submissions, 'group_id') . "
                             </div>
-                        </div>";                
+                        </div>";
             }else{
                 Session::Messages($m['NoneWorkGroupNoSubmission'], 'alert-danger');
-                redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);                
+                redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);
             }
         }
     } elseif ($on_behalf_of) {
@@ -1617,14 +1642,14 @@ function show_submission_form($id, $user_group_info, $on_behalf_of = false) {
                             <div class='col-sm-10'>
                               " .selection($users_with_no_submissions, 'user_id') . "
                             </div>
-                        </div>";                 
+                        </div>";
             } else {
                 Session::Messages($m['NoneWorkUserNoSubmission'], 'alert-danger');
                 redirect_to_home_page('modules/work/index.php?course='.$course_code.'&id='.$id);
             }
     }
-    $notice = $on_behalf_of ? '' : "<div class='alert alert-info'>".icon('fa-info-circle')." $langNotice3</div>";   
-    $extra = $on_behalf_of ? "                        
+    $notice = $on_behalf_of ? '' : "<div class='alert alert-info'>".icon('fa-info-circle')." $langNotice3</div>";
+    $extra = $on_behalf_of ? "
                         <div class='form-group'>
                             <label for='userfile' class='col-sm-2 control-label'>$m[grade]:</label>
                             <div class='col-sm-10'>
@@ -1635,7 +1660,7 @@ function show_submission_form($id, $user_group_info, $on_behalf_of = false) {
                         <div class='form-group'>
                             <label for='email_button' class='col-sm-2 control-label'>$m[email_users]: </label>
                             <div class='col-sm-10'>
-                              <input type='checkbox' name='email' id='email_button' value='1'> 
+                              <input type='checkbox' name='email' id='email_button' value='1'>
                             </div>
                         </div>" : '';
     if (!$is_group_assignment or count($user_group_info) or $on_behalf_of) {
@@ -1650,7 +1675,7 @@ function show_submission_form($id, $user_group_info, $on_behalf_of = false) {
                         <div class='form-group'>
                             <label for='userfile' class='col-sm-2 control-label'>$langWorkFile:</label>
                             <div class='col-sm-10'>
-                              <input type='file'  name='userfile' id='userfile'> 
+                              <input type='file'  name='userfile' id='userfile'>
                             </div>
                         </div>
                         <div class='form-group'>
@@ -1691,7 +1716,7 @@ function assignment_details($id, $row) {
                 'icon' => 'fa-file-archive-o',
                 'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;download=$id",
                 'level' => 'primary'
-            ),            
+            ),
             array(
                 'title' => $langGraphResults,
                 'icon' => 'fa-bar-chart',
@@ -1708,15 +1733,15 @@ function assignment_details($id, $row) {
                 'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id&amp;choice=do_delete",
                 'button-class' => "btn-danger",
                 'confirm' => "$langConfirmDelete"
-            )            
+            )
         ));
     }
     $deadline = (int)$row->deadline ? nice_format($row->deadline, true) : $m['no_deadline'];
-    if ($row->time > 0) { 
+    if ($row->time > 0) {
         $deadline_notice = "<br><span>($langDaysLeft " . format_time_duration($row->time) . ")</span>";
     } elseif ((int)$row->deadline) {
         $deadline_notice = "<br><span class='text-danger'>$langEndDeadline</span>";
-    }   
+    }
     $tool_content .= "
     <div class='panel panel-primary'>
         <div class='panel-heading'>
@@ -1729,7 +1754,7 @@ function assignment_details($id, $row) {
                 </div>
                 <div class='col-sm-9'>
                     $row->title
-                </div>                
+                </div>
             </div>";
         if (!empty($row->description)) {
             $tool_content .= "<div class='row  margin-bottom-fat'>
@@ -1738,27 +1763,27 @@ function assignment_details($id, $row) {
                 </div>
                 <div class='col-sm-9'>
                     $row->description
-                </div>                
+                </div>
             </div>";
         }
-        if (!empty($row->comments)) {        
+        if (!empty($row->comments)) {
             $tool_content .= "<div class='row  margin-bottom-fat'>
                 <div class='col-sm-3'>
                     <strong>$m[comments]:</strong>
                 </div>
                 <div class='col-sm-9'>
                     $row->comments
-                </div>                
+                </div>
             </div>";
         }
-        if (!empty($row->file_name)) {        
+        if (!empty($row->file_name)) {
             $tool_content .= "<div class='row  margin-bottom-fat'>
                 <div class='col-sm-3'>
                     <strong>$langWorkFile:</strong>
                 </div>
                 <div class='col-sm-9'>
                     <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;get=$row->id&amp;file_type=1'>$row->file_name</a>
-                </div>                
+                </div>
             </div>";
         }
         $tool_content .= "
@@ -1768,7 +1793,7 @@ function assignment_details($id, $row) {
                 </div>
                 <div class='col-sm-9'>
                     $row->max_grade
-                </div>                
+                </div>
             </div>
             <div class='row  margin-bottom-fat'>
                 <div class='col-sm-3'>
@@ -1776,27 +1801,27 @@ function assignment_details($id, $row) {
                 </div>
                 <div class='col-sm-9'>
                     " . nice_format($row->submission_date, true) . "
-                </div>                
+                </div>
             </div>
             <div class='row  margin-bottom-fat'>
                 <div class='col-sm-3'>
                     <strong>$m[deadline]:</strong>
                 </div>
                 <div class='col-sm-9'>
-                    $deadline ".(isset($deadline_notice) ? $deadline_notice : "")."                   
-                </div>                
+                    $deadline ".(isset($deadline_notice) ? $deadline_notice : "")."
+                </div>
             </div>
             <div class='row  margin-bottom-fat'>
                 <div class='col-sm-3'>
                     <strong>$m[group_or_user]:</strong>
                 </div>
                 <div class='col-sm-9'>
-                    ".(($row->group_submissions == '0') ? $m['user_work'] : $m['group_work'])."                   
-                </div>                
-            </div>    
+                    ".(($row->group_submissions == '0') ? $m['user_work'] : $m['group_work'])."
+                </div>
+            </div>
         </div>
     </div>";
-       
+
 }
 
 // Show a table header which is a link with the appropriate sorting
@@ -1836,7 +1861,7 @@ function show_assignment($id, $display_graph_results = false) {
 
     $nav[] = $works_url;
     assignment_details($id, $row);
-    
+
     $rev = (@($_REQUEST['rev'] == 1)) ? ' DESC' : '';
     if (isset($_REQUEST['sort'])) {
         if ($_REQUEST['sort'] == 'am') {
@@ -1883,12 +1908,12 @@ function show_assignment($id, $display_graph_results = false) {
         }
         if (!$display_graph_results) {
             $result = Database::get()->queryArray("SELECT assign.id id, assign.file_name file_name,
-                                                   assign.uid uid, assign.group_id group_id, 
+                                                   assign.uid uid, assign.group_id group_id,
                                                    assign.submission_date submission_date,
                                                    assign.grade_submission_date grade_submission_date,
                                                    assign.grade grade, assign.comments comments,
                                                    assign.grade_comments grade_comments,
-                                                   assignment.deadline deadline 
+                                                   assignment.deadline deadline
                                                    FROM assignment_submit AS assign, user, assignment
                                                    WHERE assign.assignment_id = ?d AND assign.assignment_id = assignment.id AND user.id = assign.uid
                                                    ORDER BY ?s ?s", $id, $order, $rev);
@@ -1928,7 +1953,7 @@ function show_assignment($id, $display_graph_results = false) {
                 $filelink = empty($row->file_name) ? '&nbsp;' :
                         ("<a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;get=$row->id'>" .
                         q($row->file_name) . "</a>");
-                
+
                 $late_sub_text = ((int) $row->deadline && $row->submission_date > $row->deadline) ?  '<div style="color:red;">$m[late_submission]</div>' : '';
                 $tool_content .= "
                                 <tr $row_color>
@@ -1938,7 +1963,7 @@ function show_assignment($id, $display_graph_results = false) {
                                 <td width='180'>$filelink
                                 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id&amp;as_id=$row->id' onClick='return confirmation(\"$langDelWarnUserAssignment\");'>
                                  <img src='$themeimg/delete.png' title='$m[WorkDelete]' />
-                                </a>                                
+                                </a>
                                 </td>
                                 <td width='100'>" . nice_format($row->submission_date, TRUE) .$late_sub_text. "</td>
                                 <td width='5'>
@@ -1955,6 +1980,7 @@ function show_assignment($id, $display_graph_results = false) {
                 //professor comments
                 $gradelink = "grade_edit.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
                 $reportlink = "work_result_rpt.php?course=$course_code&amp;assignment=$id&amp;submission=$row->id";
+
                 if (trim($row->grade_comments)) {
                     $label = $m['gradecomments'] . ':';
                     $icon = 'edit.png';
@@ -1988,7 +2014,7 @@ function show_assignment($id, $display_graph_results = false) {
                 // Used to display grades distribution chart
                 $graded_submissions_count = Database::get()->querySingle("SELECT COUNT(*) AS count FROM assignment_submit AS assign, user
                                                              WHERE assign.assignment_id = ?d AND user.id = assign.uid AND
-                                                             assign.grade <> ''", $id)->count;                
+                                                             assign.grade <> ''", $id)->count;
                 $chart = new Plotter();
                 $chart->setTitle("$langGraphResults");
                 foreach ($gradeOccurances as $gradeValue => $gradeOccurance) {
@@ -2009,7 +2035,7 @@ function show_assignment($id, $display_graph_results = false) {
 
 function show_non_submitted($id) {
     global $tool_content, $works_url, $course_id, $m, $langSubmissions,
-            $langGroup, $course_code;    
+            $langGroup, $course_code;
     $row = Database::get()->querySingle("SELECT *, CAST(UNIX_TIMESTAMP(deadline)-UNIX_TIMESTAMP(NOW()) AS SIGNED) AS time
                                 FROM assignment
                                 WHERE course_id = ?d AND id = ?d", $course_id, $id);
@@ -2052,7 +2078,7 @@ function show_non_submitted($id) {
                       <p class='sub_title1'>$m[WorkGroupNoSubmission]:</p>
                       <div class='alert alert-warning'>$m[NoneWorkGroupNoSubmission]</div>";
         }
-        
+
     } else {
         $users = users_with_no_submissions($id);
         $num_results = count($users);
@@ -2082,9 +2108,9 @@ function show_non_submitted($id) {
                     $tool_content .= "<tr>
                     <td>$i.</td>
                     <td>".display_user($row)."</td>
-                    <td>".  uid_to_am($row) ."</td>    
+                    <td>".  uid_to_am($row) ."</td>
                     </tr>";
-                            
+
                     $i++;
                 }
                 $tool_content .= "</table></div>";
@@ -2092,14 +2118,15 @@ function show_non_submitted($id) {
             $tool_content .= "
                       <p class='sub_title1'>$m[WorkUserNoSubmission]:</p>
                       <div class='alert alert-warning'>$m[NoneWorkUserNoSubmission]</div>";
-        }              
-    } 
+        }
+    }
 }
 // show all the assignments - student view only
 function show_student_assignments() {
     global $tool_content, $m, $uid, $course_id, $course_code,
     $langDaysLeft, $langDays, $langNoAssign, $urlServer,
     $course_code, $themeimg;
+    
 
     $gids = user_group_info($uid, $course_id);
     if (!empty($gids)) {
@@ -2109,12 +2136,12 @@ function show_student_assignments() {
     }
 
     $result = Database::get()->queryArray("SELECT *, CAST(UNIX_TIMESTAMP(deadline)-UNIX_TIMESTAMP(NOW()) AS SIGNED) AS time
-                                 FROM assignment WHERE course_id = ?d AND active = 1 AND 
+                                 FROM assignment WHERE course_id = ?d AND active = 1 AND
                                  (assign_to_specific = 0 OR assign_to_specific = 1 AND id IN
                                     (SELECT assignment_id FROM assignment_to_specific WHERE user_id = ?d UNION SELECT assignment_id FROM assignment_to_specific WHERE group_id IN ($gids_sql_ready))
                                  )
                                  ORDER BY CASE WHEN CAST(deadline AS UNSIGNED) = '0' THEN 1 ELSE 0 END, deadline", $course_id, $uid);
-    
+
     if (count($result)>0) {
         $tool_content .= "<div class='table-responsive'><table class='table-default'>
                                   <tr>
@@ -2122,11 +2149,13 @@ function show_student_assignments() {
                                       <th class='text-center'>$m[deadline]</th>
                                       <th class='text-center'>$m[submitted]</th>
                                       <th>$m[grade]</th>
+                                      <th>κατάταξη</th>
                                   </tr>";
         $k = 0;
         foreach ($result as $row) {
             $title_temp = q($row->title);
             $test = (int)$row->deadline;
+            $rankreportlink = "rank_report.php?course=$course_code&amp;assignment=$row->id";
             if((int)$row->deadline){
                 $deadline = nice_format($row->deadline, true);
             }else{
@@ -2164,7 +2193,7 @@ function show_student_assignments() {
                 }
                 $tool_content .= "<div style='padding-bottom: 5px;padding-top:5px;'>$grade</div>";
             }
-            $tool_content .= "</td>
+            $tool_content .= "</td><td class='option-btn-cell' align='center'><div style='padding-bottom: 5px;padding-top:10px;'><a href='". $rankreportlink ."'>". icon('fa-sort-alpha-asc') ."</a></div></td></tr>
                                   </tr>";
             $k++;
         }
@@ -2180,7 +2209,7 @@ function show_assignments() {
     global $tool_content, $m, $langEdit, $langDelete, $langNoAssign, $langNewAssign, $langCommands,
     $course_code, $themeimg, $course_id, $langConfirmDelete, $langDaysLeft, $m,
     $langWarnForSubmissions, $langDelSure;
-    
+
 
     $result = Database::get()->queryArray("SELECT *, CAST(UNIX_TIMESTAMP(deadline)-UNIX_TIMESTAMP(NOW()) AS SIGNED) AS time
               FROM assignment WHERE course_id = ?d ORDER BY CASE WHEN CAST(deadline AS UNSIGNED) = '0' THEN 1 ELSE 0 END, deadline", $course_id);
@@ -2189,7 +2218,7 @@ function show_assignments() {
                   'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;add=1",
                   'button-class' => 'btn-success',
                   'icon' => 'fa-plus-circle',
-                  'level' => 'primary-label')  
+                  'level' => 'primary-label')
             ));
 
     if (count($result)>0) {
@@ -2210,12 +2239,12 @@ function show_assignments() {
             if (!$num_submitted) {
                 $num_submitted = '&nbsp;';
             }
-                    
-            $num_ungraded = Database::get()->querySingle("SELECT COUNT(*) AS count FROM assignment_submit WHERE assignment_id = ?d AND grade IS NULL", $row->id)->count;            
+
+            $num_ungraded = Database::get()->querySingle("SELECT COUNT(*) AS count FROM assignment_submit WHERE assignment_id = ?d AND grade IS NULL", $row->id)->count;
             if (!$num_ungraded) {
                 $num_ungraded = '&nbsp;';
             }
-            
+
             $tool_content .= "\n<tr class='".(!$row->active ? "not_visible":"")."'>";
             $deadline = (int)$row->deadline ? nice_format($row->deadline, true) : $m['no_deadline'];
             $tool_content .= "<td>
@@ -2223,12 +2252,12 @@ function show_assignments() {
                             </td>
                             <td class='text-center'>$num_submitted</td>
                             <td class='text-center'>$num_ungraded</td>
-                            <td class='text-center'>$deadline"; 
+                            <td class='text-center'>$deadline";
             if ($row->time > 0) {
                 $tool_content .= " <br><span class='label label-warning'>$langDaysLeft" . format_time_duration($row->time) . "</span>";
             } else if((int)$row->deadline){
                 $tool_content .= " <br><span class='label label-danger'>$m[expired]</span>";
-            }                         
+            }
            $tool_content .= "</td>
               <td class='option-btn-cell'>" .
               action_button(array(
@@ -2253,7 +2282,7 @@ function show_assignments() {
         }
         $tool_content .= '</table></div>';
     } else {
-        $tool_content .= "\n<div class='alert alert-warning'>$langNoAssign</div>";        
+        $tool_content .= "\n<div class='alert alert-warning'>$langNoAssign</div>";
     }
 }
 
@@ -2263,12 +2292,12 @@ function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_
 
     $grade_valid = filter_var($grade, FILTER_VALIDATE_FLOAT);
     (isset($grade) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
-    
+
     if(isset($auto_judge_scenarios_output)){
         Database::get()->query("UPDATE assignment_submit SET auto_judge_scenarios_output = ?s
                                 WHERE id = ?d",serialize($auto_judge_scenarios_output), $sid);
     }
-    if (Database::get()->query("UPDATE assignment_submit 
+    if (Database::get()->query("UPDATE assignment_submit
                                 SET grade = ?f, grade_comments = ?s,
                                 grade_submission_date = NOW(), grade_submission_ip = ?s
                                 WHERE id = ?d", $grade, $comment, $_SERVER['REMOTE_ADDR'], $sid)->affectedRows>0) {
@@ -2277,7 +2306,7 @@ function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_
                 'title' => $title,
                 'grade' => $grade,
                 'comments' => $comment));
-        if(!$preventUiAlterations) Session::Messages($langGrades, 'alert-success'); 
+        if(!$preventUiAlterations) Session::Messages($langGrades, 'alert-success');
     } else {
         if(!$preventUiAlterations) Session::Messages($langGrades);
     }
@@ -2295,7 +2324,7 @@ function submit_grades($grades_id, $grades, $email = false) {
         $sid = intval($sid);
         $val = Database::get()->querySingle("SELECT grade from assignment_submit WHERE id = ?d", $sid)->grade;
         $grade_valid = filter_var($grade, FILTER_VALIDATE_FLOAT);
-        (isset($grade) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;             
+        (isset($grade) && $grade_valid!== false) ? $grade = $grade_valid : $grade = NULL;
         if ($val != $grade) {
             if (Database::get()->query("UPDATE assignment_submit
                                         SET grade = ?d, grade_submission_date = NOW(), grade_submission_ip = ?s
@@ -2307,7 +2336,7 @@ function submit_grades($grades_id, $grades, $email = false) {
                         'grade' => $grade));
                 if ($email) {
                     grade_email_notify($grades_id, $sid, $grade, '');
-                }          
+                }
                 Session::Messages($langGrades, 'alert-success');
             }
         }
@@ -2325,7 +2354,7 @@ function send_file($id, $file_type) {
         }
         if (!($is_editor || $GLOBALS['is_member'])) {
             return false;
-        }        
+        }
         send_file_to_client("$GLOBALS[workPath]/admin_files/$info->file_path", $info->file_name, null, true);
     } else {
         $info = Database::get()->querySingle("SELECT * FROM assignment_submit WHERE id = ?d", $id);
@@ -2338,7 +2367,7 @@ function send_file($id, $file_type) {
         if (!($is_editor or $info->uid == $uid or $GLOBALS['is_member'])) {
             return false;
         }
-        send_file_to_client("$GLOBALS[workPath]/$info->file_path", $info->file_name, null, true);        
+        send_file_to_client("$GLOBALS[workPath]/$info->file_path", $info->file_name, null, true);
     }
     exit;
 }
@@ -2349,7 +2378,7 @@ function download_assignments($id) {
     $counter = Database::get()->querySingle('SELECT COUNT(*) AS count FROM assignment_submit WHERE assignment_id = ?d', $id)->count;
     if ($counter>0) {
         $secret = work_secret($id);
-        $filename = "{$course_code}_work_$id.zip";  
+        $filename = "{$course_code}_work_$id.zip";
         chdir($workPath);
         create_zip_index("$secret/index.html", $id);
         $zip = new PclZip($filename);
@@ -2477,7 +2506,7 @@ function send_mail_to_group_id($gid, $subject, $body) {
     global $charset;
     $res = Database::get()->queryArray("SELECT surname, givenname, email
                                  FROM user, group_members AS members
-                                 WHERE members.group_id = ?d 
+                                 WHERE members.group_id = ?d
                                  AND user.id = members.user_id", $gid);
     foreach ($res as $info) {
         send_mail('', '', "$info->givenname $info->surname", $info->email, $subject, $body, $charset);
@@ -2493,18 +2522,18 @@ function send_mail_to_user_id($uid, $subject, $body) {
 // Return a list of users with no submissions for assignment $id
 function users_with_no_submissions($id) {
     global $course_id;
-    if (Database::get()->querySingle("SELECT assign_to_specific FROM assignment WHERE id = ?d", $id)->assign_to_specific) {   
+    if (Database::get()->querySingle("SELECT assign_to_specific FROM assignment WHERE id = ?d", $id)->assign_to_specific) {
         $q = Database::get()->queryArray("SELECT user.id AS id, surname, givenname
                                 FROM user, course_user
-                                WHERE user.id = course_user.user_id 
-                                AND course_user.course_id = ?d AND course_user.status = 5 
+                                WHERE user.id = course_user.user_id
+                                AND course_user.course_id = ?d AND course_user.status = 5
                                 AND user.id NOT IN (SELECT uid FROM assignment_submit
-                                                    WHERE assignment_id = ?d) AND user.id IN (SELECT user_id FROM assignment_to_specific WHERE assignment_id = ?d)", $course_id, $id, $id);       
+                                                    WHERE assignment_id = ?d) AND user.id IN (SELECT user_id FROM assignment_to_specific WHERE assignment_id = ?d)", $course_id, $id, $id);
     } else {
         $q = Database::get()->queryArray("SELECT user.id AS id, surname, givenname
                                 FROM user, course_user
-                                WHERE user.id = course_user.user_id 
-                                AND course_user.course_id = ?d AND course_user.status = 5 
+                                WHERE user.id = course_user.user_id
+                                AND course_user.course_id = ?d AND course_user.status = 5
                                 AND user.id NOT IN (SELECT uid FROM assignment_submit
                                                     WHERE assignment_id = ?d)", $course_id, $id);
     }
@@ -2518,7 +2547,7 @@ function users_with_no_submissions($id) {
 // Return a list of groups with no submissions for assignment $id
 function groups_with_no_submissions($id) {
     global $course_id;
-    
+
     $q = Database::get()->queryArray('SELECT group_id FROM assignment_submit WHERE assignment_id = ?d', $id);
     $groups = user_group_info(null, $course_id, $id);
     if (count($q)>0) {
