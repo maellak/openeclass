@@ -900,7 +900,7 @@ function new_assignment() {
                                 <tr>
                                   <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
                                   <td>
-                                    <select name='auto_judge_scenarios[0][assertion]' id='auto_judge_assertion'>
+                                    <select name='auto_judge_scenarios[0][assertion]' class='auto_judge_assertion'>
                                         <option value='eq' selected='selected'>is equal to</option>
                                         <option value='same'>is same to</option>
                                         <option value='notEq'>is not equal to</option>
