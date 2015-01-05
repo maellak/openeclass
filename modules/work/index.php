@@ -718,6 +718,7 @@ function submit_work($id, $on_behalf_of = null) {
                     $weight_sum += $curScenario['weight'];
                     $i++;
                 }
+
                 // 3 decimal digits precision
                 $grade = round($partial / $weight_sum * $max_grade, 3);
                 // allow an error of 0.001
