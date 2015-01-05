@@ -196,7 +196,7 @@ if ($is_editor) {
         $('#autojudge_new_scenario').click(function(e) {
             var rows = $(this).parent().parent().parent().find('tr').size()-1;
             // Clone the first line
-            var newLine = $(this).parent().parent().parent().find('tr:first').clone();
+            var newLine = $(this).parent().parent().parent().find('tr:last').prev('tr').clone();
             // Replace 0 wth the line number
             newLine.html(newLine.html().replace(/auto_judge_scenarios\[0\]/g, 'auto_judge_scenarios['+rows+']'));
             // Initialize the remove event and show the button
@@ -217,9 +217,19 @@ if ($is_editor) {
         $(document).on('change', 'select.auto_judge_assertion', function(e) {
             e.preventDefault();
             var value = $(this).val();
+
+            // Change selected attr.
+            $(this).find('option').each(function() {
+                if ($(this).attr('selected') == 'selected') {
+                    $(this).removeAttr('selected');
+                } else if ($(this).attr('value') == value) {
+                    $(this).attr('selected', true);
+                }
+            });
             var row = $(this).parent().parent();
             var tableBody = $(this).parent().parent().parent();
             var indexNum = row.index() + 1;
+
             if (value === 'eq' ||
                 value === 'same' ||
                 value === 'notEq' ||
@@ -891,7 +901,7 @@ function new_assignment() {
                                   <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
                                   <td>
                                     <select name='auto_judge_scenarios[0][assertion]' class='auto_judge_assertion'>
-                                        <option value='eq'>is equal to</option>
+                                        <option value='eq' selected='selected'>is equal to</option>
                                         <option value='same'>is same to</option>
                                         <option value='notEq'>is not equal to</option>
                                         <option value='notSame'>is not same to</option>
@@ -1070,7 +1080,7 @@ function show_edit_assignment($id) {
 
     $tool_content .= "
     <div class='form-wrapper'>
-    <form class='form-horizontal' role='form' enctype='multipart/form-data' action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post'>
+    <form class='form-horizontal' role='form' enctype='multipart/form-data' action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post' onsubmit='return check_weights();'>
     <input type='hidden' name='id' value='$id' />
     <input type='hidden' name='choice' value='do_edit' />
     <fieldset>
