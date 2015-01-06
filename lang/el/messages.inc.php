@@ -4272,4 +4272,5 @@ $langLessOptions = 'Λιγότερες επιλογές';
 $langauto_judge = 'Ρυθμίσεις Αυτόματου Κριτή';
 $langHackerEarth = "Κλειδί HackerEarth";
 $langAutoJudge = "Ρυθμίσεις αυτόματου κριτή του $siteName";
-$langHackerEarthKeyUpdated = "Το κλειδί του HackerEarth τροποποιήθηκε με επιτυχία!";
+$langAutoJudgeConnector = "Επιθυμητή υπηρεσία μεταγλώττισης";
+$langAutoJudgeUpdated = "Οι ρυθμίσεις αυτόματου κριτή ενημερώθηκαν με επιτυχία";

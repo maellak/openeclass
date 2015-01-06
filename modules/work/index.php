@@ -487,20 +487,15 @@ function submit_work($id, $on_behalf_of = null) {
     $langUploadSuccess, $langBack, $langUploadError,
     $langExerciseNotPermit, $langUnwantedFiletype, $course_code,
     $langOnBehalfOfUserComment, $langOnBehalfOfGroupComment, $course_id;
-    $langExt = array(
-        'C' => 'c',
-        'CPP' => 'cpp',
-        'CPP11' => 'cpp11',
-        'CLOJURE' => 'clj',
-        'CSHARP' => 'cs',
-        'JAVA' => 'java',
-        'JAVASCRIPT' => 'js',
-        'HASKELL' => 'hs',
-        'PERL' => 'pl',
-        'PHP' => 'php',
-        'PYTHON' => 'py',
-        'RUBY' => 'rb',
-    );
+    // Include connectors
+    $connectorFiles = array_diff(scandir('modules/work/connectors'), array('..', '.'));
+    foreach($connectorFiles as $curFile) {
+        require_once('modules/work/connectors/'.$curFile);
+    }
+    // End including connectors
+    $connector = q(get_config('autojudge_connector'));
+    $connector = new $connector();
+    $langExt = $connector->getSupportedLanguages();
 
     if (isset($on_behalf_of)) {
         $user_id = $on_behalf_of;
@@ -657,44 +652,20 @@ function submit_work($id, $on_behalf_of = null) {
                 $errorsComment = '';
                 $weight_sum = 0;
                 foreach($auto_judge_scenarios as $curScenario) {
-                    //set POST variables
-                    $url           = 'http://api.hackerearth.com/code/run/';
-                    $fields_string = null;
-                    $fields        = array(
-                        'client_secret' => $hackerEarthKey,
-                        'input'         => $curScenario['input'],
-                        'source'        => urlencode($content),
-                        'lang'          => $lang,
-                    );
-
-                    // url-ify the data for the POST
-                    foreach ($fields as $key => $value) {
-                        $fields_string .= $key.'='.$value.'&';
-                    }
-                    // Remove last '&' character;
-                    rtrim($fields_string, '&');
-
-                    // Open curl connection
-                    $ch = curl_init();
-                    // Set the url, number of POST vars, POST data
-                    curl_setopt($ch, CURLOPT_URL, $url);
-                    curl_setopt($ch, CURLOPT_POST, count($fields));
-                    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
-                    // Execute post
-                    $result = json_decode(curl_exec($ch), true);
-                    // Close curl connection
-                    curl_close($ch);
-
+                    $input = new AutoJudgeConnectorInput();
+                    $input->input = $curScenario['input'];
+                    $input->code = $content;
+                    $input->lang = $lang;
+                    $result = $connector->compile($input);
                     // Check if we have compilation errors.
-                    if ($result['compile_status'] !== 'OK') {
+                    if ($result->compileStatus !== $result::COMPILE_STATUS_OK) {
                         // Write down the error message.
                         $num = $i+1;
-                        $errorsComment = "Εργασία $num: ".$result['compile_status']."<br />";
+                        $errorsComment = "Εργασία $num: ".$result->compileStatus." ".$result->output."<br />";
                         $auto_judge_scenarios_output[$i]['passed'] = 0;
                     } else {
                         // Get all needed values to run the assertion.
-                        $auto_judge_scenarios_output[$i]['student_output'] = trim($result['run_status']['output']);
+                        $auto_judge_scenarios_output[$i]['student_output'] = $result->output;
                         $scenarioOutputExpectation = trim($curScenario['output']);
                         $scenarionAssertion        = $curScenario['assertion'];
                         // Do it now.

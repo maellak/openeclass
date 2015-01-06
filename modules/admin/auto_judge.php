@@ -30,26 +30,80 @@ $navigation[] = array('url' => 'index.php', 'name' => $langAdmin);
 
 $available_themes = active_subdirs("$webDir/template", 'theme.html');
 
+// Scan the connectors directory and locate the appropriate classes
+$connectorFiles = array_diff(scandir('modules/work/connectors'), array('..', '.'));
+$connectorClasses = array();
+foreach($connectorFiles as $curFile) {
+    require_once('modules/work/connectors/'.$curFile);
+    $tokens = token_get_all(file_get_contents('modules/work/connectors/'.$curFile));
+    $class_token = false;
+    foreach ($tokens as $token) {
+      if (is_array($token)) {
+        if ($token[0] == T_CLASS) {
+           $class_token = true;
+        } else if ($class_token && $token[0] == T_STRING) {
+           if(strpos($token[1], 'AutoJudgeConnector') === false) {
+            $connectorClasses[] = $token[1];
+           }
+           $class_token = false;
+        }
+      }
+    }
+}
+
 // Save new auto_judge.php
 if (isset($_POST['submit'])) {
-    
-    set_config('hackerEarthKey', $_POST['formhackerEarthKey']);
+    set_config('autojudge_connector', $_POST['formconnector']);
+    foreach($connectorClasses as $curConnectorClass) {
+        $connector = new $curConnectorClass();
+        foreach($connector->getConfigFields() as $curField => $curLabel) {
+            set_config($curField, $_POST['form'.$curField]);
+        }
+    }
 
     // Display result message
-    $tool_content .= "<div class='alert alert-success'>$langHackerEarthKeyUpdated</div>";
+    $tool_content .= "<div class='alert alert-success'>$langAutoJudgeUpdated</div>";
 } // end of if($submit)
 // Display auto_judge.php edit form
 else {
+    $connectorOptions = array_map(function($connectorClass) {
+        $connector = new $connectorClass();
+        $selected = q(get_config('autojudge_connector')) == $connectorClass ? " selected='selected'" : '';
+        return "<option value='$connectorClass'$selected>".$connector->getName()."</option>";
+    }, $connectorClasses);
     $tool_content .= "<form action='$_SERVER[SCRIPT_NAME]' method='post'>
                 <fieldset><legend>$langBasicCfgSetting</legend>
 	 <table class='tbl' width='100%'>
-	 <tr>
-	   <th width='200' class='left'><b>$langHackerEarth</b></th>
-	   <td><input class='FormData_InputText' type='text' name='formhackerEarthKey' size='40' value='" . q(get_config('hackerEarthKey')) . "'></td>
-	 </tr>";
+         <tr>
+            <th width='200' class='left'><b>$langAutoJudgeConnector</b></th>
+            <td><select name='formconnector'>".implode('', $connectorOptions)."</select></td>
+         </tr>";
+    foreach($connectorClasses as $curConnectorClass) {
+        $connector = new $curConnectorClass();
+        foreach($connector->getConfigFields() as $curField => $curLabel) {
+            $tool_content .= "
+              <tr class='connector-config connector-$curConnectorClass' style='display: none;'>
+                <th width='200' class='left'><b>$curLabel</b></th>
+                <td><input class='FormData_InputText' type='text' name='form$curField' size='40' value='" . q(get_config($curField)) . "'></td>
+              </tr>";
+        }
+    }
     $tool_content .= "</table></fieldset>";
     $tool_content .= "<input class='btn btn-primary' type='submit' name='submit' value='$langModify'> </form>";
-    
+
+    $head_content .= "
+        <script type='text/javascript'>
+        function update_connector_config_visibility() {
+            $('tr.connector-config').hide();
+            $('tr.connector-'+$('select[name=\"formconnector\"]').val()).show();
+        }
+        $(document).ready(function() {
+            $('select[name=\"formconnector\"]').change(function() {
+                update_connector_config_visibility();
+            });
+            update_connector_config_visibility();
+        });
+        </script>";
 }
 
 // Display link to index.php
