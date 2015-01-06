@@ -84,6 +84,10 @@ else {
         <tr class='connector-config connector-$curConnectorClass' style='display: none;'>
             <th width='200' class='left'><b>$langAutoJudgeSupportedLanguages</b></th>
             <td>".implode(', ', array_keys($connector->getSupportedLanguages()))."</td>
+        </tr>
+        <tr class='connector-config connector-$curConnectorClass' style='display: none;'>
+            <th width='200' class='left'><b>$langAutoJudgeSupportsInput</b></th>
+            <td>".($connector->supportsInput() ? $langCMeta['true'] : $langCMeta['false'])."</td>
         </tr>";
         foreach($connector->getConfigFields() as $curField => $curLabel) {
             $tool_content .= "

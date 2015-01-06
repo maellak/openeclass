@@ -39,6 +39,13 @@ require_once 'include/sendMail.inc.php';
 require_once 'modules/graphics/plotter.php';
 require_once 'include/log.php';
 
+// Include autojudge connectors
+$connectorFiles = array_diff(scandir('modules/work/connectors'), array('..', '.'));
+foreach($connectorFiles as $curFile) {
+    require_once('modules/work/connectors/'.$curFile);
+}
+// End including connectors
+
 // For colorbox, fancybox, shadowbox use
 require_once 'include/lib/modalboxhelper.class.php';
 require_once 'include/lib/multimediahelper.class.php';
@@ -138,6 +145,7 @@ if ($is_editor) {
         $('input[id=assign_button_some]').click(ajaxAssignees);
         $('input[id=assign_button_all]').click(hideAssignees);
         $('input[name=auto_judge]').click(changeAutojudgeScenariosVisibility);
+        $(document).ready(function() { changeAutojudgeScenariosVisibility.apply($('input[name=auto_judge]')); });
         function hideAssignees()
         {
             $('#assignees_tbl').addClass('hide');
@@ -487,12 +495,6 @@ function submit_work($id, $on_behalf_of = null) {
     $langUploadSuccess, $langBack, $langUploadError,
     $langExerciseNotPermit, $langUnwantedFiletype, $course_code,
     $langOnBehalfOfUserComment, $langOnBehalfOfGroupComment, $course_id;
-    // Include connectors
-    $connectorFiles = array_diff(scandir('modules/work/connectors'), array('..', '.'));
-    foreach($connectorFiles as $curFile) {
-        require_once('modules/work/connectors/'.$curFile);
-    }
-    // End including connectors
     $connector = q(get_config('autojudge_connector'));
     $connector = new $connector();
     $langExt = $connector->getSupportedLanguages();
@@ -635,8 +637,6 @@ function submit_work($id, $on_behalf_of = null) {
 
         // Auto-judge: Send file to hackearth
         if ($auto_judge && $ext === $langExt[$lang]) {
-                $hackerEarthKey = q(get_config('hackerEarthKey'));
-                if(!isset($hackerEarthKey)) { echo 'Hacker Earth Key is not specified in config.php!'; die(); }
                 $content = file_get_contents("$workPath/$filename");
                 // Run each scenario and count how many passed
                  $auto_judge_scenarios_output = array(
@@ -713,7 +713,10 @@ function submit_work($id, $on_behalf_of = null) {
 function new_assignment() {
     global $tool_content, $m, $langAdd, $course_code, $course_id;
     global $desc, $language, $head_content, $langCancel, $langMoreOptions, $langLessOptions;
-    global $langBack, $langStudents, $langMove, $langWorkFile;
+    global $langBack, $langStudents, $langMove, $langWorkFile, $langAutoJudgeInputNotSupported;
+
+    $connector = q(get_config('autojudge_connector'));
+    $connector = new $connector();
 
     load_js('bootstrap-datetimepicker');
     $head_content .= "<script type='text/javascript'>
@@ -739,7 +742,6 @@ function new_assignment() {
         });
     </script>";
     $workEnd = isset($_POST['WorkEnd']) ? $_POST['WorkEnd'] : "";
-    $hackerEarthKey = q(get_config('hackerEarthKey'));
     
     $tool_content .= action_bar(array(
         array('title' => $langBack,
@@ -856,8 +858,8 @@ function new_assignment() {
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>Auto-judge:</label>
                     <div class='col-sm-10'>
-                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' ". (($hackerEarthKey=="") ? "disabled='1'" : "checked='1'") ." />
-                        <table ". (($hackerEarthKey=="") ? "style='display: none;'" : "") .">
+                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' />
+                        <table style='display: none;'>
                             <thead>
                                 <tr>
                                   <th>Input</th>
@@ -869,7 +871,7 @@ function new_assignment() {
                             </thead>
                             <tbody>
                                 <tr>
-                                  <td><input type='text' name='auto_judge_scenarios[0][input]' /></td>
+                                  <td><input type='text' name='auto_judge_scenarios[0][input]' ".($connector->supportsInput() ? '' : 'readonly="readonly" placeholder="'.$langAutoJudgeInputNotSupported.'"')." /></td>
                                   <td>
                                     <select name='auto_judge_scenarios[0][assertion]' class='auto_judge_assertion'>
                                         <option value='eq' selected='selected'>is equal to</option>
@@ -909,7 +911,7 @@ function new_assignment() {
                         </table>
                     </div>
                 </div>
-                <div class='form-group' ". (($hackerEarthKey=="") ? "style='display: none;'" : "") .">
+                <div class='form-group'>
                   <label class='col-sm-2 control-label'>Programming Language:</label>
                   <div class='col-sm-10'>
                     <select id='lang' name='lang'>

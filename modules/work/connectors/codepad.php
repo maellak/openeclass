@@ -70,4 +70,8 @@ class CodepadConnector implements AutoJudgeConnector {
             'Tcl' => 'tcl',
         );
     }
+
+    public function supportsInput() {
+        return false;
+    }
 }

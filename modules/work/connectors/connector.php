@@ -7,6 +7,8 @@ interface AutoJudgeConnector {
     public function getName();
 
     public function getSupportedLanguages();
+
+    public function supportsInput();
 }
 
 class AutoJudgeConnectorResult {

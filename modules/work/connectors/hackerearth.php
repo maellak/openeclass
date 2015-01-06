@@ -66,4 +66,8 @@ class HackerEarthConnector implements AutoJudgeConnector {
             'RUBY' => 'rb',
         );
     }
+
+    public function supportsInput() {
+        return true;
+    }
 }

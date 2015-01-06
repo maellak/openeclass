@@ -4273,5 +4273,7 @@ $langauto_judge = 'Ρυθμίσεις Αυτόματου Κριτή';
 $langHackerEarth = "Κλειδί HackerEarth";
 $langAutoJudge = "Ρυθμίσεις αυτόματου κριτή του $siteName";
 $langAutoJudgeSupportedLanguages = 'Υποστηριζόμενες Γλώσσες';
+$langAutoJudgeSupportsInput = 'Υποστηρίζει μεταβλητά δεδομένα εισόδου';
+$langAutoJudgeInputNotSupported = 'Δεν υποστηρίζεται από υπηρεσία μεταγλώττισης';
 $langAutoJudgeConnector = "Επιθυμητή υπηρεσία μεταγλώττισης";
 $langAutoJudgeUpdated = "Οι ρυθμίσεις αυτόματου κριτή ενημερώθηκαν με επιτυχία";
