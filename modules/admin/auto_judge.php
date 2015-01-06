@@ -80,6 +80,11 @@ else {
          </tr>";
     foreach($connectorClasses as $curConnectorClass) {
         $connector = new $curConnectorClass();
+        $tool_content .= "
+        <tr class='connector-config connector-$curConnectorClass' style='display: none;'>
+            <th width='200' class='left'><b>$langAutoJudgeSupportedLanguages</b></th>
+            <td>".implode(', ', array_keys($connector->getSupportedLanguages()))."</td>
+        </tr>";
         foreach($connector->getConfigFields() as $curField => $curLabel) {
             $tool_content .= "
               <tr class='connector-config connector-$curConnectorClass' style='display: none;'>
@@ -95,7 +100,9 @@ else {
         <script type='text/javascript'>
         function update_connector_config_visibility() {
             $('tr.connector-config').hide();
+            $('tr.connector-config input').removeAttr('required');
             $('tr.connector-'+$('select[name=\"formconnector\"]').val()).show();
+            $('tr.connector-'+$('select[name=\"formconnector\"]').val()+' input').attr('required', 'required');
         }
         $(document).ready(function() {
             $('select[name=\"formconnector\"]').change(function() {
