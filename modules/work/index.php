@@ -914,20 +914,11 @@ function new_assignment() {
                 <div class='form-group'>
                   <label class='col-sm-2 control-label'>Programming Language:</label>
                   <div class='col-sm-10'>
-                    <select id='lang' name='lang'>
-                      <option value='C'>C</option>
-                      <option value='CPP'>C++</option>
-                      <option value='CPP11'>C++11</option>
-                      <option value='CLOJURE'>Clojure</option>
-                      <option value='CSHARP'>C#</option>
-                      <option value='JAVA'>Java</option>
-                      <option value='JAVASCRIPT'>Javascript</option>
-                      <option value='HASKELL'>Haskell</option>
-                      <option value='PERL'>Perl</option>
-                      <option value='PHP'>PHP</option>
-                      <option value='PYTHON'>Python</option>
-                      <option value='RUBY'>Ruby</option>
-                    </select>
+                    <select id='lang' name='lang'>";
+                    foreach($connector->getSupportedLanguages() as $lang => $ext) {
+                        $tool_content .= "<option value='$lang'>$lang</option>\n";
+                    }
+                    $tool_content .= "</select>
                   </div>
                 </div>
                 <table id='assignees_tbl' class='table hide'>
