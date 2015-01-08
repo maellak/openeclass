@@ -1213,7 +1213,7 @@ function show_edit_assignment($id) {
                             foreach ($auto_judge_scenarios as $aajudge) {
                                 $tool_content .=
                                 "<tr>
-                                    <td><input type='text' value='$aajudge[input]' name='auto_judge_scenarios[$rows][input]' /></td>";
+                                    <td><input type='text' value='".htmlspecialchars($aajudge[input], ENT_QUOTES)."' name='auto_judge_scenarios[$rows][input]' /></td>";
 
                                 $tool_content .=
                                 "<td>
@@ -1242,7 +1242,7 @@ function show_edit_assignment($id) {
                                 </td>";
 
                                 if (isset($aajudge['output'])) {
-                                    $tool_content .= "<td><input type='text' value='$aajudge[output]' name='auto_judge_scenarios[$rows][output]' class='auto_judge_output' /></td>";
+                                    $tool_content .= "<td><input type='text' value='".htmlspecialchars($aajudge[output], ENT_QUOTES)."' name='auto_judge_scenarios[$rows][output]' class='auto_judge_output' /></td>";
                                 } else {
                                     $tool_content .= "<td><input type='text' value='' name='auto_judge_scenarios[$rows][output]' disabled='disabled' class='auto_judge_output' /></td>";
                                 }
