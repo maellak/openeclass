@@ -705,6 +705,10 @@ function submit_work($id, $on_behalf_of = null) {
                 }
                 submit_grade_comments($id, $sid, $grade, $comment, false, $auto_judge_scenarios_output, true);
 
+        } else if ($auto_judge && $ext !== $langExt[$lang]) {
+            if($lang == null) { die('Auto Judge is enabled but no language is selected'); }
+            if($langExt[$lang] == null) { die('An unsupported language was selected. Perhaps platform-wide auto judge settings have been changed?'); }
+            submit_grade_comments($id, $sid, 0, 'Εσφαλμένος τύπος αρχείου. Expected: '.$langExt[$lang].' Input: '.$ext, false, null, true);
         }
         // End Auto-judge
     } else { // not submit_ok
@@ -1189,6 +1193,7 @@ function show_edit_assignment($id) {
                 </table>";
 
             $auto_judge           = $row->auto_judge;
+            $lang                 = $row->lang;
             $tool_content .= "
             <div class='form-group'>
                 <label class='col-sm-2 control-label'>Auto-judge:</label>
@@ -1206,6 +1211,8 @@ function show_edit_assignment($id) {
                         </thead>
                         <tbody>";
                         $auto_judge_scenarios = $auto_judge == true ? unserialize($row->auto_judge_scenarios) : null;
+                        $connector = q(get_config('autojudge_connector'));
+                        $connector = new $connector();
                         $rows    = 0;
                         $display = 'visible';
                         if ($auto_judge_scenarios != null) {
@@ -1297,6 +1304,16 @@ function show_edit_assignment($id) {
                         </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class='form-group'>
+                  <label class='col-sm-2 control-label'>Programming Language:</label>
+                  <div class='col-sm-10'>
+                    <select id='lang' name='lang'>";
+                    foreach($connector->getSupportedLanguages() as $llang => $ext) {
+                        $tool_content .= "<option value='$llang' ".($llang === $lang ? "selected='selected'" : "").">$llang</option>\n";
+                    }
+                    $tool_content .= "</select>
+                  </div>
                 </div>
             </div>
 
