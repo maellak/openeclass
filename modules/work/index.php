@@ -900,6 +900,27 @@ function new_assignment() {
                         </div>
                     </div>
                 </div>
+                <table id='assignees_tbl' class='table hide'>
+                    <tr class='title1'>
+                        <td id='assignees'>$langStudents</td>
+                        <td class='text-center'>$langMove</td>
+                        <td>$m[WorkAssignTo]</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select id='assign_box' size='15' multiple>
+                            </select>
+                        </td>
+                        <td class='text-center'>
+                            <input type='button' onClick=\"move('assign_box','assignee_box')\" value='   &gt;&gt;   ' /><br /><input type='button' onClick=\"move('assignee_box','assign_box')\" value='   &lt;&lt;   ' />
+                        </td>
+                        <td width='40%'>
+                            <select id='assignee_box' name='ingroup[]' size='15' multiple>
+
+                            </select>
+                        </td>
+                    </tr>
+                </table>
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>Auto-judge:</label>
                     <div class='col-sm-10'>
@@ -966,28 +987,8 @@ function new_assignment() {
                     $tool_content .= "</select>
                   </div>
                 </div>
-                <table id='assignees_tbl' class='table hide'>
-                    <tr class='title1'>
-                        <td id='assignees'>$langStudents</td>
-                        <td class='text-center'>$langMove</td>
-                        <td>$m[WorkAssignTo]</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <select id='assign_box' size='15' multiple>
-                            </select>
-                        </td>
-                        <td class='text-center'>
-                            <input type='button' onClick=\"move('assign_box','assignee_box')\" value='   &gt;&gt;   ' /><br /><input type='button' onClick=\"move('assignee_box','assign_box')\" value='   &lt;&lt;   ' />
-                        </td>
-                        <td width='40%'>
-                            <select id='assignee_box' name='ingroup[]' size='15' multiple>
-
-                            </select>
-                        </td>
-                    </tr>
-                </table>
             </div>
+
             <div class='col-sm-offset-2 col-sm-10'>
                 <input type='submit' class='btn btn-primary' name='new_assign' value='$langAdd' onclick=\"selectAll('assignee_box',true)\" />
                 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code' class='btn btn-default'>$langCancel</a>
@@ -1342,16 +1343,16 @@ function show_edit_assignment($id) {
                             </tbody>
                         </table>
                     </div>
-                    <div class='form-group'>
-                      <label class='col-sm-2 control-label'>Programming Language:</label>
-                      <div class='col-sm-10'>
-                        <select id='lang' name='lang'>";
-                        foreach($connector->getSupportedLanguages() as $llang => $ext) {
-                            $tool_content .= "<option value='$llang' ".($llang === $lang ? "selected='selected'" : "").">$llang</option>\n";
-                        }
-                        $tool_content .= "</select>
-                      </div>
-                    </div>
+                </div>
+                <div class='form-group'>
+                  <label class='col-sm-2 control-label'>Programming Language:</label>
+                  <div class='col-sm-10'>
+                    <select id='lang' name='lang'>";
+                    foreach($connector->getSupportedLanguages() as $llang => $ext) {
+                        $tool_content .= "<option value='$llang' ".($llang === $lang ? "selected='selected'" : "").">$llang</option>\n";
+                    }
+                    $tool_content .= "</select>
+                  </div>
                 </div>
             </div>
 
