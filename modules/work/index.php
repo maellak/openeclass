@@ -210,6 +210,8 @@ if ($is_editor) {
             // Initialize the remove event and show the button
             newLine.find('.autojudge_remove_scenario').show();
             newLine.find('.autojudge_remove_scenario').click(removeRow);
+            // Clear out any potential content
+            newLine.find('input').val('');
             // Insert it just before the final line
             newLine.insertBefore($(this).parent().parent().parent().find('tr:last'));
             e.preventDefault();
@@ -1184,13 +1186,14 @@ function show_edit_assignment($id) {
                             </select>
                         </td>
                     </tr>
-                </table>
-            </div>
+                </table>";
 
+            $auto_judge           = $row->auto_judge;
+            $tool_content .= "
             <div class='form-group'>
                 <label class='col-sm-2 control-label'>Auto-judge:</label>
                 <div class='col-sm-10'>
-                    <input type='checkbox' id='auto_judge' name='auto_judge' value='1' checked='1' />
+                    <input type='checkbox' id='auto_judge' name='auto_judge' value='1' ".($auto_judge == true ? "checked='1'" : '')." />
                     <table>
                         <thead>
                             <tr>
@@ -1202,7 +1205,6 @@ function show_edit_assignment($id) {
                             </tr>
                         </thead>
                         <tbody>";
-                        $auto_judge           = $row->auto_judge;
                         $auto_judge_scenarios = $auto_judge == true ? unserialize($row->auto_judge_scenarios) : null;
                         $rows    = 0;
                         $display = 'visible';
@@ -1247,13 +1249,13 @@ function show_edit_assignment($id) {
 
                                 $tool_content .=
                                     "<td><input type='text' value='$aajudge[weight]' name='auto_judge_scenarios[$rows][weight]' class='auto_judge_weight'/></td>
-                                    <td><a href='#' class='autojudge_remove_scenario' style='display: visible;'>X</a></td>
+                                    <td><a href='#' class='autojudge_remove_scenario' style='display: ".($rows <= 0 ? 'none': 'visible').";'>X</a></td>
                                 </tr>";
 
                                 $rows++;
-                                if ($rows == $scenariosCount) {
-                                    $tool_content .=
-                                    "<tr>
+                            }
+                        } else {
+                            $tool_content .= "<tr>
                                         <td><input type='text' name='auto_judge_scenarios[$rows][input]' /></td>
                                         <td>
                                             <select name='auto_judge_scenarios[$rows][assertion]' class='auto_judge_assertion'>
@@ -1283,18 +1285,17 @@ function show_edit_assignment($id) {
                                         <td><input type='text' name='auto_judge_scenarios[$rows][weight]' class='auto_judge_weight'/></td>
                                         <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
                                     </tr>
-                                    <tr>
-                                        <td> </td>
-                                        <td> </td>
-                                        <td> </td>
-                                        <td> </td>
-                                        <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
-                                    </tr>";
-                                }
-                            }
+                            ";
                         }
                         $tool_content .=
-                        "</tbody>
+                        "<tr>
+                            <td> </td>
+                            <td> </td>
+                            <td> </td>
+                            <td> </td>
+                            <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
+                        </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -1303,6 +1304,7 @@ function show_edit_assignment($id) {
                 <input type='submit' class='btn btn-primary' name='do_edit' value='$langEdit' onclick=\"selectAll('assignee_box',true)\" />
                 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code' class='btn btn-default'>$langCancel</a>
             </div>
+        </div>
     </fieldset>
     </form></div>";
 }
