@@ -1232,125 +1232,126 @@ function show_edit_assignment($id) {
             $auto_judge           = $row->auto_judge;
             $lang                 = $row->lang;
             $tool_content .= "
-            <div class='form-group'>
-                <label class='col-sm-2 control-label'>Auto-judge:</label>
-                <div class='col-sm-10'>
-                    <input type='checkbox' id='auto_judge' name='auto_judge' value='1' ".($auto_judge == true ? "checked='1'" : '')." />
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Input</th>
-                                <th> </th>
-                                <th>Expected Output</th>
-                                <th>Weight</th>
-                                <th>Delete</th>
-                            </tr>
-                        </thead>
-                        <tbody>";
-                        $auto_judge_scenarios = $auto_judge == true ? unserialize($row->auto_judge_scenarios) : null;
-                        $connector = q(get_config('autojudge_connector'));
-                        $connector = new $connector();
-                        $rows    = 0;
-                        $display = 'visible';
-                        if ($auto_judge_scenarios != null) {
-                            $scenariosCount = count($auto_judge_scenarios);
-                            foreach ($auto_judge_scenarios as $aajudge) {
-                                $tool_content .=
-                                "<tr>
-                                    <td><input type='text' value='".htmlspecialchars($aajudge[input], ENT_QUOTES)."' name='auto_judge_scenarios[$rows][input]' /></td>";
-
-                                $tool_content .=
-                                "<td>
-                                    <select name='auto_judge_scenarios[$rows][assertion]' class='auto_judge_assertion'>
-                                        <option value='eq'"; if ($aajudge['assertion'] === 'eq') {$tool_content .= "selected='selected'";} $tool_content .=">is equal to</option>
-                                        <option value='same'"; if ($aajudge['assertion'] === 'same') {$tool_content .= "selected='selected'";} $tool_content .=">is same to</option>
-                                        <option value='notEq'"; if ($aajudge['assertion'] === 'notEq') {$tool_content .= "selected='selected'";} $tool_content .=">is not equal to</option>
-                                        <option value='notSame'"; if ($aajudge['assertion'] === 'notSame') {$tool_content .= "selected='selected'";} $tool_content .=">is not same to</option>
-                                        <option value='integer'"; if ($aajudge['assertion'] === 'integer') {$tool_content .= "selected='selected'";} $tool_content .=">is int</option>
-                                        <option value='float'"; if ($aajudge['assertion'] === 'float') {$tool_content .= "selected='selected'";} $tool_content .=">is float</option>
-                                        <option value='digit'"; if ($aajudge['assertion'] === 'digit') {$tool_content .= "selected='selected'";} $tool_content .=">is digit</option>
-                                        <option value='boolean'"; if ($aajudge['assertion'] === 'boolean') {$tool_content .= "selected='selected'";} $tool_content .=">is boolean</option>
-                                        <option value='notEmpty'"; if ($aajudge['assertion'] === 'notEmpty') {$tool_content .= "selected='selected'";} $tool_content .=">is not empty</option>
-                                        <option value='notNull'"; if ($aajudge['assertion'] === 'notNull') {$tool_content .= "selected='selected'";} $tool_content .=">is not null</option>
-                                        <option value='string'"; if ($aajudge['assertion'] === 'string') {$tool_content .= "selected='selected'";} $tool_content .=">is string</option>
-                                        <option value='startsWith'"; if ($aajudge['assertion'] === 'startsWith') {$tool_content .= "selected='selected'";} $tool_content .=">starts with</option>
-                                        <option value='endsWith'"; if ($aajudge['assertion'] === 'endsWith') {$tool_content .= "selected='selected'";} $tool_content .=">ends with</option>
-                                        <option value='contains'"; if ($aajudge['assertion'] === 'contains') {$tool_content .= "selected='selected'";} $tool_content .=">contains</option>
-                                        <option value='numeric'"; if ($aajudge['assertion'] === 'numeric') {$tool_content .= "selected='selected'";} $tool_content .=">is numeric</option>
-                                        <option value='isArray'"; if ($aajudge['assertion'] === 'isArray') {$tool_content .= "selected='selected'";} $tool_content .=">is array</option>
-                                        <option value='true'"; if ($aajudge['assertion'] === 'true') {$tool_content .= "selected='selected'";} $tool_content .=">is true</option>
-                                        <option value='false'"; if ($aajudge['assertion'] === 'false') {$tool_content .= "selected='selected'";} $tool_content .=">is false</option>
-                                        <option value='isJsonString'"; if ($aajudge['assertion'] === 'isJsonString') {$tool_content .= "selected='selected'";} $tool_content .=">is json string</option>
-                                        <option value='isObject'"; if ($aajudge['assertion'] === 'isObject') {$tool_content .= "selected='selected'";} $tool_content .=">is object</option>
-                                    </select>
-                                </td>";
-
-                                if (isset($aajudge['output'])) {
-                                    $tool_content .= "<td><input type='text' value='".htmlspecialchars($aajudge[output], ENT_QUOTES)."' name='auto_judge_scenarios[$rows][output]' class='auto_judge_output' /></td>";
-                                } else {
-                                    $tool_content .= "<td><input type='text' value='' name='auto_judge_scenarios[$rows][output]' disabled='disabled' class='auto_judge_output' /></td>";
-                                }
-
-                                $tool_content .=
-                                    "<td><input type='text' value='$aajudge[weight]' name='auto_judge_scenarios[$rows][weight]' class='auto_judge_weight'/></td>
-                                    <td><a href='#' class='autojudge_remove_scenario' style='display: ".($rows <= 0 ? 'none': 'visible').";'>X</a></td>
-                                </tr>";
-
-                                $rows++;
-                            }
-                        } else {
-                            $tool_content .= "<tr>
-                                        <td><input type='text' name='auto_judge_scenarios[$rows][input]' /></td>
-                                        <td>
-                                            <select name='auto_judge_scenarios[$rows][assertion]' class='auto_judge_assertion'>
-                                                <option value='eq' selected='selected'>is equal to</option>
-                                                <option value='same'>is same to</option>
-                                                <option value='notEq'>is not equal to</option>
-                                                <option value='notSame'>is not same to</option>
-                                                <option value='integer'>is int</option>
-                                                <option value='float'>is float</option>
-                                                <option value='digit'>is digit</option>
-                                                <option value='boolean'>is boolean</option>
-                                                <option value='notEmpty'>is not empty</option>
-                                                <option value='notNull'>is not null</option>
-                                                <option value='string'>is string</option>
-                                                <option value='startsWith'>starts with</option>
-                                                <option value='endsWith'>ends with</option>
-                                                <option value='contains'>contains</option>
-                                                <option value='numeric'>is numeric</option>
-                                                <option value='isArray'>is array</option>
-                                                <option value='true'>is true</option>
-                                                <option value='false'>is false</option>
-                                                <option value='isJsonString'>is json string</option>
-                                                <option value='isObject'>is object</option>
-                                            </select>
-                                        </td>
-                                        <td><input type='text' name='auto_judge_scenarios[$rows][output]' class='auto_judge_output' /></td>
-                                        <td><input type='text' name='auto_judge_scenarios[$rows][weight]' class='auto_judge_weight'/></td>
-                                        <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
-                                    </tr>
-                            ";
-                        }
-                        $tool_content .=
-                        "<tr>
-                            <td> </td>
-                            <td> </td>
-                            <td> </td>
-                            <td style='text-align:center;'> Άθροισμα: <span id='weights-sum'>0</span></td>
-                            <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
                 <div class='form-group'>
-                  <label class='col-sm-2 control-label'>Programming Language:</label>
-                  <div class='col-sm-10'>
-                    <select id='lang' name='lang'>";
-                    foreach($connector->getSupportedLanguages() as $llang => $ext) {
-                        $tool_content .= "<option value='$llang' ".($llang === $lang ? "selected='selected'" : "").">$llang</option>\n";
-                    }
-                    $tool_content .= "</select>
-                  </div>
+                    <label class='col-sm-2 control-label'>Auto-judge:</label>
+                    <div class='col-sm-10'>
+                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' ".($auto_judge == true ? "checked='1'" : '')." />
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Input</th>
+                                    <th> </th>
+                                    <th>Expected Output</th>
+                                    <th>Weight</th>
+                                    <th>Delete</th>
+                                </tr>
+                            </thead>
+                            <tbody>";
+                            $auto_judge_scenarios = $auto_judge == true ? unserialize($row->auto_judge_scenarios) : null;
+                            $connector = q(get_config('autojudge_connector'));
+                            $connector = new $connector();
+                            $rows    = 0;
+                            $display = 'visible';
+                            if ($auto_judge_scenarios != null) {
+                                $scenariosCount = count($auto_judge_scenarios);
+                                foreach ($auto_judge_scenarios as $aajudge) {
+                                    $tool_content .=
+                                    "<tr>
+                                        <td><input type='text' value='".htmlspecialchars($aajudge[input], ENT_QUOTES)."' name='auto_judge_scenarios[$rows][input]' /></td>";
+
+                                    $tool_content .=
+                                    "<td>
+                                        <select name='auto_judge_scenarios[$rows][assertion]' class='auto_judge_assertion'>
+                                            <option value='eq'"; if ($aajudge['assertion'] === 'eq') {$tool_content .= " selected='selected'";} $tool_content .=">is equal to</option>
+                                            <option value='same'"; if ($aajudge['assertion'] === 'same') {$tool_content .= " selected='selected'";} $tool_content .=">is same to</option>
+                                            <option value='notEq'"; if ($aajudge['assertion'] === 'notEq') {$tool_content .= " selected='selected'";} $tool_content .=">is not equal to</option>
+                                            <option value='notSame'"; if ($aajudge['assertion'] === 'notSame') {$tool_content .= " selected='selected'";} $tool_content .=">is not same to</option>
+                                            <option value='integer'"; if ($aajudge['assertion'] === 'integer') {$tool_content .= " selected='selected'";} $tool_content .=">is int</option>
+                                            <option value='float'"; if ($aajudge['assertion'] === 'float') {$tool_content .= " selected='selected'";} $tool_content .=">is float</option>
+                                            <option value='digit'"; if ($aajudge['assertion'] === 'digit') {$tool_content .= " selected='selected'";} $tool_content .=">is digit</option>
+                                            <option value='boolean'"; if ($aajudge['assertion'] === 'boolean') {$tool_content .= " selected='selected'";} $tool_content .=">is boolean</option>
+                                            <option value='notEmpty'"; if ($aajudge['assertion'] === 'notEmpty') {$tool_content .= " selected='selected'";} $tool_content .=">is not empty</option>
+                                            <option value='notNull'"; if ($aajudge['assertion'] === 'notNull') {$tool_content .= " selected='selected'";} $tool_content .=">is not null</option>
+                                            <option value='string'"; if ($aajudge['assertion'] === 'string') {$tool_content .= " selected='selected'";} $tool_content .=">is string</option>
+                                            <option value='startsWith'"; if ($aajudge['assertion'] === 'startsWith') {$tool_content .= " selected='selected'";} $tool_content .=">starts with</option>
+                                            <option value='endsWith'"; if ($aajudge['assertion'] === 'endsWith') {$tool_content .= " selected='selected'";} $tool_content .=">ends with</option>
+                                            <option value='contains'"; if ($aajudge['assertion'] === 'contains') {$tool_content .= " selected='selected'";} $tool_content .=">contains</option>
+                                            <option value='numeric'"; if ($aajudge['assertion'] === 'numeric') {$tool_content .= " selected='selected'";} $tool_content .=">is numeric</option>
+                                            <option value='isArray'"; if ($aajudge['assertion'] === 'isArray') {$tool_content .= " selected='selected'";} $tool_content .=">is array</option>
+                                            <option value='true'"; if ($aajudge['assertion'] === 'true') {$tool_content .= " selected='selected'";} $tool_content .=">is true</option>
+                                            <option value='false'"; if ($aajudge['assertion'] === 'false') {$tool_content .= " selected='selected'";} $tool_content .=">is false</option>
+                                            <option value='isJsonString'"; if ($aajudge['assertion'] === 'isJsonString') {$tool_content .= " selected='selected'";} $tool_content .=">is json string</option>
+                                            <option value='isObject'"; if ($aajudge['assertion'] === 'isObject') {$tool_content .= " selected='selected'";} $tool_content .=">is object</option>
+                                        </select>
+                                    </td>";
+
+                                    if (isset($aajudge['output'])) {
+                                        $tool_content .= "<td><input type='text' value='".htmlspecialchars($aajudge[output], ENT_QUOTES)."' name='auto_judge_scenarios[$rows][output]' class='auto_judge_output' /></td>";
+                                    } else {
+                                        $tool_content .= "<td><input type='text' value='' name='auto_judge_scenarios[$rows][output]' disabled='disabled' class='auto_judge_output' /></td>";
+                                    }
+
+                                    $tool_content .=
+                                        "<td><input type='text' value='$aajudge[weight]' name='auto_judge_scenarios[$rows][weight]' class='auto_judge_weight'/></td>
+                                        <td><a href='#' class='autojudge_remove_scenario' style='display: ".($rows <= 0 ? 'none': 'visible').";'>X</a></td>
+                                    </tr>";
+
+                                    $rows++;
+                                }
+                            } else {
+                                $tool_content .= "<tr>
+                                            <td><input type='text' name='auto_judge_scenarios[$rows][input]' /></td>
+                                            <td>
+                                                <select name='auto_judge_scenarios[$rows][assertion]' class='auto_judge_assertion'>
+                                                    <option value='eq' selected='selected'>is equal to</option>
+                                                    <option value='same'>is same to</option>
+                                                    <option value='notEq'>is not equal to</option>
+                                                    <option value='notSame'>is not same to</option>
+                                                    <option value='integer'>is int</option>
+                                                    <option value='float'>is float</option>
+                                                    <option value='digit'>is digit</option>
+                                                    <option value='boolean'>is boolean</option>
+                                                    <option value='notEmpty'>is not empty</option>
+                                                    <option value='notNull'>is not null</option>
+                                                    <option value='string'>is string</option>
+                                                    <option value='startsWith'>starts with</option>
+                                                    <option value='endsWith'>ends with</option>
+                                                    <option value='contains'>contains</option>
+                                                    <option value='numeric'>is numeric</option>
+                                                    <option value='isArray'>is array</option>
+                                                    <option value='true'>is true</option>
+                                                    <option value='false'>is false</option>
+                                                    <option value='isJsonString'>is json string</option>
+                                                    <option value='isObject'>is object</option>
+                                                </select>
+                                            </td>
+                                            <td><input type='text' name='auto_judge_scenarios[$rows][output]' class='auto_judge_output' /></td>
+                                            <td><input type='text' name='auto_judge_scenarios[$rows][weight]' class='auto_judge_weight'/></td>
+                                            <td><a href='#' class='autojudge_remove_scenario' style='display: none;'>X</a></td>
+                                        </tr>
+                                ";
+                            }
+                            $tool_content .=
+                            "<tr>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td style='text-align:center;'> Άθροισμα: <span id='weights-sum'>0</span></td>
+                                <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class='form-group'>
+                      <label class='col-sm-2 control-label'>Programming Language:</label>
+                      <div class='col-sm-10'>
+                        <select id='lang' name='lang'>";
+                        foreach($connector->getSupportedLanguages() as $llang => $ext) {
+                            $tool_content .= "<option value='$llang' ".($llang === $lang ? "selected='selected'" : "").">$llang</option>\n";
+                        }
+                        $tool_content .= "</select>
+                      </div>
+                    </div>
                 </div>
             </div>
 
@@ -1358,7 +1359,6 @@ function show_edit_assignment($id) {
                 <input type='submit' class='btn btn-primary' name='do_edit' value='$langEdit' onclick=\"selectAll('assignee_box',true)\" />
                 <a href='$_SERVER[SCRIPT_NAME]?course=$course_code' class='btn btn-default'>$langCancel</a>
             </div>
-        </div>
     </fieldset>
     </form></div>";
 }
