@@ -204,7 +204,7 @@ if ($is_editor) {
         $('#autojudge_new_scenario').click(function(e) {
             var rows = $(this).parent().parent().parent().find('tr').size()-1;
             // Clone the first line
-            var newLine = $(this).parent().parent().parent().find('tr:last').prev('tr').clone();
+            var newLine = $(this).parent().parent().parent().find('tr:first').clone();
             // Replace 0 wth the line number
             newLine.html(newLine.html().replace(/auto_judge_scenarios\[0\]/g, 'auto_judge_scenarios['+rows+']'));
             // Initialize the remove event and show the button
