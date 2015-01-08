@@ -139,6 +139,43 @@ if ($is_editor) {
         else
             return true;
     }
+    function updateWeightsSum() {
+        var weights = document.getElementsByClassName('auto_judge_weight');
+        var weight_sum = 0;
+        var max_grade = parseFloat(document.getElementById('max_grade').value);
+        max_grade = Math.round(max_grade * 1000) / 1000;
+
+        for (i = 0; i < weights.length; i++) {
+            // match ints or floats
+            w = weights[i].value.match(/^\d+\.\d+$|^\d+$/);
+            if(w != null) {
+                w = parseFloat(w);
+                if(w >= 0  && w <= max_grade)  // 0->max_grade allowed
+                {
+                    /* allow 3 decimal digits */
+                    weight_sum += w;
+                    continue;
+                }
+                else{
+                    $('#weights-sum').html('NaN');
+                }
+            }
+            else {
+                $('#weights-sum').html('NaN');
+            }
+        }
+        $('#weights-sum').html(weight_sum);
+        diff = Math.round((max_grade - weight_sum) * 1000) / 1000;
+        if (diff >= 0 && diff <= 0.001) {
+            $('#weights-sum').css('color', 'green');
+        } else {
+            $('#weights-sum').css('color', 'red');
+        }
+    }
+    $(document).ready(function() {
+        updateWeightsSum();
+        $('.auto_judge_weight').change(updateWeightsSum);
+    });
 
     $(function() {
         $('input[name=group_submissions]').click(changeAssignLabel);
@@ -912,7 +949,7 @@ function new_assignment() {
                                     <td> </td>
                                     <td> </td>
                                     <td> </td>
-                                    <td> </td>
+                                    <td style='text-align:center;'> Άθροισμα: <span id='weights-sum'>0</span></td>
                                     <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
                                 </tr>
                             </tbody>
@@ -1299,7 +1336,7 @@ function show_edit_assignment($id) {
                             <td> </td>
                             <td> </td>
                             <td> </td>
-                            <td> </td>
+                            <td style='text-align:center;'> Άθροισμα: <span id='weights-sum'>0</span></td>
                             <td> <input type='submit' value='Νέο σενάριο' id='autojudge_new_scenario' /></td>
                         </tr>
                         </tbody>
