@@ -1235,6 +1235,7 @@ $teacher_upload_whitelist = 'htm, html, js, css, xml, xsl, cpp, c, java, m, h, t
 $db->query("CREATE TABLE `config` (
     `key` VARCHAR(32) NOT NULL,
     `value` TEXT NOT NULL,
+	`autojudge_connector` VARCHAR(20) DEFAULT 'CodepadConnector',
     PRIMARY KEY (`key`))");
 $default_config = array(
     'base_url', $urlForm,
