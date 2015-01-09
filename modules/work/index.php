@@ -493,7 +493,7 @@ function add_assignment() {
 function submit_work($id, $on_behalf_of = null) {
     global $tool_content, $workPath, $uid, $course_id, $works_url,
     $langUploadSuccess, $langBack, $langUploadError,
-    $langExerciseNotPermit, $langUnwantedFiletype, $course_code,
+    $langExerciseNotPermit, $langUnwantedFiletype, $langAutoJudgeEmptyFile, $course_code,
     $langOnBehalfOfUserComment, $langOnBehalfOfGroupComment, $course_id;
     $connector = q(get_config('autojudge_connector'));
     $connector = new $connector();
@@ -629,7 +629,7 @@ function submit_work($id, $on_behalf_of = null) {
                 }
                 $tool_content .= "<div class='alert alert-success'>$msg2<br>$msg1<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;id=$id'>$langBack</a></div><br>";
             } else{
-                $tool_content .= "<div class='alert alert-danger'>Το αρχείο που επιχειρείτε να ανεβάσετε είναι κενό. Η εργασία δεν υποβλήθηκε.<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
+                $tool_content .= "<div class='alert alert-danger'>$langAutoJudgeEmptyFile<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
             }
         } else {
             $tool_content .= "<div class='alert alert-danger'>$langUploadError<br><a href='$_SERVER[SCRIPT_NAME]?course=$course_code'>$langBack</a></div><br>";
@@ -661,7 +661,7 @@ function submit_work($id, $on_behalf_of = null) {
                     if ($result->compileStatus !== $result::COMPILE_STATUS_OK) {
                         // Write down the error message.
                         $num = $i+1;
-                        $errorsComment = "Εργασία $num: ".$result->compileStatus." ".$result->output."<br />";
+                        $errorsComment = $result->compileStatus." ".$result->output."<br />";
                         $auto_judge_scenarios_output[$i]['passed'] = 0;
                     } else {
                         // Get all needed values to run the assertion.
@@ -681,7 +681,6 @@ function submit_work($id, $on_behalf_of = null) {
                             $partial += $curScenario['weight'];
                         } else {
                             $num = $i+1;
-                            $errorsComment = "Εργασία $num: Assertion failed! <br />";
                             $auto_judge_scenarios_output[$i]['passed'] = 0;
                         }
                     }

@@ -4277,3 +4277,5 @@ $langAutoJudgeSupportsInput = 'Υποστηρίζει μεταβλητά δεδ�
 $langAutoJudgeInputNotSupported = 'Δεν υποστηρίζεται από υπηρεσία μεταγλώττισης';
 $langAutoJudgeConnector = "Επιθυμητή υπηρεσία μεταγλώττισης";
 $langAutoJudgeUpdated = "Οι ρυθμίσεις αυτόματου κριτή ενημερώθηκαν με επιτυχία";
+
+$langAutoJudgeEmptyFile = "Το αρχείο που επιχειρείτε να ανεβάσετε είναι κενό. Η εργασία δεν υποβλήθηκε.";
