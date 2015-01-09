@@ -52,7 +52,7 @@ if (isset($_GET['assignment'])) {
     $i = 1;
     $i++;
 
-	$nameTools = 'Κατατάξεις εργασίας ['. $assign->title. ']';
+	$nameTools = sprintf($langAutoJudgeRankReport, $assign->title);
 
     
     if($assign==null)
@@ -97,18 +97,19 @@ function get_course_title() {
 }
 
 function show_report($assign,$submissions) {
-		global $tool_content,$course_code;
+		global $tool_content,$course_code, $langAutoJudgeRank, $langAutoJudgeStudent,
+                $langAutoJudgeScenariosPassed, $langAutoJudgeDownloadPdf;
            $tool_content = "
                                 <table  style=\"table-layout: fixed; width: 99%\" class='table-default'>
                                 <tr>
-                                     <td><b>Κατάταξη</b></td>
-                                     <td><b>Εκπαιδευόμενος</b></td>
-                                     <td><b>Βαθμός</b></td>
-                                     <td><b>Περασμένα Σενάρια</b></td>
+                                     <td><b>$langAutoJudgeRank</b></td>
+                                     <td><b>$langAutoJudgeStudent</b></td>
+                                     <td><b>".$m['grade']."</b></td>
+                                     <td><b>$langAutoJudgeScenariosPassed</b></td>
                                 </tr>". get_table_content($assign,$submissions) . "
                                 
                                 </table>
-                                 <p align='left'><a  class='btn btn-primary' href='rank_report.php?course=".$course_code."&assignment=".$assign->id."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
+                                 <p align='left'><a  class='btn btn-primary' href='rank_report.php?course=".$course_code."&assignment=".$assign->id."&downloadpdf=1'>$langAutoJudgeDownloadPdf</a></p>
                                 <br>";
   }
 

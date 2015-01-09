@@ -4278,4 +4278,55 @@ $langAutoJudgeInputNotSupported = 'Δεν υποστηρίζεται από υπ
 $langAutoJudgeConnector = "Επιθυμητή υπηρεσία μεταγλώττισης";
 $langAutoJudgeUpdated = "Οι ρυθμίσεις αυτόματου κριτή ενημερώθηκαν με επιτυχία";
 
+// scenarios edit
+$langAutoJudgeEnable = 'Αυτόματος Κριτής';
+$langAutoJudgeInput = 'Είσοδος';
+$langAutoJudgeOutput = 'Έξοδος';
+$langAutoJudgeExpectedOutput = 'Αναμενόμενη έξοδος';
+$langAutoJudgeOperator = 'Τελεστής';
+$langAutoJudgeWeight = 'Βαθμοί';
+$langAutoJudgeProgrammingLanguage = 'Γλώσσα Προγραμματισμού';
+$langAutoJudgeResult = 'Αποτέλεσμα';
+
+// messages & misc
 $langAutoJudgeEmptyFile = "Το αρχείο που επιχειρείτε να ανεβάσετε είναι κενό. Η εργασία δεν υποβλήθηκε.";
+$langAutoJudgeInvalidFileType = "Εσφαλμένος τύπος αρχείου. Αναμενόμενος: %s, Δόθηκε: %s";
+$langAutoJudgeSum = 'Άθροισμα';
+$langAutoJudgeNewScenario = 'Νέο σενάριο';
+$langAutoJudgeShowWorkResultRpt = 'Προβολή αναφοράς αποτελεσμάτων';
+$langAutoJudgeRank = 'Κατάταξη';
+$langAutoJudgeScenariosPassed = 'Περασμένα Σενάρια';
+
+// asserts
+$langAutoJudgeAssertions = array(
+    "eq" => "είναι ίσο με",
+    "same" => "είναι ίδιο με",
+    "notEq" => "δεν είναι ίσο με",
+    "notSame" => "δεν είναι ίδιο με",
+    "integer" => "είναι ακέραιος",
+    "float" => "είναι δεκαδικός",
+    "digit" => "είναι ψηφίο",
+    "boolean" => "είναιboolean",
+    "notEmpty" => "δεν είναι κενό",
+    "notNull" => "δεν είναι Null",
+    "string" => "είναι string",
+    "startsWith" => "αρχίζει με",
+    "endsWith" => "τελειώνει με",
+    "contains" => "περιέχει",
+    "numeric" => "είναι αριθμητικό",
+    "isArray" => "είναι array",
+    "true" => "είναι true",
+    "false" => "είναι false",
+    "isJsonString" => "είναι JSON string ",
+    "isObject" => "είναι αντικείμενο",
+);
+
+// result report
+$langAutoJudgeDetailedReport = 'Αυτόματος κριτής: Αναλυτική αναφορά ';
+$langAutoJudgeResultsFor = 'Αποτελέσματα για';
+$langAutoJudgeNotEnabledForReport = ' Ο αυτόματος κριτής δεν είναι ενεργοποιημένος για την συγκεκριμένη εργασία. ';
+$langAutoJudgeDownloadPdf = 'Λήψη σε μορφή PDF';
+
+// rank report
+$langAutoJudgeRankReport = 'Κατατάξεις εργασίας [%s]';
+$langAutoJudgeStudent = 'Εκπαιδευόμενος';

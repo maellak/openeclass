@@ -2371,7 +2371,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
         Database::get()->query("UPDATE config SET `value` = '" . ECLASS_VERSION . "' WHERE `key`='version'");
         
 		// update config table with field autojudge_connector 
-		Database::get()->query("ALTER TABLE config ADD autojudge_connector VARCHAR(20) DEFAULT 'CodepadConnector'");
+		Database::get()->query("ALTER TABLE config ADD autojudge_connector VARCHAR(40) DEFAULT 'CodepadConnector'");
 		
         echo "<hr><div class='alert alert-success'>$langUpgradeSuccess
         <br><b>$langUpgReady</b></div>

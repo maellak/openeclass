@@ -29,10 +29,10 @@ require_once __DIR__.'/../../include/tcpdf/tcpdf.php';
 require_once 'work_functions.php';
 require_once 'modules/group/group_functions.php';
 
-$nameTools = 'Αυτόματος κριτής: Αναλυτική αναφορά ';
+$nameTools = $langAutoJudgeDetailedReport;
 
 if (isset($_GET['assignment']) && isset($_GET['submission'])) {
-    global $tool_content, $course_code, $m;
+    global $tool_content, $course_code, $m, $langAutoJudgeNotEnabledForReport;
     $as_id = intval($_GET['assignment']);
     $sub_id = intval($_GET['submission']);
     $assign = get_assignment_details($as_id);
@@ -59,7 +59,7 @@ if (isset($_GET['assignment']) && isset($_GET['submission'])) {
             }
          }
          else{
-               Session::Messages(' Ο αυτόματος κριτής δεν είναι ενεργοποιημένος για την συγκεκριμένη εργασία. ', 'alert-danger');
+               Session::Messages($langAutoJudgeNotEnabledForReport, 'alert-danger');
               draw($tool_content, 2);
              }
       } else {
@@ -92,53 +92,34 @@ function get_submission_rank($assign_id,$grade, $submission_date) {
 }
 
 function show_report($id, $sid, $assign,$sub, $auto_judge_scenarios, $auto_judge_scenarios_output) {
-         global $course_code,$tool_content;
+         global $m, $course_code,$tool_content, $langAutoJudgeInput, $langAutoJudgeOutput,
+                 $langAutoJudgeExpectedOutput, $langAutoJudgeOperator, $langAutoJudgeWeight,
+                 $langAutoJudgeResult, $langAutoJudgeResultsFor, $langAutoJudgeRank,
+                 $langAutoJudgeDownloadPdf, $langBack;
                $tool_content = "
                                 <table  style=\"table-layout: fixed; width: 99%\" class='table-default'>
-                                <tr> <td> <b>Αποτελέσματα για</b>: ".  q(uid_to_name($sub->uid))."</td> </tr>
-                                <tr> <td> <b>Βαθμός</b>: $sub->grade /$assign->max_grade </td>
-                                     <td><b> Κατάταξη</b>: ".get_submission_rank($assign->id,$sub->grade, $sub->submission_date)." </td>
+                                <tr> <td> <b>$langAutoJudgeResultsFor</b>: ".  q(uid_to_name($sub->uid))."</td> </tr>
+                                <tr> <td> <b>".$m['grade']."</b>: $sub->grade /$assign->max_grade </td>
+                                     <td><b> $langAutoJudgeRank</b>: ".get_submission_rank($assign->id,$sub->grade, $sub->submission_date)." </td>
                                 </tr>
-                                  <tr> <td> <b>Είσοδος</b> </td>
-                                       <td> <b>Έξοδος</b> </td>
-                                       <td> <b>Τελεστής</b> </td>
-                                       <td> <b>Αναμενόμενη έξοδος</b> </td>
-                                       <td> <b>Βαρύτητα</b> </td>
-                                       <td> <b>Αποτέλεσμα</b> </td>
+                                  <tr> <td> <b>$langAutoJudgeInput</b> </td>
+                                       <td> <b>$langAutoJudgeOutput</b> </td>
+                                       <td> <b>$langAutoJudgeOperator</b> </td>
+                                       <td> <b>$langAutoJudgeExpectedOutput</b> </td>
+                                       <td> <b>$langAutoJudgeWeight</b> </td>
+                                       <td> <b>$langAutoJudgeResult</b> </td>
                                 </tr>
                                 ".get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output, $assign->max_grade)."
                                 </table>
-                                <p align='left'><a href='work_result_rpt.php?course=".$course_code."&assignment=".$assign->id."&submission=".$sid."&downloadpdf=1'>Λήψη σε μορφή PDF</a></p>
-                                <p align='right'><a href='index.php?course=".$course_code."'>Επιστροφή</a></p>
+                                <p align='left'><a href='work_result_rpt.php?course=".$course_code."&assignment=".$assign->id."&submission=".$sid."&downloadpdf=1'>$langAutoJudgeDownloadPdf</a></p>
+                                <p align='right'><a href='index.php?course=".$course_code."'>$langBack</a></p>
                              <br>";
   }
 
 function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output, $max_grade) {
-    global $themeimg;
+    global $themeimg, $langAutoJudgeAssertions;
     $table_content = "";
     $i=0;
-    $assertions = array(
-    "eq" => "είναι ίσο με",
-    "same" => "είναι ίδιο με",
-    "notEq" => "δεν είναι ίσο με",
-    "notSame" => "δεν είναι ίδιο με",
-    "integer" => "είναι ακέραιος",
-    "float" => "είναι δεκαδικός",
-    "digit" => "είναι ψηφίο",
-    "boolean" => "είναιboolean",
-    "notEmpty" => "δεν είναι κενό",
-    "notNull" => "δεν είναι Null",
-    "string" => "είναι string",
-    "startsWith" => "αρχίζει με",
-    "endsWith" => "τελειώνει με",
-    "contains" => "περιέχει",
-    "numeric" => "είναι αριθμητικό",
-    "isArray" => "είναι array",
-    "true" => "είναι true",
-    "false" => "είναι false",
-    "isJsonString" => "είναι JSON string ",
-    "isObject" => "είναι αντικείμενο",
-);
    
     foreach($auto_judge_scenarios as $cur_senarios){
            if(!isset($cur_senarios['output']))// expected output disable
@@ -148,7 +129,7 @@ function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output, 
                            <tr>
                            <td style=\"word-break:break-all;\">".$cur_senarios['input']."</td>
                            <td style=\"word-break:break-all;\">".$auto_judge_scenarios_output[$i]['student_output']."</td>
-                           <td style=\"word-break:break-all;\">".$assertions[$cur_senarios['assertion']]."</td>
+                           <td style=\"word-break:break-all;\">".$langAutoJudgeAssertions[$cur_senarios['assertion']]."</td>
                            <td style=\"word-break:break-all;\">".$cur_senarios['output']."</td>
                            <td align=\"center\" style=\"word-break:break-all;\">".$cur_senarios['weight']."/".$max_grade."</td>
                            <td align=\"center\"><img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/" .$icon."\"></td></tr>";

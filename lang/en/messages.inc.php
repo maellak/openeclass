@@ -3550,3 +3550,29 @@ $langFormErrors = 'Form contains errors. Please correct and resubmit form.';
  * ************************************************************ */
 $langMoreOptions = 'More options';
 $langLessOptions = 'Less options';
+
+/* * ***********************************************************
+ * Auto Judge
+ * ************************************************************ */
+$langAutoJudgeAssertions = array(
+    "eq" => "is equal to",
+    "same" => "is same to",
+    "notEq" => "is not equal to",
+    "notSame" => "is not same to",
+    "integer" => "is int",
+    "float" => "is float",
+    "digit" => "is digit",
+    "boolean" => "is boolean",
+    "notEmpty" => "is not empty",
+    "notNull" => "is not null",
+    "string" => "is string",
+    "startsWith" => "starts with",
+    "endsWith" => "ends with",
+    "contains" => "contains",
+    "numeric" => "is numeric",
+    "isArray" => "is array",
+    "true" => "is true",
+    "false" => "is false",
+    "isJsonString" => "is json string",
+    "isObject" => "is object",
+);

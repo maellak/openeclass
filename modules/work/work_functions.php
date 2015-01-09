@@ -175,7 +175,8 @@ function was_graded($uid, $id, $ret_val = FALSE) {
 
 // Show details of a submission
 function show_submission_details($id) {
-    global $uid, $m, $langSubmittedAndGraded, $tool_content, $course_code;
+    global $uid, $m, $langSubmittedAndGraded, $tool_content, $course_code,
+           $langAutoJudgeEnable, $langAutoJudgeShowWorkResultRpt;
     $sub = Database::get()->querySingle("SELECT * FROM assignment_submit WHERE id = ?d", $id);
     if (!$sub) {
         die("Error: submission $id doesn't exist.");
@@ -222,8 +223,8 @@ function show_submission_details($id) {
           <th>" . $m['filename'] . ":</th>
           <td><a href='$_SERVER[SCRIPT_NAME]?course=$course_code&amp;get=$sub->id'>" . q($sub->file_name) . "</a></td>
         </tr>
-         <th> Αυτόματος κριτής:</th>
-          <td><a href='$reportlink'> Προβολή αναφοράς αποτελεσμάτων</a></td>
+         <th> $langAutoJudgeEnable:</th>
+          <td><a href='$reportlink'> $langAutoJudgeShowWorkResultRpt</a></td>
         </tr>";
     table_row($m['comments'], $sub->comments, true);
     $tool_content .= "
