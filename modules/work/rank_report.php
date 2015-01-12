@@ -128,7 +128,7 @@ function get_table_content($assign,$submissions) {
                      if ($i==5 or $i == 6) {$s.=" <img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/work_medals/Bronze_medal_with_cup.svg\" style=\"width: 30px; height: 30px\">";}
                      $table_content.="
                                       <tr>
-                                      <td style=\"word-break:break-all;\">".$i."</td>
+                                      <td style=\"word-break:break-all;\">".$s."</td>
                                       <td style=\"word-break:break-all;\">".$submission->username."</td>
                                       <td style=\"word-break:break-all;\">".$submission->grade."/". $assign->max_grade  ."</td>
                                       <td align=\"center\">".$submission->grade_comments."</td></tr>";
