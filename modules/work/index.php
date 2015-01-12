@@ -157,11 +157,15 @@ if ($is_editor) {
                     continue;
                 }
                 else{
-                    $('#weights-sum').html('NaN');
+                    $('#weights-sum').html('-');
+                    $('#weights-sum').css('color', 'red');
+                    return;
                 }
             }
             else {
-                $('#weights-sum').html('NaN');
+                $('#weights-sum').html('-');
+                $('#weights-sum').css('color', 'red');
+                return;
             }
         }
         $('#weights-sum').html(weight_sum);
@@ -175,6 +179,7 @@ if ($is_editor) {
     $(document).ready(function() {
         updateWeightsSum();
         $('.auto_judge_weight').change(updateWeightsSum);
+        $('#max_grade').change(updateWeightsSum);
     });
 
     $(function() {
@@ -231,10 +236,10 @@ if ($is_editor) {
         }
         function changeAutojudgeScenariosVisibility() {
             if($(this).is(':checked')) {
-                $(this).parent().find('table').show();
+                $(this).parent().parent().find('table').show();
                 $('#lang').parent().parent().show();
             } else {
-                $(this).parent().find('table').hide();
+                $(this).parent().parent().find('table').hide();
                 $('#lang').parent().parent().hide();
             }
         }
@@ -251,6 +256,8 @@ if ($is_editor) {
             newLine.find('input').val('');
             // Insert it just before the final line
             newLine.insertBefore($(this).parent().parent().parent().find('tr:last'));
+            // Add the event handler
+            newLine.find('.auto_judge_weight').change(updateWeightsSum);
             e.preventDefault();
             return false;
         });
@@ -928,7 +935,7 @@ function new_assignment() {
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>$langAutoJudgeEnable:</label>
                     <div class='col-sm-10'>
-                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' />
+                        <div class='radio'><input type='checkbox' id='auto_judge' name='auto_judge' value='1' /></div>
                         <table style='display: none;'>
                             <thead>
                                 <tr>
@@ -1243,7 +1250,7 @@ function show_edit_assignment($id) {
                 <div class='form-group'>
                     <label class='col-sm-2 control-label'>$langAutoJudgeEnable:</label>
                     <div class='col-sm-10'>
-                        <input type='checkbox' id='auto_judge' name='auto_judge' value='1' ".($auto_judge == true ? "checked='1'" : '')." />
+                        <div class='radio'><input type='checkbox' id='auto_judge' name='auto_judge' value='1' ".($auto_judge == true ? "checked='1'" : '')." /></div>
                         <table>
                             <thead>
                                 <tr>
