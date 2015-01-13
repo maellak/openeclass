@@ -127,10 +127,10 @@ function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output, 
            $icon = ($auto_judge_scenarios_output[$i]['passed']==1) ? 'tick.png' : 'delete.png';
            $table_content.="
                            <tr>
-                           <td style=\"word-break:break-all;\">".$cur_senarios['input']."</td>
+                           <td style=\"word-break:break-all;\">".str_replace(' ', '&nbsp;', $cur_senarios['input'])."</td>
                            <td style=\"word-break:break-all;\">".$auto_judge_scenarios_output[$i]['student_output']."</td>
                            <td style=\"word-break:break-all;\">".$langAutoJudgeAssertions[$cur_senarios['assertion']]."</td>
-                           <td style=\"word-break:break-all;\">".$cur_senarios['output']."</td>
+                           <td style=\"word-break:break-all;\">".str_replace(' ', '&nbsp;', $cur_senarios['output'])."</td>
                            <td align=\"center\" style=\"word-break:break-all;\">".$cur_senarios['weight']."/".$max_grade."</td>
                            <td align=\"center\"><img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/" .$icon."\"></td></tr>";
                      $i++;
