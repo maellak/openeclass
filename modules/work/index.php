@@ -544,8 +544,9 @@ function submit_work($id, $on_behalf_of = null) {
     $langOnBehalfOfUserComment, $langOnBehalfOfGroupComment, $course_id;
     $connector = q(get_config('autojudge_connector'));
     $connector = new $connector();
-//checks for submission validity end here    $langExt = $connector->getSupportedLanguages();
+    $langExt = $connector->getSupportedLanguages();
 
+    //checks for submission validity end here
     if (isset($on_behalf_of)) {
         $user_id = $on_behalf_of;
     } else {
@@ -2380,7 +2381,7 @@ function submit_grade_comments($id, $sid, $grade, $comment, $email, $auto_judge_
         //update gradebook if needed
         $quserid = Database::get()->querySingle("SELECT uid FROM assignment_submit WHERE id = ?d", $sid)->uid;
         update_gradebook_book($quserid, $id, $grade, 'assignment');
-        Session::Messages($langGrades, 'alert-success');
+        if(!$preventUiAlterations) Session::Messages($langGrades, 'alert-success');
     } else {
         if(!$preventUiAlterations) Session::Messages($langGrades);
     }
