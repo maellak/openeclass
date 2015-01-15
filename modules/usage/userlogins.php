@@ -50,7 +50,7 @@ $head_content .= "<script type='text/javascript'>
 
 statistics_tools($course_code, "userlogins");
 
-$nameTools = $langUserLogins;
+$pageName = $langUserLogins;
 $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langUsage);
 
 if (isset($_POST['user_date_start'])) {
@@ -145,8 +145,7 @@ if (count($unknown_users) > 0) {
 
 if ($table_cont) {
     $tool_content .= "<div class='table-responsive'>
-        <table class='table-default'>
-        <tr><th colspan='4'>$langUserLogins</th></tr>
+        <table class='table-default'>        
         <tr>
         <th class='text-left'>" . $langUser . "</th>
         <th>" . $langAddress . "</th>

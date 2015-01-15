@@ -19,11 +19,8 @@
  *                  e-mail: info@openeclass.org
  * ======================================================================== */
 
-/* ===========================================================================
-  pollparticipate.php
-  @last update: 26-5-2006 by Dionysios Synodinos
-  @authors list: Dionysios G. Synodinos <synodinos@gmail.com>
-  ==============================================================================
+/**
+ * @file pollparticipate.php
  */
 
 $require_current_course = TRUE;
@@ -35,7 +32,8 @@ require_once 'functions.php';
 
 load_js('bootstrap-slider');
 
-$nameTools = $langParticipate;
+$toolName = $langQuestionnaire;
+$pageName = $langParticipate;
 $navigation[] = array("url" => "index.php?course=$course_code", "name" => $langQuestionnaire);
 
 if (!isset($_REQUEST['UseCase']))
@@ -61,8 +59,8 @@ switch ($_REQUEST['UseCase']) {
 draw($tool_content, 2, null, $head_content);
 
 function printPollForm() {
-    global $course_id, $course_code, $tool_content, $langPollStart,
-    $langPollEnd, $langSubmit, $langPollInactive, $langPollUnknown, $uid,
+    global $course_id, $course_code, $tool_content,
+    $langSubmit, $langPollInactive, $langPollUnknown, $uid,
     $langPollAlreadyParticipated, $is_editor, $langBack, $langQuestion,
     $langCancel, $head_content;
     
@@ -147,7 +145,8 @@ function printPollForm() {
                     $name_ext = ($qtype == QTYPE_SINGLE)? '': '[]';
                     $type_attr = ($qtype == QTYPE_SINGLE)? "radio": "checkbox";
                     $answers = Database::get()->queryArray("SELECT * FROM poll_question_answer 
-                                WHERE pqid = ?d ORDER BY pqaid", $pqid);
+                                WHERE pqid = ?d ORDER BY pqaid", $pqid);                   
+                    if ($qtype == QTYPE_MULTIPLE) $tool_content .= "<input type='hidden' name='answer[$pqid]' value='-1'>";
                     foreach ($answers as $theAnswer) {
                         $tool_content .= "
                         <div class='form-group'>
@@ -185,7 +184,7 @@ function printPollForm() {
                     $tool_content .= "
                         <div class='form-group margin-bottom-fat'>                           
                             <div class='col-sm-12 margin-top-thin'>
-                                <textarea name='answer[$pqid]'></textarea>
+                                <textarea class='form-control' name='answer[$pqid]'></textarea>
                             </div>
                         </div>";
                 }                
@@ -218,10 +217,16 @@ function submitPoll() {
     foreach ($_POST['question'] as $pqid => $qtype) {
         $pqid = intval($pqid);
         if ($qtype == QTYPE_MULTIPLE) {
-            foreach ($answer[$pqid] as $aid) {
-                $aid = intval($aid);
+            if(is_array($answer[$pqid])){
+                foreach ($answer[$pqid] as $aid) {
+                    $aid = intval($aid);
+                    Database::get()->query("INSERT INTO poll_answer_record (pid, qid, aid, answer_text, user_id, submit_date)
+                        VALUES (?d, ?d, ?d, '', ?d , NOW())", $pid, $pqid, $aid, $user_id);
+                }
+            } else {
+                $aid = -1;
                 Database::get()->query("INSERT INTO poll_answer_record (pid, qid, aid, answer_text, user_id, submit_date)
-                    VALUES (?d, ?d, ?d, '', ?d , NOW())", $pid, $pqid, $aid, $user_id);
+                    VALUES (?d, ?d, ?d, '', ?d , NOW())", $pid, $pqid, $aid, $user_id);                
             }
             continue;
         } elseif ($qtype == QTYPE_SCALE) {

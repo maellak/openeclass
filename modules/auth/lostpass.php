@@ -34,7 +34,7 @@ include '../../include/baseTheme.php';
 include 'auth.inc.php';
 include 'include/sendMail.inc.php';
 require_once 'include/phpass/PasswordHash.php';
-$nameTools = $lang_remind_pass;
+$pageName = $lang_remind_pass;
 
 // javascript
 load_js('pwstrength.js');
@@ -89,7 +89,7 @@ if (isset($_REQUEST['u']) and isset($_REQUEST['h'])) {
             $hasher = new PasswordHash(8, false);
             $q1 = Database::get()->query("UPDATE user SET password = ?s
                                                       WHERE id = ?d",
-                    $hasher->HasPassword($_POST['newpass']), $userUID);
+                    $hasher->HashPassword($_POST['newpass']), $userUID);
             if ($q1->affectedRows > 0) {
                 $tool_content = "<div class='alert alert-success'><p>$langAccountResetSuccess1</p></div>
                                                        $homelink";

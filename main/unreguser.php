@@ -24,7 +24,8 @@ $require_login = TRUE;
 include '../include/baseTheme.php';
 require_once 'include/log.php';
 
-$nameTools = $langUnregUser;
+$toolName = $langMyProfile;
+$pageName = $langUnregUser;
 $navigation[] = array("url" => "profile/profile.php", "name" => $langModifyProfile);
 
 if (!isset($_GET['doit']) or $_GET['doit'] != "yes") {

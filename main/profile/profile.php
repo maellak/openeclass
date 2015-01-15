@@ -36,6 +36,10 @@ require_once 'include/log.php';
 check_uid();
 check_guest();
 
+$toolName = $langMyProfile;
+$pageName = $langModifyProfile;
+$navigation[] = array('url' => 'display_profile.php', 'name' => $langMyProfile);
+
 $tree = new Hierarchy();
 $userObj = new User();
 $image_path = $webDir . '/courses/userimg/' . $_SESSION['uid'];
@@ -47,8 +51,6 @@ var lang = {
         addPicture: '" . js_escape($langAddPicture) . "',
         confirmDelete: '" . js_escape($langConfirmDelete) . "'}; 
 $(profile_init);</script>";
-
-$nameTools = $langModifyProfile;
 
 $myrow = Database::get()->querySingle("SELECT surname, givenname, username, email, am, phone,
                                             lang, status, has_icon, description,

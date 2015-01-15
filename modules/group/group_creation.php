@@ -30,8 +30,8 @@ $helpTopic = 'Group';
 $require_editor = true;
 
 require_once '../../include/baseTheme.php';
-
-$nameTools = $langNewGroupCreate;
+$toolName = $langGroups;
+$pageName = $langNewGroupCreate;
 $navigation[] = array("url" => "index.php?course=$course_code", "name" => $langGroups);
 
 $tool_content .= action_bar(array(

@@ -1684,6 +1684,10 @@ tinymce.init({
     selector: 'textarea.mceEditor',
     language: '$language',
     theme: 'modern',
+    image_class_list: [
+        {title: 'Responsive', value: 'img-responsive'},
+        {title: 'None', value: ''}
+    ],
     plugins: 'pagebreak,save,image,link,media,eclmedia,print,contextmenu,paste,noneditable,visualchars,nonbreaking,template,wordcount,advlist,emoticons,preview,searchreplace,table,insertdatetime,code',
     entity_encoding: 'raw',
     relative_urls: false,
@@ -1729,28 +1733,6 @@ function text_area($name, $rows, $cols, $text, $extra = '') {
     return "<textarea name='$name' rows='$rows' cols='$cols' $extra>" .
             q(str_replace('{', '&#123;', $text)) .
             "</textarea>\n";
-}
-
-// 
-/**
- * @brief  Does the special course unit with course descriptions exist?
- *       If so, return its id, else create it first
- * @global type $langCourseDescription
- * @param type $course_id
- * @return type
- */
-function description_unit_id($course_id) {
-    global $langCourseDescription;
-    
-    $q = Database::get()->querySingle("SELECT id FROM course_units
-                                       WHERE course_id = ?d AND `order` = -1", $course_id);
-    if ($q) {
-        $id = $q->id;
-        return $id;
-    } else {
-        $sql = Database::get()->query("INSERT INTO course_units SET `order` = -1, `title` = ?s, `visible` = 0, `course_id` = ?d", $langCourseDescription, $course_id);
-        return $sql->lastInsertID;        
-    }
 }
 
 /**
@@ -1860,7 +1842,7 @@ function units_set_maxorder() {
  */
 function handle_unit_info_edit() {
     
-    global $langCourseUnitModified, $langCourseUnitAdded, $maxorder, $course_id, $course_code;
+    global $langCourseUnitModified, $langCourseUnitAdded, $maxorder, $course_id, $course_code, $webDir;
     
     $title = $_REQUEST['unittitle'];
     $descr = $_REQUEST['unitdescr'];
@@ -2128,7 +2110,7 @@ function copy_resized_image($source_file, $type, $maxwidth, $maxheight, $target_
 }
 
 // Produce HTML source for an icon
-function icon($name, $title = null, $link = null, $link_attrs = '') {
+function icon($name, $title = null, $link = null, $link_attrs = '', $with_title = false) {
     global $themeimg;
 
     if (isset($title)) {
@@ -2138,7 +2120,29 @@ function icon($name, $title = null, $link = null, $link_attrs = '') {
         $extra = '';
     }
 
-    $img = "<i class='fa $name' $extra></i>";
+    $img = (isset($title) && $with_title) ? "<i class='fa $name' $extra></i> $title" : "<i class='fa $name' $extra></i>";
+    if (isset($link)) {
+        return "<a href='$link'$link_attrs>$img</a>";
+    } else {
+        return $img;
+    }
+}
+
+function icon_old_style($name, $title = null, $link = null, $attrs = null, $format = 'png', $link_attrs = '') {
+    global $themeimg;
+
+    if (isset($title)) {
+        $title = q($title);
+        $extra = "alt='$title' title='$title'";
+    } else {
+        $extra = "alt=''";
+    }
+
+    if (isset($attrs)) {
+        $extra .= ' ' . $attrs;
+    }
+
+    $img = "<img src='$themeimg/$name.$format' $extra>";
     if (isset($link)) {
         return "<a href='$link'$link_attrs>$img</a>";
     } else {
@@ -2185,9 +2189,7 @@ function is_url_accepted($url,$protocols=""){
 }
 
 function stop_output_buffering() {
-    while (ob_get_level() > 0) {
-        ob_end_flush();
-    }
+    while (@ob_end_flush());
 }
 
 // Seed mt_rand
@@ -2471,6 +2473,9 @@ function update_gradebook_book($uid, $id, $grade, $activity)
             if ($q2) { // update grade if exists            
                 Database::get()->query("UPDATE gradebook_book SET grade = ?d WHERE gradebook_activity_id = $q->id AND uid = ?d", $grade, $uid);
             } else {
+                if ($grade == '') {
+                    $grade = 0;
+                }
                 Database::get()->query("INSERT INTO gradebook_book SET gradebook_activity_id = $q->id, uid = ?d, grade = ?d", $uid, $grade);
             }
         }
@@ -2636,7 +2641,7 @@ function copyright_info($cid, $noImg=1) {
     }
     if($noImg==1){
     $link = "<a href='" . $license[$lic]['link'] . "$link_suffix'>
-            <img class='img-responsive' src='$themeimg/" . $license[$lic]['image'] . ".png' title='" . $license[$lic]['title'] . "' alt='" . $license[$lic]['title'] . "' /></a><br>";
+            <img src='$themeimg/" . $license[$lic]['image'] . ".png' title='" . $license[$lic]['title'] . "' alt='" . $license[$lic]['title'] . "' /></a><br>";
     }else if($noImg==0){
         $link = "";
     }
@@ -2699,9 +2704,14 @@ function forbidden($path) {
  * level is optional and can be 'primary' for primary entries or unset
  */
 function action_bar($options) {
-    global $langConfirmDelete, $langCancel, $langDelete;
+    global $langConfirmDelete, $langCancel, $langDelete, $pageName;
+    
     $out_primary = $out_secondary = array();
     $i=0;
+    $page_title = "";
+    if (isset($pageName)) {
+        $page_title = "<div class='pull-left' style='padding-top:31px;'><h4>".q($pageName)."</h4></div>";
+    }    
     foreach (array_reverse($options) as $option) {
         // skip items with show=false
         if (isset($option['show']) and !$option['show']) {
@@ -2720,7 +2730,7 @@ function action_bar($options) {
             $confirm_extra = " data-title='$title_conf' data-message='" .
                 q($option['confirm']) . "' data-cancel-txt='$langCancel' data-action-txt='$accept_conf' data-action-class='btn-danger'";
             $confirm_modal_class = ' confirmAction';
-            $form_begin = "<form method=post action='$option[url]'>";
+            $form_begin = "<form method=post action='$option[url]' style='display:inline-block;'>";
             $form_end = '</form>';
             $href = '';
         } else {
@@ -2739,42 +2749,50 @@ function action_bar($options) {
         }        
         if ($level == 'primary-label') {
             array_unshift($out_primary,
-                "<li$class>$form_begin<a$confirm_extra class='btn $button_class$confirm_modal_class'" . $href .
+                "$form_begin<a$confirm_extra class='btn $button_class$confirm_modal_class'" . $href .
                 " data-placement='bottom' data-toggle='tooltip' rel='tooltip'" .
                 " title='$title'$link_attrs>" .
                 "<i class='fa $option[icon] space-after-icon'></i>" .
-                "<span class='hidden-xs'>$title</span></a>$form_end</li>");
+                "<span class='hidden-xs'>$title</span></a>$form_end");
         } elseif ($level == 'primary') {
             array_unshift($out_primary,
-                "<li$class>$form_begin<a$confirm_extra class='btn $button_class$confirm_modal_class'" . $href .
+                "$form_begin<a$confirm_extra class='btn $button_class$confirm_modal_class'" . $href .
                 " data-placement='bottom' data-toggle='tooltip' rel='tooltip'" .
                 " title='$title'$link_attrs>" .
-                "<i class='fa $option[icon]'></i></a>$form_end</li>");
+                "<i class='fa $option[icon]'></i></a>$form_end");
         } else {
             array_unshift($out_secondary,
-                    "<li$class>$form_begin<a$confirm_extra  class='btn $button_class$confirm_modal_class'" . $href .
-                    " data-placement='bottom' data-toggle='tooltip' rel='tooltip'" .
-                    " title='$title'$link_attrs>" .
-                    "<i class='fa $option[icon]'></i></a>$form_end</li>");
+                "<li$class>$form_begin<a$confirm_extra  class='$confirm_modal_class'" . $href .
+                " title='$title'$link_attrs>" .
+                "<i class='fa $option[icon]'></i> $title</a>$form_end</li>");
         }
         $i++;
     }
-    $out = "<ul class='list-inline'>";
+    $out = '';                
     if (count($out_primary)) {
         $out .= implode('', $out_primary);
     }
+
+    $action_button = "";
     if (count($out_secondary)) {
-        $out .= "<li><button type='button' class='btn btn-default expandable-btn'><i class='fa fa-th-large'></i></button></li>";
-    }
-    $out .= "</ul>";
-    if (count($out_secondary)) {
-        $out .= "<ul class='list-inline expandable' style=\"float:right\">" . implode('', $out_secondary) . "</ul>";
+        //$action_list = q("<div class='list-group'>".implode('', $out_secondary)."</div>");
+        $action_button .= "<button type='button' class='btn btn-default dropdown-toggle' data-toggle='dropdown' aria-expanded='false'><i class='fa fa-gears'></i> <span class='caret'></span></button>";
+        $action_button .= "  <ul class='dropdown-menu dropdown-menu-right' role='menu'>
+                     ".implode('', $out_secondary)."
+                  </ul>";
     }
     if ($out && $i!=0) {
-        return "<div class='row'>" .
-             "<div class='col-sm-12 clearfix'>" .
-             "<div class='well well-sm action-bar-wrapper primary-tools margin-top-thin margin-bottom-thin pull-right'>" .
-             $out . "</div></div></div>";
+        return "<div class='row'>
+                    <div class='col-sm-12 clearfix'>
+                        $page_title
+                        <div class='margin-top-thin margin-bottom-fat pull-right'>
+                            <div class='btn-group'>
+                            $out
+                            $action_button
+                            </div>                         
+                        </div>
+                    </div>
+                </div>";
     } else {
         return '';
     }
@@ -2790,8 +2808,9 @@ function action_bar($options) {
  */
 function action_button($options) {
     global $langConfirmDelete, $langCancel, $langDelete;
-    $out = '';
+    $out_primary = $out_secondary = array();
     foreach (array_reverse($options) as $option) {
+        $level = isset($option['level'])? $option['level']: 'secondary';
         // skip items with show=false
         if (isset($option['show']) and !$option['show']) {
             continue;
@@ -2801,33 +2820,58 @@ function action_button($options) {
         } else {
             $class = '';
         }
-        $icon_class = '';
-        if (isset($option['icon-class'])) {
-            $icon_class .= 'class="' . $option['icon-class'] . '"';
+        if (isset($option['btn_class'])) {
+            $btn_class = ' '.$option['btn_class'];
+        } else {
+            $btn_class = ' btn-default';
         }
-        if (isset($option['icon-extra'])) {
-            $icon_class .= ' ' . $option['icon-extra'];
+        $disabled = isset($option['disabled']) && $option['disabled'] ? ' disabled' : '';
+        $icon_class = "class='list-group-item $class";
+        if (isset($option['icon-class'])) {
+            $icon_class .= " " . $option['icon-class'];
         }
         if (isset($option['confirm'])) {
             $title = isset($option['confirm_title']) ? $option['confirm_title'] : $langConfirmDelete;
             $accept = isset($option['confirm_button']) ? $option['confirm_button'] : $langDelete;
-            $icon_class .= " class='confirmAction' data-title='$title' data-message='" .
+            $icon_class .= " confirmAction' data-title='$title' data-message='" .
                 q($option['confirm']) . "' data-cancel-txt='$langCancel' data-action-txt='$accept' data-action-class='btn-danger'";
             $form_begin = "<form method=post action='$option[url]'>";
             $form_end = '</form>';
             $url = '#';
         } else {
+            $icon_class .= "'";
             $confirm_extra = $form_begin = $form_end = '';
             $url = isset($option['url'])? $option['url']: '#';
-        }
-        $out .= "<div class='opt-btn-more-tool tool-btn$class'>" . $form_begin .
-            icon($option['icon'], $option['title'], $url, $icon_class ) .
-            $form_end . '</div>';
+        }       
+        if (isset($option['icon-extra'])) {
+            $icon_class .= ' ' . $option['icon-extra'];
+        }        
+        
+        if ($level == 'primary-label') {
+            array_unshift($out_primary, "<a href='$url' class='btn $btn_class$disabled'><i class='fa $option[icon] space-after-icon'></i>$option[title]</a>");
+        } elseif ($level == 'primary') {
+            array_unshift($out_primary, "<a href='$url' class='btn $btn_class$disabled'><i class='fa $option[icon]'></i></a>");
+        } else {
+            array_unshift($out_secondary, $form_begin . icon($option['icon'], $option['title'], $url, $icon_class, true) . $form_end);
+        }        
     }
-    return '<div class="opt-btn-wrapper">' .
-        '<div class="opt-btn-more-wrapper">' .
-        $out .
-        '</div><div class="opt-btn tool-btn"><i class="fa fa-gear "></i></div></div>';
+    $primary_buttons = "";
+    if (count($out_primary)) {
+        $primary_buttons = implode('', $out_primary);
+    }       
+    $action_button = "";
+    if (count($out_secondary)) {
+        $action_list = q("<div class='list-group'>".implode('', $out_secondary)."</div>");
+        $action_button = "
+                <a tabindex='1' class='btn btn-default' data-container='body' data-toggle='popover' data-trigger='manual' data-html='true' data-placement='bottom' data-content='$action_list'>
+                    <i class='fa fa-gear'></i>  <span class='caret'></span>
+                </a>";
+    }    
+    
+    return "<div class='btn-group btn-group-sm' role='group' aria-label='...'>
+                $primary_buttons
+                $action_button
+          </div>";
 }
 /**
  * Removes spcific get variable from Query String

@@ -4,7 +4,7 @@
  * Open eClass 3.0
  * E-learning and Course Management System
  * ========================================================================
- * Copyright 2003-2012  Greek Universities Network - GUnet
+ * Copyright 2003-2014  Greek Universities Network - GUnet
  * A full copyright notice can be read in "/info/copyright.txt".
  * For a full list of contributors, see "credits.txt".
  *
@@ -35,8 +35,7 @@ require_once 'include/action.php';
 $action = new action();
 $action->record(MODULE_ID_DESCRIPTION);
 
-$nameTools = $langCourseDescription;
-$unit_id = description_unit_id($course_id);
+$toolName = $langCourseDescription;
 
 ModalBoxHelper::loadModalBox();
 if ($is_editor) {
@@ -61,15 +60,6 @@ if ($is_editor) {
         }
         Session::Messages($langCourseUnitAdded,"alert-success");
         redirect_to_home_page("modules/course_description/index.php");
-    } else if (isset($_POST['submit']) && isset($_POST['edIdBloc'])) {
-        // Save results from block edit (save action)
-        $res_id = intval($_POST['edIdBloc']);
-        if ($res_id == -1) {
-            $unit_id = description_unit_id($course_id);
-            add_unit_resource($unit_id, 'description', $res_id, $_POST['edTitleBloc'], $_POST['edContentBloc']);
-            header("Location: {$urlServer}courses/$course_code");
-            exit;
-        }
     }
 }
 
@@ -98,13 +88,15 @@ if ($q && count($q) > 0) {
                                 'icon' => $row->visible ? 'fa-eye-slash' : 'fa-eye'
                             ),
                             array('title' => q($langUp),
+                                'level' => 'primary',
                                 'icon' => 'fa-arrow-up',
                                 'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;up=$row->id",
-                                'show' => $i > 0),
+                                'disabled' => $i <= 0),
                             array('title' => q($langDown),
+                                'level' => 'primary',
                                 'icon' => 'fa-arrow-down',
                                 'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;down=$row->id",
-                                'show' => $i + 1 < count($q))
+                                'disabled' => $i + 1 >= count($q))
                         )
                 ) ."</div>
               <h3 class='panel-title'>$row->title</h3>      

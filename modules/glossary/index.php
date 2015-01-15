@@ -46,7 +46,7 @@ if ($is_editor) {
     $max_glossary_terms = get_config('max_glossary_terms');
 }
 
-$nameTools = $langGlossary;
+$toolName = $langGlossary;
 
 $categories = array();
 Database::get()->queryFunc("SELECT id, name, description, `order`
@@ -90,6 +90,15 @@ if ($glossary_data) {
 if ($is_editor) {
     
     if (isset($_GET['add']) or isset($_GET['config']) or isset($_GET['edit'])) {
+        if (isset($_GET['add'])) {
+            $pageName = $langAddGlossaryTerm;
+        }
+        if (isset($_GET['config'])) {
+            $pageName = $langConfig;
+        }
+        if (isset($_GET['edit'])) {
+            $pageName = $langEdit;
+        }
         $tool_content .= action_bar(array(
                 array('title' => $langBack,
                       'url' => "$base_url",
@@ -109,8 +118,7 @@ if ($is_editor) {
                       'button-class' => 'btn-success'),
                 array('title' => $langConfig,
                       'url' => "$base_url&amp;config=1",                      
-                      'icon' => 'fa-gear',
-                      'level' => 'primary-label'),
+                      'icon' => 'fa-gear'),
                 array('title' => "$langGlossaryToCsv (UTF8)",
                       'url' => "dumpglossary.php?course=$course_code",
                       'icon' => 'fa-download'),
@@ -207,7 +215,7 @@ if ($is_editor) {
     // display configuration form
     if (isset($_GET['config'])) {
         $navigation[] = array('url' => $base_url, 'name' => $langGlossary);
-        $nameTools = $langConfig;
+        $pageName = $langConfig;
         $checked_expand = $expand_glossary ? ' checked="1"' : '';
         $checked_index = $glossary_index ? ' checked="1"' : '';
         $tool_content .= "<div class='form-wrapper'>
@@ -247,10 +255,10 @@ if ($is_editor) {
         $html_id = $html_term = $html_url = $definition = $notes = '';
         $category_id = 'none';
         if (isset($_GET['add'])) {
-            $nameTools = $langAddGlossaryTerm;
+            $pageName = $langAddGlossaryTerm;
             $submit_value = $langSubmit;
         } else {
-            $nameTools = $langEditGlossaryTerm;
+            $pageName = $langEditGlossaryTerm;
             $id = intval($_GET['edit']);
             $data = Database::get()->querySingle("SELECT term, definition, url, notes, category_id
                                               FROM glossary WHERE id = ?d", $id);
@@ -369,7 +377,7 @@ if(!isset($_GET['add']) && !isset($_GET['edit']) && !isset($_GET['config'])) {
     }    
     if ($cat_id) {
         $navigation[] = array('url' => $base_url, 'name' => $langGlossary);
-        $nameTools = q($categories[$cat_id]);
+        $pageName = q($categories[$cat_id]);
         $where .= " AND category_id = $cat_id";
     }
     $sql = Database::get()->queryArray("SELECT id, term, definition, url, notes, category_id
@@ -388,7 +396,7 @@ if(!isset($_GET['add']) && !isset($_GET['edit']) && !isset($_GET['config'])) {
         $tool_content .= "</tr>";    
         foreach ($sql as $g) {
             if (isset($_GET['id'])) {
-                $nameTools = q($g->term);
+                $pageName = q($g->term);
             }        
             if (!empty($g->url)) {
                 $urllink = "<div><span class='smaller'>(<a href='" . q($g->url) .

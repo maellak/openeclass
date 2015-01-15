@@ -61,7 +61,7 @@ if ($extra_messages) {
     include $extra_messages;
 }
 
-$nameTools = $langUpgrade;
+$pageName = $langUpgrade;
 
 $auth_methods = array('imap', 'pop3', 'ldap', 'db');
 $OK = "[<font color='green'> $langSuccessOk </font>]";
@@ -298,12 +298,13 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                     ('user_multidep', '0'),
                     ('restrict_owndep', '0'),
                     ('restrict_teacher_owndep', '0')");
-
+    
+    // upgrade from versions < 2.1.3 is not possible
     if (version_compare($oldversion, '2.1.3', '<') or ( !isset($oldversion))) {
         updateInfo(1, $langUpgTooOld);
         exit;
     }
-
+    // upgrade from version 2.x to 3.0
     if (version_compare($oldversion, '2.2', '<')) {
         // course units
         Database::get()->query("CREATE TABLE IF NOT EXISTS `course_units` (
@@ -849,7 +850,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
         }
     }
 
-    if (version_compare($oldversion, '3', '<')) {
+    if (version_compare($oldversion, '3.0b2', '<')) {
         // Check whether new tables already exist and delete them if empty, 
         // rename them otherwise
         $new_tables = array('cron_params', 'log', 'log_archive', 'forum',
@@ -1319,6 +1320,8 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
                             `start_date` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
                             `end_date` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
                             `active` INT(11) NOT NULL DEFAULT 0,
+                            `description` MEDIUMTEXT NOT NULL,
+                            `end_message` MEDIUMTEXT NOT NUll,
                             `anonymized` INT(1) NOT NULL DEFAULT 0)
                             $charset_spec");
         Database::get()->query("CREATE TABLE IF NOT EXISTS `poll_answer_record` (
@@ -2067,7 +2070,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
             Database::get()->query("CREATE INDEX `bbb_index` ON bbb_session(course_id)");
     DBHelper::indexExists('course', 'course_index') or
             Database::get()->query("CREATE INDEX `course_index` ON course(code)");
-    DBHelper::indexExists('course_department', 'course_index') or
+    DBHelper::indexExists('course_department', 'cdep_index') or
             Database::get()->query("CREATE INDEX `cdep_index` ON course_department(course, department)");
     DBHelper::indexExists('course_description', 'cd_type_index') or
             Database::get()->query('CREATE INDEX `cd_type_index` ON course_description(`type`)');
@@ -2298,7 +2301,6 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
         }
         if (version_compare($oldversion, '2.4', '<')) {
             updateInfo(-1, $langUpgCourse . " " . $row->code . " 2.4");
-            convert_description_to_units($row->code, $row->id);
             upgrade_course_index_php($row->code);
             upgrade_course_2_4($row->code, $row->id, $row->lang);
         }
@@ -2322,7 +2324,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
             updateInfo(-1, $langUpgCourse . " " . $row->code . " 2.10");
             upgrade_course_2_11($row->code);
         }
-        if (version_compare($oldversion, '3.0', '<')) {
+        if (version_compare($oldversion, '3.0b2', '<')) {
             updateInfo(-1, $langUpgCourse . " " . $row->code . " 3.0");
             upgrade_course_3_0($row->code, $row->id);
         }
@@ -2334,7 +2336,7 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
         convert_db_utf8($mysqlMainDb);
     }
 
-    if (version_compare($oldversion, '3', '<')) { // special procedure, must execute after course upgrades
+    if (version_compare($oldversion, '3.0b2', '<')) {
         Database::get()->query("USE `$mysqlMainDb`");
 
         Database::get()->query("CREATE VIEW `actions_daily_tmpview` AS
@@ -2369,27 +2371,53 @@ $mysqlMainDb = ' . quote($mysqlMainDb) . ';
             set_config('enable_indexing', 0);
             echo "<hr><p class='alert alert-info'>$langUpgIndexingNotice</p>";
         }
-    }
-    // convert tables to InnoDB storage engine
-    $result = Database::get()->queryArray("SHOW FULL TABLES");
-    foreach ($result as $table) {
-        $value = "Tables_in_$mysqlMainDb";
-        if ($table->Table_type === 'BASE TABLE') {
-            Database::get()->query("ALTER TABLE `" . $table->$value . "` ENGINE = InnoDB");
+        
+        // convert tables to InnoDB storage engine
+        $result = Database::get()->queryArray("SHOW FULL TABLES");
+        foreach ($result as $table) {
+            $value = "Tables_in_$mysqlMainDb";
+            if ($table->Table_type === 'BASE TABLE') {
+                Database::get()->query("ALTER TABLE `" . $table->$value . "` ENGINE = InnoDB");
+            }
         }
     }
-
-    // upgrade from 3.0 beta to 3.0 new-ui
+        
     if (version_compare($oldversion, '3.0', '<')) {
+        Database::get()->query("USE `$mysqlMainDb`");
         Database::get()->query("CREATE TABLE IF NOT EXISTS `theme_options` (
                                 `id` int(11) NOT NULL AUTO_INCREMENT,
                                 `name` VARCHAR(300) NOT NULL,
                                 `styles` LONGTEXT NOT NULL,
                                 PRIMARY KEY (`id`)) $charset_spec");
+        //Add course home_layout fiels
+        if (!DBHelper::fieldExists('home_layout', 'course')) {
+            Database::get()->query("ALTER TABLE course ADD home_layout TINYINT(1) NOT NULL DEFAULT 1");
+            Database::get()->query("UPDATE course SET home_layout = 3");
+        }
+        if (!DBHelper::fieldExists('q_scale', 'poll_question')) {
+            Database::get()->query("ALTER TABLE poll_question ADD q_scale INT(11) NULL DEFAULT NULL");
+        }
+        //Add course image field
+        if (!DBHelper::fieldExists('course_image', 'course')) {
+            Database::get()->query("ALTER TABLE course ADD course_image VARCHAR(400) NULL");
+        }
+        // Move course description from unit_resources to new course.description field
+        if (!DBHelper::fieldExists('description', 'course')) {
+            Database::get()->query("ALTER TABLE course ADD description MEDIUMTEXT NOT NULL");
+            $result = Database::get()->query("UPDATE course, course_units, unit_resources
+                SET course.description = unit_resources.comments
+                WHERE course.id = course_units.course_id AND
+                      course_units.id = unit_resources.unit_id AND
+                      course_units.`order` = -1 AND
+                      unit_resources.res_id = -1");
+            if ($result->affectedRows) {
+                Database::get()->query("DELETE FROM unit_resources WHERE res_id = -1");
+                Database::get()->query("DELETE FROM course_units WHERE `order` = -1");
+            }
+        }
         set_config('theme', 'default');
-        set_config('theme_options_id', 0);
+        set_config('theme_options_id', 0);    
     }
-
     // update eclass version
     Database::get()->query("UPDATE config SET `value` = '" . ECLASS_VERSION . "' WHERE `key`='version'");
 

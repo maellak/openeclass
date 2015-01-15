@@ -33,8 +33,6 @@ require_once 'include/lib/multimediahelper.class.php';
 require_once 'include/lib/fileUploadLib.inc.php';
 require_once 'modules/graphics/plotter.php';
 
-$nameTools = $langWelcomeToPortfolio;
-
 ModalBoxHelper::loadModalBox();
 
 if(!empty($langLanguageCode)){
@@ -187,10 +185,10 @@ $tool_content .= "
                             </div>
                             <div class='col-sm-6 event-legend'>
                                 <div>
-                                    <span class='event event-success'></span><span>$langAgendaPersonalEvent</span>
+                                    <span class='event event-success'></span><span>$langAgendaSystemEvent</span>
                                 </div>
                                 <div>
-                                    <span class='event event-special'></span><span>$langAgendaSystemEvent</span>
+                                    <span class='event event-special'></span><span>$langAgendaPersonalEvent</span>
                                 </div>
                             </div>
                         </div>
@@ -219,20 +217,46 @@ $tool_content .= "
             </div>
     </div>";
 
+$userdata = Database::get()->querySingle("SELECT surname, givenname, username, email, status, phone, am, registered_at,
+                has_icon, description, password,
+                email_public, phone_public, am_public
+            FROM user
+            WHERE id = ?d", $uid);
+$numUsersRegistered = Database::get()->querySingle("SELECT COUNT(*) AS numUsers
+        FROM course_user cu1, course_user cu2
+        WHERE cu1.course_id = cu2.course_id AND cu1.user_id = ?d AND cu1.status = ?d AND cu2.status <> ?d;", $uid, USER_TEACHER, USER_TEACHER)->numUsers;
+$lastVisit = Database::get()->queryArray("SELECT * FROM loginout
+                        WHERE id_user = ?d ORDER by idLog DESC LIMIT 2", $uid);
 $tool_content .= "
 </div>
 <div id='profile_box' class='row'>
     <div class='col-md-12'>
+        <h3 class='content-title'>$langCompactProfile</h3>
         <div class='panel'>
             <div class='panel-body'>
                 <div class='row'>
-                    <div class='col-sm-3'>
-                        <img src='" . user_icon($uid, IMAGESIZE_LARGE) . "' style='width:100px;' class='img-circle center-block img-responsive' alt='Circular Image'>
-                        <h4 class='text-center'>".q("$_SESSION[givenname] $_SESSION[surname]")."</h4>
+                    <div class='col-xs-4 col-sm-2'>
+                        <img src='" . user_icon($uid, IMAGESIZE_LARGE) . "' style='width:80px;' class='img-circle center-block img-responsive' alt='Avatar Image'><br>
+                        <h5 class='not_visible text-center' style='margin:0px;'>".q($_SESSION['uname'])."</h5>
                     </div>
-                    <!--<div class='col-sm-9'>
-                        <div class='stats'>".courseVisitsPlot()."</div>
-                    </div>--> 
+                    <div class='col-xs-8 col-sm-5'>
+                        <h4>".q("$_SESSION[givenname] $_SESSION[surname]")."</h4>
+                        <span class='tag'>$langProfileMemberSince : </span><span class='tag-value'>". claro_format_locale_date($dateFormatLong, strtotime($userdata->registered_at))."</span><br>
+                        <span class='tag'>$langProfileLastVisit : <span><span class='tag-value'>". claro_format_locale_date($dateFormatLong, strtotime($lastVisit[1]->when))."</span>
+                    </div>
+                    <div class='col-xs-12 col-sm-5'>
+                        <ul class='list-group'>
+                            <li class='list-group-item'>
+                              <span class='badge'>$student_courses_count</span>
+                              $langSumCoursesEnrolled
+                            </li>
+                            <li class='list-group-item'>
+                              <span class='badge'>$teacher_courses_count</span>
+                              $langSumCoursesSupport
+                            </li>
+                        </ul>
+                        <div class='quick-change-pwd'><a href='".$urlSecure."main/profile/password.php'>$langProfileQuickPassword</a></div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -35,6 +35,7 @@ require_once 'modules/rating/class.rating.php';
 
 ModalBoxHelper::loadModalBox();
 
+$toolName = $langForums;
 if ($is_editor) {
     load_js('tools.js');
 }
@@ -150,7 +151,7 @@ if (!add_units_navigation(TRUE)) {
     $navigation[] = array('url' => "index.php?course=$course_code", 'name' => $langForums);
     $navigation[] = array('url' => "viewforum.php?course=$course_code&amp;forum=$forum", 'name' => q($forum_name));
 }
-$nameTools = q($topic_subject);
+$pageName = q($topic_subject);
 
 if (isset($_SESSION['message'])) {
     $tool_content .= $_SESSION['message'];

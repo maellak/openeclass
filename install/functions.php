@@ -51,10 +51,9 @@ function draw($toolContent, $options=null) {
     $t->set_block('mainBlock', 'LoggedOutBlock', 'delete');
     $t->set_block('mainBlock', 'toolTitleBlock', 'delete');
     $t->set_block('mainBlock', 'statusSwitchBlock', 'delete');
-    $t->set_block('mainBlock', 'breadCrumbHomeBlock', 'delete');
-    $t->set_block('mainBlock', 'breadCrumbStartBlock', 'delete');
-    $t->set_block('mainBlock', 'breadCrumbEndBlock', 'delete');
     $t->set_block('mainBlock', 'modalWindowBlock', 'delete');
+    $t->set_var('logo_img', 'logo_eclass.png');
+    $t->set_var('logo_img_small', 'logo_eclass_small.png');
     $t->set_var('template_base', '../template/default');
 
     if (isset($options['no-menu'])) {
@@ -69,6 +68,7 @@ function draw($toolContent, $options=null) {
         $t->set_block('mainBlock', 'leftNavCategoryBlock', 'leftNavCategory');
         $t->set_block('leftNavCategoryBlock', 'leftNavLinkBlock', 'leftNavLink');
         $t->set_block('mainBlock', 'mobileViewOpenDiv', 'delete');
+        $t->set_block('mainBlock', 'searchBlock', 'delete');
 
         if (is_array($toolArr)) {
             for ($i = 0; $i < $numOfToolGroups; $i++) {

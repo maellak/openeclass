@@ -32,7 +32,6 @@ if (!defined('COMMON_DOCUMENTS')) {
         $menuTypeID = 3;
     }
 }
-
 $guest_allowed = true;
 require_once '../../include/baseTheme.php';
 /* * ** The following is added for statistics purposes ** */
@@ -65,7 +64,8 @@ copyright_info_init();
 
 $require_help = TRUE;
 $helpTopic = 'Doc';
-
+$toolName = $langDoc;
+$pageName = '';
 // check for quotas
 $diskUsed = dir_total_space($basedir);
 if (defined('COMMON_DOCUMENTS')) {
@@ -77,8 +77,7 @@ if (defined('COMMON_DOCUMENTS')) {
 }
 
 
-if (isset($_GET['showQuota'])) {
-    $nameTools = $langQuotaBar;
+if (isset($_GET['showQuota'])) {    
     if ($subsystem == GROUP) {
         $navigation[] = array('url' => 'index.php?course=' . $course_code . '&amp;group_id=' . $group_id, 'name' => $langDoc);
     } elseif ($subsystem == EBOOK) {
@@ -489,8 +488,7 @@ if ($can_upload) {
                 <div class='col-xs-12'>
                     <div class='form-wrapper'>
                         <form class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code'>
-                            <fieldset>
-                                <legend>$langRename:</legend>
+                            <fieldset>                                
                                     <input type='hidden' name='sourceFile' value='" . q($_GET['rename']) . "' />
                                     $group_hidden_input
                                     <div class='form-group'>
@@ -532,24 +530,23 @@ if ($can_upload) {
     if (isset($_GET['createDir'])) {
         $createDir = q($_GET['createDir']);
         $dialogBox .= "
-<div class='row'>        
-    <div class='col-md-12'>
-            <h5 class='content-title'>$langCreateDir</h5>
-            <div class='panel padding-thin focused'>
-                <form action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post' class='form-inline' role='form'>
-                    $group_hidden_input
-                    <input type='hidden' name='newDirPath' value='$createDir' />
-                    <div class='form-group'>
-                        <input type='text' class='form-control' id='newDirName' name='newDirName' placeholder='$langNameDir'>
-                    </div>
-                    <button type='submit' class='btn btn-primary'>
-                        <i class='fa fa-plus space-after-icon'></i>
-                        $langCreateDir
-                    </button>
-                </form>
+        <div class='row'>        
+        <div class='col-md-12'>            
+                <div class='panel padding-thin focused'>
+                    <form action='$_SERVER[SCRIPT_NAME]?course=$course_code' method='post' class='form-inline' role='form'>
+                        $group_hidden_input
+                        <input type='hidden' name='newDirPath' value='$createDir' />
+                        <div class='form-group'>
+                            <input type='text' class='form-control' id='newDirName' name='newDirName' placeholder='$langNameDir'>
+                        </div>
+                        <button type='submit' class='btn btn-primary'>
+                            <i class='fa fa-plus space-after-icon'></i>
+                            $langCreateDir
+                        </button>
+                    </form>
+                </div>
             </div>
-        </div>
-    </div>";
+        </div>";
     }
 
     // add/update/remove comment
@@ -784,25 +781,26 @@ if ($can_upload) {
         if ($result) {
             $filename = q($result->filename);
             $replacemessage = sprintf($langReplaceFile, '<b>' . $filename . '</b>');
-            $dialogBox = "
-                                <form method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code' enctype='multipart/form-data'>
-                                <fieldset>
-                                <input type='hidden' name='replacePath' value='" . q($_GET['replace']) . "' />
-                                $group_hidden_input
-                                        <table class='table-default'>
-                                        <tr>
-                                                <td>$replacemessage</td>
-                                                <td><input type='file' name='newFile' size='35' /></td>
-                                                <td><input class='btn btn-primary' type='submit' value='$langReplace' /></td>
-                                        </tr>
-                                        </table>
-                                </fieldset>
-                                </form>
-                                <br />";
+            $dialogBox = "<div class='form-wrapper'>
+                        <form class='form-horizontal' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code' enctype='multipart/form-data'>
+                        <fieldset>
+                        <input type='hidden' name='replacePath' value='" . q($_GET['replace']) . "' />
+                        $group_hidden_input
+                        <div class='form-group'>
+                            <label class='col-sm-5 control-label'>$replacemessage</label>
+                            <div class='col-sm-7'><input type='file' name='newFile' size='35' /></div>
+                        </div>
+                        <div class='form-group'>
+                            <div class='col-sm-offset-3 col-sm-9'>
+                                <input class='btn btn-primary' type='submit' value='$langReplace' />
+                            </div>
+                        </div>
+                        </fieldset>
+                        </form></div>";
         }
     }
 
-    // Emfanish ths formas gia tropopoihsh comment
+    // Add comment form
     if (isset($_GET['comment'])) {
         $comment = $_GET['comment'];
         $oldComment = '';
@@ -827,80 +825,75 @@ if ($can_upload) {
             $fileName = my_basename($comment);
             if (empty($oldFilename))
                 $oldFilename = $fileName;
-            $dialogBox .= "
-                        <form method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code'>
+                $dialogBox .= "<div class='form-wrapper'>
+                        <form class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code'>
                         <fieldset>
-                          <legend>$langAddComment</legend>
                           <input type='hidden' name='commentPath' value='" . q($comment) . "' />
                           <input type='hidden' size='80' name='file_filename' value='$oldFilename' />
                           $group_hidden_input
-                          <table class='table-default'>
-                          <tr>
-                            <th>$langWorkFile:</th>
-                            <td>$oldFilename</td>
-                          </tr>
-                          <tr>
-                            <th>$langTitle:</th>
-                            <td><input class='form-control' type='text' name='file_title' value='$oldTitle'></td>
-                          </tr>
-                          <tr>
-                            <th>$langComment:</th>
-                            <td><input class='form-control' type='text' name='file_comment' value='$oldComment'></td>
-                          </tr>
-                          <tr>
-                            <th>$langCategory:</th>
-                            <td>" .
-                    selection(array('0' => $langCategoryOther,
-                        '1' => $langCategoryExcercise,
-                        '2' => $langCategoryLecture,
-                        '3' => $langCategoryEssay,
-                        '4' => $langCategoryDescription,
-                        '5' => $langCategoryExample,
-                        '6' => $langCategoryTheory), 'file_category', $oldCategory, "class='form-control'") . "</td>
-                          </tr>
-                          <tr>
-                            <th>$langSubject : </th>
-                            <td><input class='form-control' type='text' name='file_subject' value='$oldSubject'></td>
-                          </tr>
-                          <tr>
-                            <th>$langDescription : </th>
-                            <td><input class='form-control' type='text' name='file_description' value='$oldDescription'></td>
-                          </tr>
-                          <tr>
-                            <th>$langAuthor : </th>
-                            <td><input class='form-control' type='text' name='file_author' value='$oldAuthor'></td>
-                          </tr>";
-            $dialogBox .= "<tr><th>$langCopyrighted : </th><td>";
-            $dialogBox .= selection($copyright_titles, 'file_copyrighted', $oldCopyrighted, "class='form-control'") . "</td></tr>";
-
-            // display combo box for language selection
-            $dialogBox .= "
-                                <tr>
-                                <th>$langLanguage :</th>
-                                <td>" .
-                    selection(array('en' => $langEnglish,
-                        'fr' => $langFrench,
-                        'de' => $langGerman,
-                        'el' => $langGreek,
-                        'it' => $langItalian,
-                        'es' => $langSpanish), 'file_language', $oldLanguage, "class='form-control'") .
-                    "</td>
-                        </tr>
-                        <tr>
-                        <th>&nbsp;</th>
-                        <td class='right'><input class='btn btn-primary' type='submit' value='$langOkComment' /></td>
-                        </tr>
-                        <tr>
-                        <th>&nbsp;</th>
-                        <td class='right'>$langNotRequired</td>
-                        </tr>
-                        </table>
-                        <input type='hidden' size='80' name='file_creator' value='$oldCreator' />
-                        <input type='hidden' size='80' name='file_date' value='$oldDate' />
-                        <input type='hidden' size='80' name='file_oldLanguage' value='$oldLanguage' />
+                          <div class='form-group'>
+                          <label class='col-sm-2 control-label'>$langWorkFile:</label>
+                              <span>$oldFilename</span>
+                          </div>
+                          <div class='form-group'>
+                            <label class='col-sm-2 control-label'>$langTitle:</label>
+                            <div class='col-sm-10'><input class='form-control' type='text' name='file_title' value='$oldTitle'></div>
+                          </div>
+                          <div class='form-group'>
+                            <label class='col-sm-2 control-label'>$langComment:</label>
+                            <div class='col-sm-10'><input class='form-control' type='text' name='file_comment' value='$oldComment'></div>
+                          </div>
+                          <div class='form-group'>
+                            <label class='col-sm-2 control-label'>$langCategory:</label>
+                            <div class='col-sm-10'>" .
+                                selection(array('0' => $langCategoryOther,
+                                    '1' => $langCategoryExcercise,
+                                    '2' => $langCategoryLecture,
+                                    '3' => $langCategoryEssay,
+                                    '4' => $langCategoryDescription,
+                                    '5' => $langCategoryExample,
+                                    '6' => $langCategoryTheory), 'file_category', $oldCategory, "class='form-control'") . "</div>
+                          </div>
+                          <div class='form-group'>
+                            <label class='col-sm-2 control-label'>$langSubject:</label>
+                            <div class='col-sm-10'><input class='form-control' type='text' name='file_subject' value='$oldSubject'></div>
+                          </div>
+                          <div class='form-group'>
+                            <label class='col-sm-2 control-label'>$langDescription:</label>
+                            <div class='col-sm-10'><input class='form-control' type='text' name='file_description' value='$oldDescription'></div>
+                          </div>
+                          <div class='form-group'>
+                            <label class='col-sm-2 control-label'>$langAuthor:</label>
+                            <div class='col-sm-10'><input class='form-control' type='text' name='file_author' value='$oldAuthor'></div>
+                          </div>
+                        <div class='form-group'>
+                            <label class='col-sm-2 control-label'>$langCopyrighted:</label>
+                            <div class='col-sm-10'>"
+                                 .selection($copyright_titles, 'file_copyrighted', $oldCopyrighted, "class='form-control'") . 
+                            "</div>
+                        </div>
+                        <div class='form-group'>
+                                <label class='col-sm-2 control-label'>$langLanguage:</label>
+                                <div class='col-sm-10'>" .
+                                    selection(array('en' => $langEnglish,
+                                        'fr' => $langFrench,
+                                        'de' => $langGerman,
+                                        'el' => $langGreek,
+                                        'it' => $langItalian,
+                                        'es' => $langSpanish), 'file_language', $oldLanguage, "class='form-control'") .
+                                "</div>
+                        </div>
+                        <div class='form-group'>
+                            <div class='col-sm-offset-2 col-sm-10'>
+                                <input class='btn btn-primary' type='submit' value='$langOkComment'>
+                            </div>
+                        </div>
+                        <span class='help-block'>$langNotRequired</span>                       
+                        <input type='hidden' size='80' name='file_creator' value='$oldCreator'>
+                        <input type='hidden' size='80' name='file_date' value='$oldDate'>
+                        <input type='hidden' size='80' name='file_oldLanguage' value='$oldLanguage'>
                         </fieldset>
-                        </form>
-                        \n\n";
+                        </form></div>";
         } else {
             $action_message = "<div class='alert alert-danger'>$langFileNotFound</div>";
         }
@@ -942,7 +935,8 @@ if ($can_upload) {
                                                 path = ?s", $newVisibilityStatus, $visibilityPath);
         $r = Database::get()->querySingle("SELECT id FROM document WHERE $group_sql AND path = ?s", $visibilityPath);
         Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_DOCUMENT, $r->id);
-        $action_message = "<div class='alert alert-success'>$langViMod</div>";
+        Session::Messages($langViMod, 'alert-success');
+        redirect_to_home_page("modules/document/index.php?course=$course_code");
     }
 
     // Public accessibility commands
@@ -1089,6 +1083,21 @@ if ($can_upload) {
     }
     // available actions
     if (!$is_in_tinymce) {
+        if (isset($_GET['rename'])) {
+            $pageName = $langRename;
+        }
+        if (isset($_GET['move'])) {
+            $pageName = $langMove;
+        }
+        if (isset($_GET['createDir'])) {
+            $pageName = $langCreateDir;
+        }
+        if (isset($_GET['comment'])) {
+            $pageName = $langAddComment;
+        }
+        if (isset($_GET['replace'])) {
+            $pageName = $langReplace;
+        }
         $diskQuotaDocument = $diskQuotaDocument * 1024 / 1024;
         $tool_content .= action_bar(array(
             array('title' => $langDownloadFile,
@@ -1156,18 +1165,17 @@ if ($doc_count == 0) {
             </div>
         </div>
     </div>
-
     <div class='row'>
         <div class='col-md-12'>
                 <div class='table-responsive'>
                 <table class='table-default'>
                     <tr>";
-    $tool_content .= "<th width='50' class='center'><b>" . headlink($langType, 'type') . '</b></th>' .
-                     "<th><div align='left'>" . headlink($langName, 'name') . '</div></th>' .
-                     "<th width='60' class='center'><b>$langSize</b></th>" .
-                     "<th width='80' class='center'><b>" . headlink($langDate, 'date') . '</b></th>';
+    $tool_content .= "<th class='center'><b>" . headlink($langType, 'type') . '</b></th>' .
+                     "<th><div class='text-left'>" . headlink($langName, 'name') . '</div></th>' .
+                     "<th class='center'><b>$langSize</b></th>" .
+                     "<th class='text-center'><b>" . headlink($langDate, 'date') . '</b></th>';
     if (!$is_in_tinymce) {
-        $tool_content .= "<th width='50' class='text-center'>".icon('fa-gears', $langCommands)."</th>";
+        $tool_content .= "<th class='text-center'>".icon('fa-gears', $langCommands)."</th>";
     }
     $tool_content .= "</tr>";
 
@@ -1270,11 +1278,6 @@ if ($doc_count == 0) {
 
                     $xmlCmdDirName = ($entry['format'] == ".meta" && get_file_extension($cmdDirName) == "xml") ? substr($cmdDirName, 0, -4) : $cmdDirName;
                     $tool_content .= action_button(array(
-                                    array('title' => $langDelete,
-                                          'url' => "{$base_url}filePath=$cmdDirName&amp;delete=1",
-                                          'icon' => 'fa-times',
-                                          'class' => 'delete',
-                                          'confirm' => "$langConfirmDelete $entry[filename]"),
                                     array('title' => $langGroupSubmit,
                                           'url' => "{$urlAppend}modules/work/group_work.php?course=$course_code&amp;group_id=$group_id&amp;submit=$cmdDirName",
                                           'icon' => 'fa-book',
@@ -1312,7 +1315,12 @@ if ($doc_count == 0) {
                                     array('title' => $langResourceAccess,
                                           'url' => "{$base_url}public=$cmdDirName",
                                           'icon' => 'fa-lock',
-                                          'show' => $course_id > 0 and course_status($course_id) == COURSE_OPEN and !$entry['public'])));
+                                          'show' => $course_id > 0 and course_status($course_id) == COURSE_OPEN and !$entry['public']),
+                                    array('title' => $langDelete,
+                                          'url' => "{$base_url}filePath=$cmdDirName&amp;delete=1",
+                                          'icon' => 'fa-times',
+                                          'class' => 'delete',
+                                          'confirm' => "$langConfirmDelete $entry[filename]")));
                     $tool_content .= "</td>";
                 } else { // student view
                     $tool_content .= "<td class='text-center'>" . icon('fa-save', $dload_msg, $download_url) . "</td>";

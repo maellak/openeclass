@@ -268,19 +268,16 @@ if (isset($require_current_course) and $require_current_course) {
                                            WHERE course.id = course_department.course AND
                                                  hierarchy.id = course_department.department AND
                                                  course.code=?s"
-                , function ($course_info) use (&$course_id, &$public_code, &$course_code, &$title, &$fac, &$titulaires, &$languageInterface, &$visible, &$currentCourseName, &$currentCourseDepartment, &$currentCourseTitular, &$currentCourseLanguage ) {
+                , function ($course_info) use (&$course_id, &$public_code, &$course_code, &$fac, &$titulaires, &$languageInterface, &$visible, &$currentCourseName, &$currentCourseLanguage ) {
             $course_id = $course_info->cid;
             $public_code = $course_info->public_code;
             $course_code = $course_info->code;
-            $title = $course_info->title;
             $fac = $course_info->faculte;
             $titulaires = $course_info->prof_names;
             $languageInterface = $course_info->lang;
             $visible = $course_info->visible;
             // New variables
-            $currentCourseName = $title;
-            $currentCourseDepartment = $fac;
-            $currentCourseTitular = $titulaires;
+            $currentCourseName = $course_info->title;
             $currentCourseLanguage = $languageInterface;
         }
                 , function ($errormsg) use($urlServer) {
@@ -408,7 +405,7 @@ $static_module_paths = array('user' => MODULE_ID_USERS,
     'sharing' => MODULE_ID_SHARING,
     'notes' => MODULE_ID_NOTES);
 
-// the system admin adn power users has rights to all courses
+// the system admin and power users have rights to all courses
 if ($is_admin or $is_power_user) {
     $is_course_admin = true;
     if (isset($currentCourse)) {
@@ -421,7 +418,7 @@ if ($is_admin or $is_power_user) {
 $is_editor = false;
 if (isset($_SESSION['courses'])) {
     if (isset($currentCourse)) {
-        if (check_editor()) { // chech if user is editor of course
+        if (check_editor()) { // check if user is editor of course
             $is_editor = true;
         }
         if (@$_SESSION['courses'][$currentCourse] == USER_TEACHER) {

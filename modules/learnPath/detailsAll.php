@@ -4,7 +4,7 @@
  * Open eClass 3.0
  * E-learning and Course Management System
  * ========================================================================
- * Copyright 2003-2012  Greek Universities Network - GUnet
+ * Copyright 2003-2014  Greek Universities Network - GUnet
  * A full copyright notice can be read in "/info/copyright.txt".
  * For a full list of contributors, see "credits.txt".
  *
@@ -51,11 +51,12 @@ require_once 'include/lib/learnPathLib.inc.php';
 require_once 'modules/usage/statistics_tools_bar.php';
 
 if (isset($_GET['from_stats']) and $_GET['from_stats'] == 1) { // if we come from statistics
+    $toolName = $langUsage;
     $navigation[] = array('url' => '../usage/?course=' . $course_code, 'name' => $langUsage);
-    $nameTools = "$langLearningPaths - $langTrackAllPathExplanation";
+    $pageName = "$langLearningPaths - $langTrackAllPathExplanation";
 } else {
     $navigation[] = array("url" => "index.php?course=$course_code", "name" => $langLearningPaths);
-    $nameTools = $langTrackAllPathExplanation;
+    $pageName = $langTrackAllPathExplanation;
 }
 
 // display a list of user and their respective progress

@@ -1,5 +1,4 @@
 <?php
-require_once('main/notifications/notifications.inc.php');
 $theme_settings = array(
     'js_loaded' => array('jquery'),
     'classes' => array('tool_active' => 'active',
@@ -33,19 +32,26 @@ $theme_settings = array(
     ),
 );
 
-function template_callback($template, $menuTypeID)
+function template_callback($template, $menuTypeID, $embed)
 {
-    global $uid, $session, $native_language_names_init, $course_id, $professor, $modules, $admin_modules, $theme_settings;
+    global $uid, $session, $native_language_names_init, $course_id, $professor,
+           $modules, $admin_modules, $theme_settings;
+
     if ($uid) {
-        $template->set_block('mainBlock', 'LoggedOutBlock', 'delete');
+        if (!$embed) {
+            $template->set_block('mainBlock', 'LoggedOutBlock', 'delete');
+        }
         $template->set_block('mainBlock', 'sideBarCourseBlock', 'sideBarCourse');
         $template->set_block('sideBarCourseBlock', 'sideBarCourseNotifyBlock', 'sideBarCourseNotify');
+
+        // Save sideBarCourseNotifyBlock in session for use in AJAX callback
+        $_SESSION['template']['sideBarCourseNotifyBlock'] = trim($template->get_var('sideBarCourseNotifyBlock'));
+        
         // FIXME: smarter selection of courses for sidebar
         Database::get()->queryFunc("SELECT id, code, title, prof_names, public_code
             FROM course, course_user
             WHERE course.id = course_id AND user_id = ?d
-            ORDER BY reg_date DESC
-            LIMIT 5", function ($c) use ($template, $modules, $admin_modules, $theme_settings) {
+            ORDER BY reg_date DESC", function ($c) use ($template, $modules, $admin_modules, $theme_settings) {
                 global $urlAppend;
                 static $counter = 1;
 
@@ -53,21 +59,10 @@ function template_callback($template, $menuTypeID)
                 $template->set_var('sideBarCourseURL', $urlAppend . 'courses/' . $c->code . '/');
                 $template->set_var('sideBarCourseTitle', q($c->title));
                 $template->set_var('sideBarCourseCode', q($c->public_code));
+                $template->set_var('sideBarCourseID', q($c->id));
                 $template->set_var('sideBarCourseProf', q($c->prof_names));
-                $template->set_var('sideBarCourseNotify', '');
-                $notifications = get_course_notifications($c->id);
-                
-                foreach ($notifications as $n) {
-                    $modules_array = (isset($modules[$n->module_id]))? $modules:$admin_modules;
-                    if(isset($modules_array[$n->module_id]) && isset($modules_array[$n->module_id]['image']) && isset($theme_settings['icon_map'][$modules_array[$n->module_id]['image']])){
-                        $template->set_var('sideBarCourseNotifyIcon', $theme_settings['icon_map'][$modules_array[$n->module_id]['image']]);
-                        $template->set_var('sideBarCourseNotifyCount', $n->notcount);
-                        $template->parse('sideBarCourseNotify', 'sideBarCourseNotifyBlock', true);
-                    }
-                }
                 $template->parse('sideBarCourse', 'sideBarCourseBlock', true);
                 $counter++;
-
             }, $uid);
 
 
@@ -75,10 +70,12 @@ function template_callback($template, $menuTypeID)
         $template->set_block('mainBlock', 'LoggedInBlock', 'delete');
     }
 
-    if (!$course_id or !isset($professor) or !$professor) {
-        $template->set_block('mainBlock', 'professorBlock', 'delete');
-    } else {
-        $template->set_var('PROFESSOR', q($professor));
+    if (!$embed) {
+        if (!$course_id or !isset($professor) or !$professor) {
+            $template->set_block('mainBlock', 'professorBlock', 'delete');
+        } else {
+            $template->set_var('PROFESSOR', q($professor));
+        }
     }
 
     if ($menuTypeID != 2) {

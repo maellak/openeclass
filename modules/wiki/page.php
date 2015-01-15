@@ -65,7 +65,7 @@ if ($result->c > 0) {
 } else {
     $is_courseMember = false;
 }
-$nameTools = $langWiki;
+$pageName = $langWiki;
 
 // check and set user access level for the tool
 if (!isset($_REQUEST['wikiId'])) {
@@ -199,7 +199,7 @@ $creatorId = $uid;
 
 $versionId = ( isset($_REQUEST['versionId']) ) ? intval($_REQUEST['versionId']) : 0;
 
-$wiki_title = ( isset($_REQUEST['title']) ) ? strip_tags($_REQUEST['title']) : '';
+$wiki_title = ( isset($_REQUEST['title']) ) ? strip_tags(rawurldecode($_REQUEST['title'])) : '';
 
 $changelog = ( isset($_POST['changelog']) ) ? strip_tags($_POST['changelog']) : '';
 
@@ -457,23 +457,23 @@ switch ($action) {
                 . $wikiId . '&amp;title=' . $wiki_title
                 , 'name' => $dispTitle);
 
-            $nameTools = $langEdit;
+            $pageName = $langEdit;
             break;
         }
     case "all": {
-            $nameTools = $langWikiAllPages;
+            $pageName = $langWikiAllPages;
             break;
         }
     case "recent": {
-            $nameTools = $langWikiRecentChanges;
+            $pageName = $langWikiRecentChanges;
             break;
         }
     case "rqSearch": {
-        	$nameTools = $langSearch;
+        	$pageName = $langSearch;
         	break;
         }
     case "exSearch": {
-        	$nameTools = $langSearch;
+        	$pageName = $langSearch;
         	break;
         }   
     case "history": {
@@ -481,11 +481,11 @@ switch ($action) {
             $navigation[] = array('url' => 'page.php?course=' . $course_code . '&amp;action=show&amp;wikiId='
                 . $wikiId . '&amp;title=' . $wiki_title
                 , 'name' => $dispTitle);
-            $nameTools = $langWikiPageHistory;
+            $pageName = $langWikiPageHistory;
             break;
         }
     default: {
-            $nameTools = ( $wiki_title == "__MainPage__" ) ? $langWikiMainPage : $wiki_title;
+            $pageName = ( $wiki_title == "__MainPage__" ) ? $langWikiMainPage : $wiki_title;
         }
 }
 
@@ -846,13 +846,13 @@ switch ($action) {
                 
                 if(isset($_GET['printable']) and $_GET['printable']=="yes") {
                     if ($versionId == 0) {
-                	    $wikiPage->loadPage($title);
+                	    $wikiPage->loadPage($wiki_title);
                 	}
                     else {
                         $wikiPage->loadPageVersion($versionId);
                     }
                     
-                    $htmltitle = ($title=='__MainPage__') ? $langWikiMainPage : $title;
+                    $htmltitle = ($wiki_title=='__MainPage__') ? $langWikiMainPage : $wiki_title;
                     
                     $style = '<style type="text/css">
                             table { border: black solid 1px; }

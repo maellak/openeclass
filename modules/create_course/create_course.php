@@ -39,7 +39,7 @@ $tree = new Hierarchy();
 $course = new Course();
 $user = new User();
 
-$nameTools = $langCourseCreate;
+$toolName = $langCourseCreate;
 
 load_js('jstree');
 load_js('pwstrength.js');
@@ -208,8 +208,7 @@ foreach ($departments as $dep) {
 }
 
 // Check if the teacher is allowed to create in the departments he chose
-if (!$deps_valid) {
-    $nameTools = "";
+if (!$deps_valid) {    
     $tool_content .= "<div class='alert alert-danger'>$langCreateCourseNotAllowedNode</div>
                     <p class='pull-right'><a class='btn btn-default' href='$_SERVER[PHP_SELF]'>$langBack</a></p>";
     draw($tool_content, 1, null, $head_content);
@@ -387,9 +386,7 @@ if (!isset($_POST['create_course'])) {
         header("Location:" . $urlServer . "modules/create_course/create_course.php");
         exit;
     }
-
-    $nameTools = $langCourseCreate;
-
+    
     // create new course code: uppercase, no spaces allowed
     $code = strtoupper(new_code($departments[0]));
     $code = str_replace(' ', '', $code);
@@ -449,6 +446,7 @@ if (!isset($_POST['create_course'])) {
         $_POST['finish_date'] = '0000-00-00';
     }
 
+    $description = purify($_POST['description']);
     $result = Database::get()->query("INSERT INTO course SET
                         code = ?s,
                         lang = ?s,
@@ -468,10 +466,13 @@ if (!isset($_POST['create_course'])) {
                         keywords = '',
                         created = " . DBHelper::timeAfter() . ",
                         glossary_expand = 0,
-                        glossary_index = 1", $code, $language, $title, $_POST['formvisible'],
+                        glossary_index = 1,
+                        description = ?s",
+            $code, $language, $title, $_POST['formvisible'],
             intval($course_license), $prof_names, $code, $doc_quota * 1024 * 1024,
             $video_quota * 1024 * 1024, $group_quota * 1024 * 1024,
-            $dropbox_quota * 1024 * 1024, $password, $view_type, $_POST['start_date'], $_POST['finish_date']);
+            $dropbox_quota * 1024 * 1024, $password, $view_type,
+            $_POST['start_date'], $_POST['finish_date'], $description);
     $new_course_id = $result->lastInsertID;
     if (!$new_course_id) {
         Session::Messages($langGeneralError);
@@ -546,11 +547,6 @@ if (!isset($_POST['create_course'])) {
                                         agenda = 0", intval($new_course_id));
     $course->refresh($new_course_id, $departments);
 
-    $description = purify($_POST['description']);
-    $unit_id = description_unit_id($new_course_id);
-    if (!empty($description)) {
-        add_unit_resource($unit_id, 'description', -1, $langDescription, $description);
-    }
 
     // creation of course index.php
     course_index($code);

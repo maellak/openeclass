@@ -303,11 +303,29 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
         if ($logs->id == 1) { // don't display actions for admin user
             $icon_content = "&mdash;&nbsp;";
         } else {
+            /*$icon_content = action_button(array(
+                        array('title' => $langEdit,
+                              'url' => "edituser.php?u=$logs->id",
+                              'icon' => 'fa-edit'),
+                        array('title' => $langDelete,
+                              'url' => "deluser.php?u=$logs->id",
+                              'icon' => 'fa-times'),
+                        array('title' => $langStat,
+                              'url' => "userstats.php?u=$logs->id",
+                              'icon' => 'fa-pie-chart'),
+                        array('title' => $langActions,
+                              'url' => "userlogs.php?u=$logs->id",
+                              'icon' => 'fa-list-alt'),
+                        array('title' => $changetip,
+                              'url' => "change_user.php?username=" . urlencode($logs->username) . "",
+                              'icon' => 'fa-key',
+                              'show' => !isDepartmentAdmin()),
+                        ));*/
             $changetip = q("$langChangeUserAs $logs->username");
             $icon_content = icon('fa-edit', $langEdit, "edituser.php?u=$logs->id") . '&nbsp;' .
-                    icon('fa-times', $langDelete, "deluser.php?u=$logs->id") . '&nbsp;' .
-                    icon('fa-pie-chart', $langStat, "userstats.php?u=$logs->id") . '&nbsp;' .
-                    icon('fa-list-alt', $langActions, "userlogs.php?u=$logs->id");
+                            icon('fa-times', $langDelete, "deluser.php?u=$logs->id") . '&nbsp;' .
+                            icon('fa-pie-chart', $langStat, "userstats.php?u=$logs->id") . '&nbsp;' .
+                            icon('fa-list-alt', $langActions, "userlogs.php?u=$logs->id");
             if (!isDepartmentAdmin()) {
                 $icon_content .= '&nbsp;' . icon('fa-key', $changetip, 'change_user.php?username=' . urlencode($logs->username));
             }
@@ -371,11 +389,10 @@ $head_content .= "<script type='text/javascript'>
 
 $navigation[] = array('url' => 'index.php', 'name' => $langAdmin);
 $navigation[] = array('url' => 'search_user.php', 'name' => $langSearchUser);
-$nameTools = $langListUsersActions;
+$toolName = $langListUsersActions;
 
 // Display Actions Toolbar
-$tool_content .= "<div id='operations_container'>" .
-        action_bar(array(
+$tool_content .= action_bar(array(
             array('title' => $langAllUsers,
                 'url' => "$_SERVER[SCRIPT_NAME]",
                 'icon' => 'fa-search',
@@ -389,9 +406,12 @@ $tool_content .= "<div id='operations_container'>" .
                 'url' => "updatetheinactive.php?activate=1",
                 'icon' => 'fa-plus-circle',
                 'level' => 'primary',
-                'show' => (isset($_GET['search']) and $_GET['search'] == 'inactive')),
-        ))
-        . "</div>";
+                'show' => (isset($_GET['search']) and $_GET['search'] == 'inactive')),            
+            array('title' => $langBack,
+                'url' => "search_user.php",
+                'icon' => 'fa-reply',
+                'level' => 'primary')
+                ));
 
 // display search results
 $tool_content .= "<table id='search_results_table' class='display'>
@@ -415,12 +435,6 @@ foreach ($_REQUEST as $key => $value) {
 }
 
 $tool_content .= "<input class='btn btn-primary' type='submit' name='dellall_submit' value='$langDelList'></form></div>";
-//$tool_content .= "<p align='center'><a href='search_user.php?$pagination_link'>$langBack</a></p>";
-$tool_content .= action_bar(array(
-    array('title' => $langBack,
-        'url' => "search_user.php",
-        'icon' => 'fa-reply',
-        'level' => 'primary-label')));
 
 draw($tool_content, 3, null, $head_content);
 

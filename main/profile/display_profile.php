@@ -4,7 +4,7 @@
  * Open eClass 3.0
  * E-learning and Course Management System
  * ========================================================================
- * Copyright 2003-2012  Greek Universities Network - GUnet
+ * Copyright 2003-2014  Greek Universities Network - GUnet
  * A full copyright notice can be read in "/info/copyright.txt".
  * For a full list of contributors, see "credits.txt".
  *
@@ -30,7 +30,7 @@ require_once 'include/lib/user.class.php';
 $tree = new Hierarchy();
 $user = new User();
 
-$nameTools = $langUserProfile;
+$toolName = $langMyProfile;
 
 $userdata = array();
 
@@ -39,8 +39,8 @@ if (isset($_GET['id']) and isset($_GET['token'])) {
     if (!token_validate($id, $_GET['token'], 3600)) {
         forbidden($_SERVER['REQUEST_URI']);
     }
+    $pageName = $langUserProfile;
 } else {
-    $navigation[] = array('url' => 'profile.php', 'name' => $langModifyProfile);
     $id = $uid;
 }
 
@@ -72,7 +72,7 @@ if ($userdata) {
                     'url' => $passurl,
                     'icon' => 'fa-key',
                     'show' => $allow_password_change,
-                    'level' => 'primary'),
+                    'level' => 'primary-label'),
                 array('title' => $langEmailUnsubscribe,
                     'url' => "emailunsubscribe.php",
                     'icon' => 'fa-envelope',

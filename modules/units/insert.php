@@ -44,7 +44,7 @@ if ($id != -1) {
     $q = Database::get()->querySingle("SELECT * FROM course_units
                                     WHERE id = ?d AND course_id = ?d", $id, $course_id);
     if (!$q) {
-        $nameTools = $langUnitUnknown;
+        $pageName = $langUnitUnknown;
         draw('', 2, null, $head_content);
         exit;
     }    
@@ -78,47 +78,47 @@ if (isset($_POST['submit_doc'])) {
 
 
 switch ($_GET['type']) {
-    case 'work': $nameTools = "$langAdd $langInsertWork";
+    case 'work': $pageName = "$langAdd $langInsertWork";
         include 'insert_work.php';
         list_assignments();
         break;
-    case 'doc': $nameTools = "$langAdd $langInsertDoc";
+    case 'doc': $pageName = "$langAdd $langInsertDoc";
         include 'insert_doc.php';
         list_docs();
         break;
-    case 'exercise': $nameTools = "$langAdd $langInsertExercise";
+    case 'exercise': $pageName = "$langAdd $langInsertExercise";
         include 'insert_exercise.php';
         list_exercises();
         break;
-    case 'text': $nameTools = "$langAdd $langInsertText";
+    case 'text': $pageName = "$langAdd $langInsertText";
         include 'insert_text.php';
         display_text_form();
         break;
-    case 'link': $nameTools = "$langAdd $langInsertLink";
+    case 'link': $pageName = "$langAdd $langInsertLink";
         include 'insert_link.php';
         list_links();
         break;
-    case 'lp': $nameTools = "$langAdd $langLearningPath1";
+    case 'lp': $pageName = "$langAdd $langLearningPath1";
         include 'insert_lp.php';
         list_lps();
         break;
-    case 'video': $nameTools = "$langAddV";
+    case 'video': $pageName = "$langAddV";
         include 'insert_video.php';
         list_videos();
         break;
-    case 'ebook': $nameTools = "$langAdd $langInsertEBook";
+    case 'ebook': $pageName = "$langAdd $langInsertEBook";
         include 'insert_ebook.php';
         list_ebooks();
         break;
-    case 'forum': $nameTools = "$langAdd $langInsertForum";
+    case 'forum': $pageName = "$langAdd $langInsertForum";
         include 'insert_forum.php';
         list_forums();
         break;
-    case 'poll': $nameTools = "$langAdd $langInsertPoll";
+    case 'poll': $pageName = "$langAdd $langInsertPoll";
         include 'insert_poll.php';
         list_polls();
         break;
-    case 'wiki': $nameTools = "$langAdd $langInsertWiki";
+    case 'wiki': $pageName = "$langAdd $langInsertWiki";
         include 'insert_wiki.php';
         list_wikis();
         break;
@@ -230,7 +230,7 @@ function insert_lp($id) {
 			WHERE course_id = ?d AND learnPath_id = ?d", $course_id, $lp_id);
         $q = Database::get()->query("INSERT INTO unit_resources SET unit_id = ?d, type='lp', title = ?s, comments = ?s,
                                         visible = ?d, `order` = ?d, `date` = " . DBHelper::timeAfter() . ", res_id = ?d", 
-                                $lp->name, $lp->comment, $lp->visible, $order, $lp->learnPath_id);
+                                $id, $lp->name, $lp->comment, $lp->visible, $order, $lp->learnPath_id);
         $uresId = $q->lastInsertID;
         Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_UNITRESOURCE, $uresId);
     }
@@ -300,7 +300,7 @@ function insert_work($id) {
         } else {
             $visibility = 1;
         }
-        $q = Database::get()->querySingle("INSERT INTO unit_resources SET
+        $q = Database::get()->query("INSERT INTO unit_resources SET
                                 unit_id = ?d,
                                 type = 'work',
                                 title = ?s,
@@ -370,7 +370,7 @@ function insert_forum($id) {
                                         WHERE id = ?d
                                         AND forum_id = ?d", $topic_id, $forum_id);
             $q = Database::get()->query("INSERT INTO unit_resources
-                                            SET unit_id = ?d, type = 'topic', title = ?s, visible = 1, `order`= ?d, `date` = " . DBHelper::timeAfter . ", res_id = ?d", 
+                                            SET unit_id = ?d, type = 'topic', title = ?s, visible = 1, `order`= ?d, `date` = " . DBHelper::timeAfter() . ", res_id = ?d", 
                                         $id, $topic->title, $order, $topic->id);
         } else {
             $forum_id = $ids[0];
@@ -378,7 +378,7 @@ function insert_forum($id) {
                                         WHERE id = ?d
                                         AND course_id = ?d", $forum_id, $course_id);
             $q = Database::get()->query("INSERT INTO unit_resources SET unit_id = ?d, type = 'forum', title = ?s,
-                                            comments = ?s, visible = 1, `order` = ?d, `date` = " . DBHelper::timeAfter . ", res_id = ?d", 
+                                            comments = ?s, visible = 1, `order` = ?d, `date` = " . DBHelper::timeAfter() . ", res_id = ?d", 
                                     $id, $forum->name, $forum->desc, $order, $forum->id);
         }
         $uresId = $q->lastInsertID;
@@ -497,7 +497,7 @@ function insert_ebook($id) {
         if (isset($_POST[$type]) and count($_POST[$type]) > 0) {
             foreach ($_POST[$type] as $ebook_id) {
                 $order++;
-                $q = Database::get()->query("INSERT INTO unit_resources SET unit_id = $id, type = '$type',
+                $q = Database::get()->query("INSERT INTO unit_resources SET unit_id = ?d, type = '$type',
                                                 title = ?s, comments = '', visible=1, `order` = ?d, `date` = " . DBHelper::timeAfter() . ",res_id = ?d", 
                                             $id, $_POST[$type . '_title'][$ebook_id], $order, $ebook_id);
                 $uresId = $q->lastInsertID;

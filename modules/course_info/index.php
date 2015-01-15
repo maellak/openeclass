@@ -171,7 +171,7 @@ $head_content .= <<<hContent
 </script>
 hContent;
 
-$nameTools = $langCourseInfo;
+$toolName = $langCourseInfo;
 
 // if the course is opencourses certified, disable visibility choice in form
 $isOpenCourseCertified = ($creview = Database::get()->querySingle("SELECT is_certified FROM course_review WHERE course_id = ?d", $course_id)) ? $creview->is_certified : false;
@@ -372,26 +372,24 @@ if (isset($_POST['submit'])) {
                     'url' => "archive_course.php?course=$course_code",
                     'icon' => 'fa-archive',
                     'level' => 'primary-label'),
+                array('title' => $langCloneCourse,
+                    'url' => "clone_course.php?course=$course_code",
+                    'icon' => 'fa-archive'),
                 array('title' => $langRefreshCourse,
                     'url' => "refresh_course.php?course=$course_code",
-                    'icon' => 'fa-refresh',
-                    'level' => 'primary'),
+                    'icon' => 'fa-refresh'),
                 array('title' => $langCourseMetadata,
                     'url' => "../course_metadata/index.php?course=$course_code",
                     'icon' => 'fa-file-text',
-                    'level' => 'primary',
-                    'show' => get_config('course_metadata')
-                ),
+                    'show' => get_config('course_metadata')),
                 array('title' => $langDelCourse,
                     'url' => "delete_course.php?course=$course_code",
                     'icon' => 'fa-times',
-                    'button-class' => 'btn-danger',
-                    'level' => 'primary'),                
+                    'button-class' => 'btn-danger'),                
                 array('title' => $langCourseMetadataControlPanel,
                     'url' => "../course_metadata/control.php?course=$course_code",
                     'icon' => 'fa-list',
-                    'show' => get_config('opencourses_enable') && $is_opencourses_reviewer,
-                    'level' => 'primary'),
+                    'show' => get_config('opencourses_enable') && $is_opencourses_reviewer),
             )) .
             "</div>";
 
@@ -578,14 +576,14 @@ if (isset($_POST['submit'])) {
                 <div class='col-sm-10'>
                     <div class='radio'>
                       <label>
-                        <input id='courseopen' type='radio' name='formvisible' value='2' $visibleChecked[2] $disabledVisibility>
+                        <input id='courseopen' type='radio' name='formvisible' value='2' $visibleChecked[2]>
                         <img src='$themeimg/lock_open.png' alt='$langOpenCourse' title='$langOpenCourse' width='16'>&nbsp;$langOpenCourse
                         <span class='help-block'><small>$langPublic</small></span>
                       </label>
                     </div>
                     <div class='radio'>
                       <label>
-                        <input id='coursewithregistration' type='radio' name='formvisible' value='1' $visibleChecked[1] $disabledVisibility>
+                        <input id='coursewithregistration' type='radio' name='formvisible' value='1' $visibleChecked[1]>
                         <img src='$themeimg/lock_registration.png' alt='$m[legrestricted]' title='$m[legrestricted]' width='16'>&nbsp;$m[legrestricted]
                         <span class='help-block'><small>$langPrivOpen</small></span>
                       </label>
