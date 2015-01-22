@@ -37,6 +37,7 @@ if (!class_exists('Question')):
         var $position;
         var $type;
         var $difficulty;
+        var $category;
         var $exerciseList;  // array with the list of exercises which this question is in
 
         /**
@@ -53,6 +54,7 @@ if (!class_exists('Question')):
             $this->position = 1;
             $this->type = 1;
             $this->difficulty = 0;
+            $this->category = 0;
             $this->exerciseList = array();
         }
 
@@ -66,7 +68,7 @@ if (!class_exists('Question')):
         function read($id) {
             global $course_id;
 
-            $object = Database::get()->querySingle("SELECT question, description, weight, q_position, type, difficulty 
+            $object = Database::get()->querySingle("SELECT question, description, weight, q_position, type, difficulty, category 
                         FROM `exercise_question` WHERE course_id = ?d AND id = ?d", $course_id, $id);
             // if the question has been found
             if ($object) {
@@ -77,6 +79,7 @@ if (!class_exists('Question')):
                 $this->position = $object->q_position;
                 $this->type = $object->type;
                 $this->difficulty = $object->difficulty;
+                $this->category = $object->category;
 
                 $result = Database::get()->queryArray("SELECT exercise_id FROM `exercise_with_questions` WHERE question_id = ?d", $id);
                 // fills the array with the exercises which this question is in
@@ -155,7 +158,13 @@ if (!class_exists('Question')):
          */
         function selectDifficulty() {
             return $this->difficulty;
-        }                
+        }
+        /**
+         * returns the question category
+         */
+        function selectCategory() {
+            return $this->category;
+        }            
         /**
          * returns the relative verbal answer type
          */
@@ -264,6 +273,12 @@ if (!class_exists('Question')):
             $this->difficulty = $difficulty;
         }
         /**
+         * changes the question category
+         */
+        function updateCategory($category_id) {
+            $this->category = $category_id;
+        }        
+        /**
          * adds a picture to the question
          *
          * @author - Olivier Brouckaert
@@ -354,17 +369,18 @@ if (!class_exists('Question')):
             $position = $this->position;
             $type = $this->type;
             $difficulty = $this->difficulty;
+            $category = $this->category;
 
             // question already exists
             if ($id) {
                 Database::get()->query("UPDATE `exercise_question` SET question = ?s, description = ?s,
-					weight = ?f, q_position = ?d, type = ?d, difficulty = ?d
-					WHERE course_id = $course_id AND id='$id'", $question, $description, $weighting, $position, $type, $difficulty);
+					weight = ?f, q_position = ?d, type = ?d, difficulty = ?d, category = ?d
+					WHERE course_id = $course_id AND id='$id'", $question, $description, $weighting, $position, $type, $difficulty, $category);
             }
             // creates a new question
             else {
-                $this->id = Database::get()->query("INSERT INTO `exercise_question` (course_id, question, description, weight, q_position, type, difficulty)
-				VALUES (?d, ?s, ?s, ?f, ?d, ?d, ?d)", $course_id, $question, $description, $weighting, $position, $type, $difficulty)->lastInsertID;
+                $this->id = Database::get()->query("INSERT INTO `exercise_question` (course_id, question, description, weight, q_position, type, difficulty, category)
+				VALUES (?d, ?s, ?s, ?f, ?d, ?d, ?d, ?d)", $course_id, $question, $description, $weighting, $position, $type, $difficulty, $category)->lastInsertID;
             }
 
             // if the question is created in an exercise
@@ -482,16 +498,114 @@ if (!class_exists('Question')):
             $position = $this->position;
             $type = $this->type;
             $difficulty = $this->difficulty;
+            $category = $this->category;
 
-            $id = Database::get()->query("INSERT INTO `exercise_question` (course_id, question, description, weight, q_position, type, difficulty)
-						VALUES (?d, ?s, ?s, ?f, ?d, ?d, ?d)", $course_id, $question, $description, $weighting, $position, $type, $difficulty)->lastInsertID;
+            $id = Database::get()->query("INSERT INTO `exercise_question` (course_id, question, description, weight, q_position, type, difficulty, category)
+						VALUES (?d, ?s, ?s, ?f, ?d, ?d, ?d, ?d)", $course_id, $question, $description, $weighting, $position, $type, $difficulty, $category)->lastInsertID;
 
             // duplicates the picture
             $this->exportPicture($id);
 
             return $id;
         }
+        /**
+         *
+         * Calculate Question success rate
+         */        
+        function successRate($exerciseId = NULL) {
+            $id = $this->id;
+            $type = $this->type;           
+            $objAnswerTmp = new Answer($id);
+            $nbrAnswers = $objAnswerTmp->selectNbrAnswers();               
+            $q_correct_answers_sql = '';
+            $q_incorrect_answers_sql = '';
+            $extra_sql = '';
+            $query_vars = array($id, ATTEMPT_COMPLETED);         
+            if(isset($exerciseId)) {
+                $extra_sql = " AND b.eid = ?d";
+                $query_vars[] = $exerciseId;
+            }         
+            $total_answer_attempts = Database::get()->querySingle("SELECT COUNT(DISTINCT a.eurid) AS count
+                    FROM exercise_answer_record a, exercise_user_record b
+                    WHERE a.eurid = b.eurid AND a.question_id = ?d AND b.attempt_status=?d$extra_sql", $query_vars)->count;
+            
+            //BUILDING CORRECT ANSWER QUERY BASED ON QUESTION TYPE
+            if($type == UNIQUE_ANSWER || $type == MULTIPLE_ANSWER || $type == TRUE_FALSE){ //works wrong for MULTIPLE_ANSWER                           
+                $i=1;
+                for ($answerId = 1; $answerId <= $nbrAnswers; $answerId++) {
+                    if ($objAnswerTmp->isCorrect($answerId)) {
+                        $q_correct_answers_sql .= ($i!=1) ? ' OR ' : '';
+                        $q_correct_answers_sql .= 'a.answer_id = '.$objAnswerTmp->selectPosition($answerId);
+                        $q_incorrect_answers_sql .= ($i!=1) ? ' AND ' : '';  
+                        $q_incorrect_answers_sql .= 'a.answer_id != '.$objAnswerTmp->selectPosition($answerId);                                         
+                        $i++;                        
+                    }
+                }
+                $q_correct_answers_cnt = $i-1;
+            } elseif ($type == MATCHING) { // to be done
+                    $i = 1;
+                    for ($answerId = 1; $answerId <= $nbrAnswers; $answerId++) {
+                        //must get answer id ONLY where correct value existS
+                        $answerCorrect = $objAnswerTmp->isCorrect($answerId);
+                        if ($answerCorrect) {
+                            $q_correct_answers_sql .= ($i!=1) ? " OR " : "";
+                            $q_correct_answers_sql .= "(a.answer = $answerId AND a.answer_id = $answerCorrect)";
+                            $q_incorrect_answers_sql .= ($i!=1) ? " OR " : "";
+                            $q_incorrect_answers_sql .= "(a.answer = $answerId AND a.answer_id != $answerCorrect)";                            
+                            $i++;
+                        }
+                    }
+                    $q_correct_answers_cnt = $i-1;
+            } elseif ($type == FILL_IN_BLANKS) { // Works Great                              
+               $answer_field = $objAnswerTmp->selectAnswer($nbrAnswers);
+               //splits answer string from weighting string
+               list($answer, $answerWeighting) = explode('::', $answer_field);
+               //getting all matched strings between [ and ] delimeters
+               preg_match_all('#\[(.*?)\]#', $answer, $match);
 
+               $i=1;
+               foreach ($match[1] as $value){
+                   $q_correct_answers_sql .= ($i!=1) ? ' OR ' : '';
+                   $q_correct_answers_sql .= "(a.answer = '$value'  AND a.answer_id = $i)";
+                   $q_incorrect_answers_sql .= ($i!=1) ? ' OR ' : '';                     
+                   $q_incorrect_answers_sql .= "(a.answer != '$value'  AND a.answer_id = $i)";                
+                   $i++;
+               }
+                $q_correct_answers_cnt = $i-1;
+                            
+            }
+            //FIND CORRECT ANSWER ATTEMPTS
+            if ($type == FREE_TEXT) {
+                // This query gets answers which where graded with queston maximum grade
+                $correct_answer_attempts = Database::get()->querySingle("SELECT COUNT(DISTINCT a.eurid) AS count
+                        FROM exercise_answer_record a, exercise_user_record b, exercise_question c
+                        WHERE a.eurid = b.eurid AND a.question_id = c.id AND a.weight=c.weight AND a.question_id = ?d AND b.attempt_status=?d$extra_sql", $query_vars)->count;                           
+            } else {
+                // One Query to Rule Them All (except free text questions)
+                // This query groups attempts and counts correct and incorrect answers
+                // then counts attempts where (correct answers == total anticipated correct attempts)
+                // and (incorrect answers == 0) (this control is necessary mostly in cases of MULTIPLE ANSWER type)
+                if ($q_correct_answers_cnt > 0) {
+                    $correct_answer_attempts = Database::get()->querySingle("
+                        SELECT COUNT(*) AS counter FROM(
+                            SELECT a.eurid, 
+                            SUM($q_correct_answers_sql) as correct_answer_cnt,
+                            SUM($q_incorrect_answers_sql) as incorrect_answer_cnt
+                            FROM exercise_answer_record a, exercise_user_record b
+                            WHERE a.eurid = b.eurid AND a.question_id = ?d AND b.attempt_status = ?d$extra_sql
+                            GROUP BY(a.eurid) HAVING correct_answer_cnt = $q_correct_answers_cnt AND incorrect_answer_cnt = 0
+                        )sub", $query_vars)->counter;
+                } else {
+                    $correct_answer_attempts = 0;
+                }
+            }
+            if ($total_answer_attempts>0) {
+                $successRate = round($correct_answer_attempts/$total_answer_attempts*100, 2);
+            } else {
+                $successRate = NULL;
+            }
+            return $successRate;
+        }
     }
 
     

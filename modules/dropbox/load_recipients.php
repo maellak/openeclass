@@ -39,7 +39,7 @@ if (isset($_POST['course'])) {
         }
         
         if ($is_editor || $student_to_student_allow == 1) {
-            $sql = "SELECT DISTINCT u.id user_id, CONCAT(u.surname,' ', u.givenname) AS name
+            $sql = "SELECT DISTINCT u.id user_id, CONCAT(u.surname,' ', u.givenname) AS name, u.username
                     FROM user u, course_user cu
         		    WHERE cu.course_id = ?d
                     AND cu.user_id = u.id
@@ -63,7 +63,7 @@ if (isset($_POST['course'])) {
             }
         } else {
             //if user is student an student-student messages not allowed for course messages show teachers
-            $sql = "SELECT DISTINCT u.id user_id, CONCAT(u.surname,' ', u.givenname) AS name
+            $sql = "SELECT DISTINCT u.id user_id, CONCAT(u.surname,' ', u.givenname) AS name, u.username
                         FROM user u, course_user cu
         			    WHERE cu.course_id = ?d
                         AND cu.user_id = u.id
@@ -91,7 +91,7 @@ if (isset($_POST['course'])) {
                           AND `group_members`.user_id = ?d";
             $result_g = Database::get()->queryArray($sql_g, $cid, $uid);
             foreach ($result_g as $res_g) {
-                $sql_gt = "SELECT u.id, CONCAT(u.surname,' ', u.givenname) AS name
+                $sql_gt = "SELECT u.id, CONCAT(u.surname,' ', u.givenname) AS name, u.username
                                FROM user u, group_members g
                                WHERE g.group_id = ?d
                                AND g.is_tutor = ?d
@@ -99,7 +99,7 @@ if (isset($_POST['course'])) {
                                AND u.id != ?d";
                 $res_gt = Database::get()->queryArray($sql_gt, $res_g->id, 1, $uid);
                 foreach ($res_gt as $t) {
-                    $tutors[$t->id] = $t->name;
+                    $tutors[$t->id] = q($t->name)." (".q($t->username).")";
                 }
             }
         }
@@ -110,7 +110,7 @@ if (isset($_POST['course'])) {
                     unset($tutors[$r->user_id]);
                 }
             }
-            $jsonarr[$r->user_id] = q($r->name);
+            $jsonarr[$r->user_id] = q($r->name)." (".q($r->username).")";
         }
         if (isset($tutors)) {
             foreach ($tutors as $key => $value) {
@@ -123,26 +123,25 @@ if (isset($_POST['course'])) {
         echo json_encode(array());
     }
 } elseif (isset($_GET['autocomplete']) && $_GET['autocomplete'] == 1) {
-    $sql = "SELECT DISTINCT u.id user_id, u.am, CONCAT(u.surname,' ', u.givenname) AS name
+    $sql = "SELECT DISTINCT u.id user_id, CONCAT(u.surname,' ', u.givenname) AS name, u.username
             FROM user u, course_user cu
 		    WHERE cu.course_id IN (SELECT course_id FROM course_user WHERE user_id = ?d)
             AND cu.user_id = u.id
             AND cu.status != ?d
             AND u.id != ?d
-            AND u.surname LIKE ?s
+            AND (u.surname LIKE ?s OR u.username LIKE ?s)
             ORDER BY UPPER(u.surname), UPPER(u.givenname)
             LIMIT 10";
-    $res = Database::get()->queryArray($sql, $uid, USER_GUEST, $uid, "%".$_GET['term']."%");
+    $res = Database::get()->queryArray($sql, $uid, USER_GUEST, $uid, "%".$_GET['q']."%", "%".$_GET['q']."%");
     
-    $jsonarr = array();
+    $jsonarr["items"] = array();
     $i = 0;
     
     foreach ($res as $r) {
-        $jsonarr[$i]['value'] = $r->user_id;
-        $jsonarr[$i]['label'] = $r->name;
-        if (!empty($r->am)) {
-            $jsonarr[$i]['label'] .= " ($r->am)";
-        }
+        $jsonarr["items"][$i] = new stdClass();
+        $jsonarr["items"][$i]->id = $r->user_id;
+        $jsonarr["items"][$i]->text = q($r->name)." (".q($r->username).")";
+        
         $i++;
     }
     header('Content-Type: application/json');

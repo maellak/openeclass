@@ -19,13 +19,9 @@
  *                  e-mail: info@openeclass.org
  * ======================================================================== */
 
-/* ===========================================================================
-  index.php
-  @last update: 17-4-2006 by Costas Tsibanis
-  @authors list: Dionysios G. Synodinos <synodinos@gmail.com>
-  ==============================================================================
-  @Description: Main script for the questionnaire tool
-  ==============================================================================
+/**
+ * @file index.php
+ * @brief main script for the questionnaire tool
  */
 
 $require_login = TRUE;
@@ -40,7 +36,7 @@ $action = new action();
 $action->record(MODULE_ID_QUESTIONNAIRE);
 /* * *********************************** */
 
-$nameTools = $langQuestionnaire;
+$toolName = $langQuestionnaire;
 
 load_js('tools.js');
 if ($is_editor) {
@@ -80,45 +76,57 @@ if ($is_editor) {
             Session::Messages($langPollResultsDeleted, 'alert-success');
             redirect_to_home_page('modules/questionnaire/index.php?course='.$course_code);
         //clone poll
-        } elseif (isset($_GET['clone']) and $_GET['clone'] == 'yes') {
-            $poll = Database::get()->querySingle("SELECT * FROM poll WHERE pid = ?d", $pid);
-            $questions = Database::get()->queryArray("SELECT * FROM poll_question WHERE pid = ?d ORDER BY q_position", $pid);
-
-            $poll->name .= " ($langCopy2)";
-            $poll_data = array(
-                $poll->creator_id, 
-                $course_id, 
-                $poll->name, 
-                $poll->creation_date, 
-                $poll->start_date, 
-                $poll->end_date, 
-                $poll->description, 
-                $poll->end_message, 
-                $poll->anonymized
-            );
-            $new_pid = Database::get()->query("INSERT INTO poll
-                                SET creator_id = ?d,
-                                    course_id = ?d,
-                                    name = ?s,
-                                    creation_date = ?t,
-                                    start_date = ?t,
-                                    end_date = ?t,
-                                    description = ?s,
-                                    end_message = ?s,
-                                    anonymized = ?d,    
-                                    active = 1", $poll_data)->lastInsertID;
-
-            foreach ($questions as $question) {
-                $new_pqid = Database::get()->query("INSERT INTO poll_question
-                                           SET pid = ?d,
-                                               question_text = ?s,
-                                               qtype = ?d", $new_pid, $question->question_text, $question->qtype)->lastInsertID;
-                $answers = Database::get()->queryArray("SELECT * FROM poll_question_answer WHERE pqid = ?d ORDER BY pqaid", $question->pqid);
-                foreach ($answers as $answer) {
-                    Database::get()->query("INSERT INTO poll_question_answer
-                                            SET pqid = ?d,
-                                                answer_text = ?s", $new_pqid, $answer->answer_text);
+        } elseif (isset($_POST['clone_to_course_id'])) {
+            $clone_course_id = $_POST['clone_to_course_id'];
+            $my_courses = Database::get()->queryArray("SELECT course_id FROM course_user WHERE user_id = ?d AND status = 1", $uid);
+            $ok = false;
+            foreach ($my_courses as $row) {
+                if ($row->course_id == $clone_course_id) {
+                    $ok = true;
+                    continue;
                 }
+            }
+            if ($ok) {
+                $poll = Database::get()->querySingle("SELECT * FROM poll WHERE pid = ?d", $pid);
+                $questions = Database::get()->queryArray("SELECT * FROM poll_question WHERE pid = ?d ORDER BY q_position", $pid);
+
+                if ($clone_course_id == $course_id) $poll->name .= " ($langCopy2)";
+                $poll_data = array(
+                    $poll->creator_id, 
+                    $clone_course_id, 
+                    $poll->name, 
+                    $poll->creation_date, 
+                    $poll->start_date, 
+                    $poll->end_date, 
+                    $poll->description, 
+                    $poll->end_message, 
+                    $poll->anonymized
+                );
+                $new_pid = Database::get()->query("INSERT INTO poll
+                                    SET creator_id = ?d,
+                                        course_id = ?d,
+                                        name = ?s,
+                                        creation_date = ?t,
+                                        start_date = ?t,
+                                        end_date = ?t,
+                                        description = ?s,
+                                        end_message = ?s,
+                                        anonymized = ?d,    
+                                        active = 1", $poll_data)->lastInsertID;
+
+                foreach ($questions as $question) {
+                    $new_pqid = Database::get()->query("INSERT INTO poll_question
+                                               SET pid = ?d,
+                                                   question_text = ?s,
+                                                   qtype = ?d", $new_pid, $question->question_text, $question->qtype)->lastInsertID;
+                    $answers = Database::get()->queryArray("SELECT * FROM poll_question_answer WHERE pqid = ?d ORDER BY pqaid", $question->pqid);
+                    foreach ($answers as $answer) {
+                        Database::get()->query("INSERT INTO poll_question_answer
+                                                SET pqid = ?d,
+                                                    answer_text = ?s", $new_pqid, $answer->answer_text);
+                    }
+                }
+                Session::Messages($langCopySuccess, 'alert-success');
             }
             redirect_to_home_page('modules/questionnaire/index.php?course='.$course_code);
         }        
@@ -135,6 +143,7 @@ if ($is_editor) {
 
 printPolls();
 add_units_navigation(TRUE);
+
 draw($tool_content, 2, null, $head_content);
 
 
@@ -144,14 +153,24 @@ draw($tool_content, 2, null, $head_content);
 
 function printPolls() {
     global $tool_content, $course_id, $course_code, $langCreatePoll,
-    $langPollsActive, $langTitle, $langPollCreator, $langPollCreation,
+    $langPollsActive, $langTitle, $langPollCreator, $langPollCreation, $langCancel,
     $langPollStart, $langPollEnd, $langPollNone, $is_editor, $langAnswers,
     $themeimg, $langEdit, $langDelete, $langActions, $langSurveyNotStarted,
     $langDeactivate, $langPollsInactive, $langPollHasEnded, $langActivate,
     $langParticipate, $langVisible, $user_id, $langHasParticipated, $langSee,
     $langHasNotParticipated, $uid, $langConfirmDelete, $langPurgeExercises,
-    $langPurgeExercises, $langConfirmPurgeExercises, $langCreateDuplicate ;
+    $langPurgeExercises, $langConfirmPurgeExercises, $langCreateDuplicate, 
+    $head_content, $langCreateDuplicateIn, $langCurrentCourse;
 
+    $head_content .= "
+    <script>
+        $(document).on('click', '.warnLink', function() {
+            var pid = $(this).data('pid');
+            $('#clone_form').attr('action', '$_SERVER[SCRIPT_NAME]?pid=' + pid);
+        });          
+    </script>
+    ";
+    
     $poll_check = 0;
     $result = Database::get()->queryArray("SELECT * FROM poll WHERE course_id = ?d", $course_id);
     $num_rows = count($result);
@@ -179,6 +198,7 @@ function printPolls() {
         $index_aa = 1;
         $k = 0;
         foreach ($result as $thepoll) {
+            $total_participants = Database::get()->querySingle("SELECT COUNT(DISTINCT user_id) AS total FROM poll_answer_record WHERE pid = ?d", $thepoll->pid)->total;
             $visibility = $thepoll->active;
 
             if (($visibility) or ($is_editor)) {
@@ -221,7 +241,7 @@ function printPolls() {
                 
                 if ($is_editor) {
                     $tool_content .= "
-                        <td><a href='pollresults.php?course=$course_code&amp;pid=$pid'>".q($thepoll->name)."</a>";
+                        <td><a href='pollparticipate.php?course=$course_code&amp;UseCase=1&pid=$pid'>".q($thepoll->name)."</a>";
                 } else {
                     $tool_content .= "
                         <td>";
@@ -252,7 +272,8 @@ function printPolls() {
                                 'title' => $langPurgeExercises,
                                 'icon' => 'fa-eraser',
                                 'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;delete_results=yes&amp;pid=$pid",
-                                'confirm' => $langConfirmPurgeExercises                               
+                                'confirm' => $langConfirmPurgeExercises,
+                                'show' => $total_participants > 0
                             ),
                             array(
                                 'title' => $langDelete,
@@ -267,9 +288,17 @@ function printPolls() {
                                 'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;visibility=$visibility_func&amp;pid={$pid}"
                             ),
                             array(
+                                'title' => $langParticipate,
+                                'icon' => 'fa-pie-chart',
+                                'url' => "pollresults.php?course=$course_code&pid=$pid",
+                                'show' => $total_participants > 0
+                            ),                                        
+                            array(
                                 'title' => $langCreateDuplicate,
                                 'icon' => 'fa-copy',
-                                'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;clone=yes&amp;pid={$pid}"
+                                'icon-class' => 'warnLink',
+                                'icon-extra' => "data-toggle='modal' data-target='#modalWarning' data-remote='false' data-pid='$pid'",
+                                'url' => "#"
                             )                                        
                         ))."</td></tr>";
                 } else {
@@ -293,4 +322,33 @@ function printPolls() {
         }
         $tool_content .= "</table></div>";
     }
+    $my_courses = Database::get()->queryArray("SELECT a.course_id Course_id, b.title Title FROM course_user a, course b WHERE a.course_id = b.id AND a.course_id != ?d AND a.user_id = ?d AND a.status = 1", $course_id, $uid);
+    $tool_content .= "
+    <!-- Modal -->
+    <div class='modal fade' id='modalWarning' tabindex='-1' role='dialog' aria-labelledby='modalWarningLabel' aria-hidden='true'>
+      <div class='modal-dialog'>
+        <div class='modal-content'>
+          <div class='modal-header'>
+          $langCreateDuplicateIn
+            <button type='button' class='close' data-dismiss='modal'><span aria-hidden='true'>&times;</span><span class='sr-only'>Close</span></button>
+          </div>
+          <form action='$_SERVER[SCRIPT_NAME]' method='POST' id='clone_form'>
+          <div class='modal-body'>
+            <select class='form-control' id='course_id' name='clone_to_course_id'>
+                <option value='$course_id' selected>--- $langCurrentCourse ---</option>";
+    foreach ($my_courses as $row) {
+        $tool_content .= "<option value='$row->Course_id'>$row->Title</option>";
+    }
+    $tool_content .= "            
+            </select>
+          </div>
+          <div class='modal-footer'>
+            <input type='submit' class='btn btn-primary' value='$langCreateDuplicate'>
+            <a href='#' data-dismiss='modal' class='btn btn-default'>$langCancel</a>
+          </div>
+          </form>
+        </div>
+      </div>
+    </div>    
+    ";    
 }

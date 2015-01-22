@@ -35,6 +35,7 @@ require_once 'include/log.php';
 require_once 'include/lib/modalboxhelper.class.php';
 require_once 'include/lib/multimediahelper.class.php';
 require_once 'modules/search/agendaindexer.class.php';
+require_once 'modules/agenda/course_calendar.inc.php';
 ModalBoxHelper::loadModalBox();
 
 $action = new action();
@@ -42,7 +43,7 @@ $action->record(MODULE_ID_AGENDA);
 
 $dateNow = date("j-n-Y / H:i", time());
 
-$nameTools = $langAgenda;
+$toolName = $langAgenda;
 
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
@@ -51,15 +52,71 @@ if (isset($_GET['id'])) {
 load_js('tools.js');
 load_js('bootstrap-datetimepicker');
 load_js('bootstrap-timepicker');
+load_js('bootstrap-datepicker');
+if (!empty($langLanguageCode)) {
+    load_js('bootstrap-calendar-master/js/language/' . $langLanguageCode . '.js');
+}
+load_js('bootstrap-calendar-master/js/calendar.js');
+load_js('bootstrap-calendar-master/components/underscore/underscore-min.js');
  
 $head_content .= "
+<link rel='stylesheet' type='text/css' href='{$urlAppend}js/bootstrap-calendar-master/css/calendar.css' />
 <script type='text/javascript'>
+var dialogUpdateOptions = {
+    title: '$langConfirmUpdate',
+    message: '$langConfirmUpdateRecursiveEvents',
+    buttons: {
+        cancel:{label: '$langCancel',
+        callback: function() {
+                      return false;
+                 }
+             },
+        yes:{
+            label: '$langYes',
+            className: 'btn-primary',
+             callback: function() {
+                           $('#rep').val('yes');
+                           $('#agendaform').submit();
+                      }
+            },
+        no:{
+            label: '$langNoJustThisOne',
+            className: 'btn-info',
+            callback: function() {
+                           $('#rep').val('no');
+                           $('#agendaform').submit();
+                      }
+            }
+    }};
+var dialogDeleteOptions = {
+    title: '$langConfirmDelete',
+    message: '$langConfirmDeleteRecursiveEvents',
+    buttons: {
+        cancel:{label: '$langCancel'},
+        yes:{
+            label: '$langYes',
+            className: 'btn-danger'},
+        no:{
+            label: '$langNoJustThisOne',
+            className: 'btn-warning'}}};
+
+$(document).ready(function(){
+    $('#submitbtn').on('click', 
+            function(e){
+                checkrequired($('#agendaform'));
+    });
+});
 $(function() {
-    $('#startdatecal, #enddatecal').datetimepicker({
+    $('#startdatecal').datetimepicker({
         format: 'dd-mm-yyyy hh:ii', pickerPosition: 'bottom-left', 
         language: '".$language."',
         autoclose: true
-    });    
+    });
+    $('#enddatecal').datepicker({
+        format: 'dd-mm-yyyy', pickerPosition: 'bottom-left', 
+        language: '".$language."',
+        autoclose: true
+    });
     $('#durationcal').timepicker({showMeridian: false, minuteStep: 1, defaultTime: false });
 });
 </script>";
@@ -67,70 +124,22 @@ $(function() {
 if ($is_editor and (isset($_GET['addEvent']) or isset($_GET['id']))) {
 
     //--if add event
-    $head_content .= <<<hContent
-<script type="text/javascript">
-function checkrequired(which, entry) {
-	var pass=true;
-	if (document.images) {
-		for (i=0;i<which.length;i++) {
-			var tempobj=which.elements[i];
-			if (tempobj.name == entry) {
-				if (tempobj.type=="text"&&tempobj.value=='') {
-					pass=false;
-					break;
-		  		}
-	  		}
-		}
-	}
-	if (!pass) {
-		alert("$langEmptyAgendaTitle");
-		return false;
-	} else {
-		return true;
-	}
-}
-</script>
-hContent;
-}
-
-$result = Database::get()->queryArray("SELECT id FROM agenda WHERE course_id = ?d", $course_id);
-    if (count($result) > 1) {
-        if (isset($_GET["sens"]) && $_GET["sens"] == "d") {
-            $sens = " DESC"; 
-        } else {
-            $sens = " ASC";    
-        }
+    $head_content .= 
+"<script type='text/javascript'>
+function checkrequired(thisform) {
+    if ($('#event_title').val()=='' || $('#startdate').val()=='') {
+            bootbox.alert('$langTitleDateNotEmpty');
+            return false;
     }
-    
-// display action bar
-if (isset($_GET['addEvent']) or isset($_GET['edit'])) {
-    $tool_content .= action_bar(array(
-            array('title' => $langBack,
-                  'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code",
-                  'icon' => 'fa-reply',
-                  'level' => 'primary',
-                  'show' => $is_editor)));
-} else {
-    $tool_content .= action_bar(array(
-            array('title' => $langAddEvent,
-                  'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addEvent=1",
-                  'icon' => 'fa-plus-circle',
-                  'level' => 'primary-label',
-                  'button-class' => 'btn-success',
-                  'show' => $is_editor),
-            array('title' => $langOldToNew,
-                  'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;sens=",
-                  'icon' => 'fa-arrows-v',
-                  'level' => 'primary-label',
-                  'show' => count($result) and (isset($_GET['sens']) and $_GET['sens'] == "d")),
-            array('title' => $langOldToNew,
-                  'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;sens=d",
-                  'icon' => 'fa-arrows-v',
-                  'level' => 'primary-label',
-                  'show' => count($result) and (!isset($_GET['sens']) or (isset($_GET['sens']) and $_GET['sens'] != "d")))
-        ));                        
+    if($('#id').val()>0 && $('#rep').val() != ''){
+        bootbox.dialog(dialogUpdateOptions);
+    } else {
+        thisform.submit();
+    }
 }
-
+</script>";
+}
+    
 if ($is_editor) {
     $agdx = new AgendaIndexer();
     // modify visibility
@@ -141,96 +150,46 @@ if ($is_editor) {
         Database::get()->query("UPDATE agenda SET visible = 1 WHERE course_id = ?d AND id = ?d", $course_id, $id);
         $agdx->store($id);
     }
-    if (isset($_POST['submit'])) {
+    if (isset($_POST['event_title'])) {
         register_posted_variables(array('startdate' => true, 'event_title' => true, 'content' => true, 'duration' => true));
         $content = purify($content);
-        $startDate_obj = DateTime::createFromFormat('d-m-Y H:i', $_POST['startdate']);
-        $startdate = $startDate_obj->format('Y-m-d H:i');
         if (isset($_POST['id']) and !empty($_POST['id'])) {  // update event
             $id = $_POST['id'];                        
-            Database::get()->query("UPDATE agenda SET title = ?s, content = ?s, start = ?t, duration = ?s
-                        WHERE course_id = ?d AND id = ?d", $event_title, $content, $startdate, $duration, $course_id, $id);            
-            $agdx->store($id);
-            $txt_content = ellipsize(canonicalize_whitespace(strip_tags($content)), 50, '+');
-            Log::record($course_id, MODULE_ID_AGENDA, LOG_MODIFY, array('id' => $id,
-                                                                   'date' => $startdate,
-                                                                   'duration' => $duration,
-                                                                   'title' => $event_title,
-                                                                   'content' => $txt_content));
-        } else {
-            $period = '';            
-            if(isset($_POST['frequencyperiod']) and isset($_POST['frequencynumber']) and isset($_POST['enddate'])) {
-                $period = 'P' . $_POST['frequencynumber'] . $_POST['frequencyperiod'];
-                if (!empty($_POST['enddate'])) {                    
-                    $endDate_obj = DateTime::createFromFormat('d-m-Y H:i', $_POST['enddate']);                    
-                    $enddate = $endDate_obj->format('Y-m-d H:i');
-                } else {
-                    $enddate = '0000-00-00 00:00';
-                }                
+            if(isset($_POST['rep']) && $_POST['rep'] == 'yes'){
+                $resp = update_recursive_event($id, $event_title, $startdate, $duration, $content);
+            } else {
+                $resp = update_event($id, $event_title, $startdate, $duration, $content);
             }
-            $id = Database::get()->query("INSERT INTO agenda "
-                        ."SET course_id = ?d, "
-                        ."title = ?s, "
-                        ."content = ?s, " 
-                        ."start = ?t, "                                             
-                        ."duration = ?t, "
-                        ."recursion_period = ?t, "
-                        ."recursion_end = ?t, " 
-                        ."visible = 1", $course_id, $event_title, $content, $startdate, $duration, $period, $enddate)->lastInsertID;
-            
-            if(isset($id) && !is_null($id)) {
-                $agdx->store($id);
-                $txt_content = ellipsize(canonicalize_whitespace(strip_tags($content)), 50, '+');
-                Log::record($course_id, MODULE_ID_AGENDA, LOG_INSERT, array('id' => $id,
-                                                            'date' => $startdate,
-                                                            'duration' => $duration,
-                                                            'title' => $event_title,
-                                                            'content' => $txt_content));
-                Database::get()->query("UPDATE agenda SET source_event_id = id WHERE id = ?d",$id);
-                if(!empty($period) && !empty($enddate)) {                    
-                    $sourceevent = $id;
-                    $interval = new DateInterval($period);
-                    $startdatetime = new DateTime($startdate);                    
-                    $enddatetime = new DateTime($enddate);
-                    $newdate = date_add($startdatetime, $interval);
-                    while($newdate <= $enddatetime)
-                    {
-                        $neweventid = Database::get()->query("INSERT INTO agenda "
-                                . "SET course_id = ?d, content = ?s, title = ?s, start = ?t, duration = ?t, visible = 1,"
-                                . "recursion_period = ?s, recursion_end = ?t, "
-                                . "source_event_id = ?d", 
-                        $course_id, purify($content), $event_title, $newdate->format('Y-m-d H:i'), $duration, $period, $enddate, $sourceevent)->lastInsertID;
-                        $agdx->store($id);
-                        $txt_content = ellipsize(canonicalize_whitespace(strip_tags($content)), 50, '+');
-                        Log::record($course_id, MODULE_ID_AGENDA, LOG_INSERT, array('id' => $neweventid,
-                                                                                    'date' => $newdate->format('Y-m-d H:i'),
-                                                                                    'duration' => $duration,
-                                                                                    'title' => $event_title,
-                                                                                    'content' => $txt_content));
-                        
-                        $newdate = date_add($startdatetime, $interval);
-                    }
-                }
+            $agdx->store($id);
+        } else {
+            $recursion = null;            
+            if (!empty($_POST['frequencyperiod']) && intval($_POST['frequencynumber']) > 0 && !empty($_POST['enddate'])) {
+                $recursion = array('unit' => $_POST['frequencyperiod'], 'repeat' => $_POST['frequencynumber'], 'end' => $_POST['enddate']);
+            }            
+            $ev = add_event($event_title, $content, $startdate, $duration, $recursion);                                   
+            foreach($ev['event'] as $id) {
+                $agdx->store($id);                
             }
         }        
         $tool_content .= "<div class='alert alert-success text-center' role='alert'>$langStoredOK</div>";        
     } elseif (isset($_GET['delete']) && $_GET['delete'] == 'yes') {
-        $row = Database::get()->querySingle("SELECT title, content, start, duration
-                                        FROM agenda WHERE id = ?d", $id);
-        $txt_content = ellipsize(canonicalize_whitespace(strip_tags($row->content)), 50, '+');
-        Database::get()->query("DELETE FROM agenda WHERE course_id = ?d AND id = ?d", $course_id, $id);
+        $resp = (isset($_GET['rep']) && $_GET['rep'] == 'yes')? delete_recursive_event($id):delete_event($id);
         $agdx->remove($id);
-        Log::record($course_id, MODULE_ID_AGENDA, LOG_DELETE, array('id' => $id,
-                                                                    'date' => $row->start,
-                                                                    'duration' => $row->duration,
-                                                                    'title' => $row->title,
-                                                                    'content' => $txt_content));
-        $tool_content .= "<div class='alert alert-success text-center' role='alert'>$langDeleteOK</div><br>";        
+        $msgresp = ($resp['success'])? $langDeleteOK : $langDeleteError.": ".$resp['message'];
+        $alerttype = ($resp['success'])? 'alert-success' : 'alert-error';
+        $tool_content .= "<div class='alert $alerttype text-center' role='alert'>$msgresp</div><br>";        
     }
 
     if (isset($_GET['addEvent']) or isset($_GET['edit'])) {
-        $nameTools = $langAddEvent;
+        $pageName = $langAddEvent;
+        $tool_content .= action_bar(array(
+                array('title' => $langBack,
+                      'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code",
+                      'icon' => 'fa-reply',
+                      'level' => 'primary-label',
+                      'show' => $is_editor)));        
         $navigation[] = array("url" => $_SERVER['SCRIPT_NAME'] . "?course=$course_code", "name" => $langAgenda);
+        $rep = '';
         if (isset($id) && $id) {
             $myrow = Database::get()->querySingle("SELECT id, title, content, start, duration FROM agenda WHERE course_id = ?d AND id = ?d", $course_id, $id);
             if ($myrow) {
@@ -239,36 +198,38 @@ if ($is_editor) {
                 $content = $myrow->content;
                 $startdate = date('d-m-Y H:i', strtotime($myrow->start));
                 $duration = $myrow->duration;
+                $rep = (is_recursive($myrow->id))? 'no':''; 
             }
         } else {
             $id = $content = $duration = '';
             $startdate = date('d-m-Y H:i', strtotime('now'));
-            $enddate = date('d-m-Y H:i', strtotime('now +1 week'));
-        }    
+            $enddate = date('d-m-Y', strtotime('now +1 week'));
+        } 
         $tool_content .= "<div class='form-wrapper'>";
-        $tool_content .= "<form class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code' onsubmit='return checkrequired(this, \"event_title\");'>
-            <input type='hidden' name='id' value='$id'>";
+        $tool_content .= "<form id='agendaform' class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]?course=$course_code'>
+            <input type='hidden' id = 'id' name='id' value='$id'>"
+                . "<input type='hidden' name='rep' id='rep' value='$rep'>";
         @$tool_content .= "
             <div class='form-group'>
-                <label for='Title' class='col-sm-2 control-label'>$langTitle: </label>
+                <label for='event_title' class='col-sm-2 control-label'>$langTitle :</label>
                 <div class='col-sm-10'>
                     <input type='text' class='form-control' id='event_title' name='event_title' placeholder='$langTitle' value='" . q($event_title) . "'>
                 </div>
             </div>
             <div class='input-append date form-group' id='startdatecal' data-date='$langDate' data-date-format='dd-mm-yyyy'>
-                <label for='DateStart' class='col-sm-2 control-label'>$langDate :</label>
+                <label for='startdate' class='col-sm-2 control-label'>$langDate :</label>
                 <div class='col-xs-10 col-sm-9'>        
-                    <input name='startdate' id='startdate' type='text' value = '" .$startdate . "'>
+                    <input class='form-control' name='startdate' id='startdate' type='text' value = '" .$startdate . "'>
                 </div>
                 <div class='col-xs-2 col-sm-1'>  
                     <span class='add-on'><i class='fa fa-times'></i></span>
                     <span class='add-on'><i class='fa fa-calendar'></i></span>
                 </div>
             </div>
-            <div class='input-append bootstrap-timepicker form-group' id='durationcal'>
-                <label for='Duration' class='col-sm-2 control-label'>$langDuration <small>$langInHour</small></label>
+            <div class='input-append bootstrap-timepicker form-group'>
+                <label for='durationcal' class='col-sm-2 control-label'>$langDuration <small>$langInHour</small></label>
                 <div class='col-xs-10 col-sm-9'>
-                    <input name='duration' id='duration' type='text' class='input-small' value='" . $duration . "'>
+                    <input class='form-control' name='duration' id='durationcal' type='text' class='input-small' value='" . $duration . "'>
                 </div>
                 <div class='col-xs-2 col-sm-1'>
                     <span class='add-on'><i class='icon-time'></i></span>
@@ -296,7 +257,7 @@ if ($is_editor) {
             $tool_content .= "<div class='input-append date form-group' id='enddatecal' data-date='$langDate' data-date-format='dd-mm-yyyy'>
                 <label for='Enddate' class='col-sm-2 control-label'>$langUntil :</label>
                     <div class='col-xs-10 col-sm-9'>
-                        <input name='enddate' id='enddate' type='text' value = '" . $enddate . "'>
+                        <input class='form-control' name='enddate' id='enddate' type='text' value = '" . $enddate . "'>
                     </div>
                     <div class='col-xs-2 col-sm-1'>  
                         <span class='add-on'><i class='fa fa-times'></i></span>
@@ -311,121 +272,103 @@ if ($is_editor) {
                       </div>            
                       <div class='form-group'>
                         <div class='col-sm-offset-2 col-sm-10'>
-                            <input type='submit' class='btn btn-default' name='submit' value='$langAddModify'>
+                            <input type='button' class='btn btn-default' id='submitbtn' name='submitbtn' value='$langAddModify'>
                         </div>
                       </div>                
             </form></div>";
     }
 }
+    /* ---------------------------------------------
+     *  End  of  prof only
+     * ------------------------------------------- */
+// display action bar
+if (!isset($_GET['addEvent']) && !isset($_GET['edit'])) {
+    $tool_content .= action_bar(array(
+            array('title' => $langAddEvent,
+                  'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;addEvent=1",
+                  'icon' => 'fa-plus-circle',
+                  'level' => 'primary-label',
+                  'button-class' => 'btn-success',
+                  'show' => $is_editor),
+            array('title' => $langiCalExport,
+                  'url' => "icalendar.php?c=$course_id",
+                  'icon' => 'fa-calendar',
+                  'level' => 'primary')
+        ));                        
 
-/* ---------------------------------------------
- *  End  of  prof only
- * ------------------------------------------- */
-if (!isset($_GET['sens'])) {
-    $sens = " ASC";
-}
-if ($is_editor) {
-    $result = Database::get()->queryArray("SELECT id, title, content, start, duration, visible FROM agenda WHERE course_id = ?d
-		ORDER BY start " . $sens, $course_id);
-} else {
-    $result = Database::get()->queryArray("SELECT id, title, content, start, duration, visible FROM agenda WHERE course_id = ?d
-		AND visible = 1 ORDER BY start " . $sens, $course_id);
-}
+    $cal_content_list = event_list_view();
+    $tool_content .= ''
+                . '<div id="calendar_wrapper" class="row">
+                    <div class="col-md-12">
+                        <div class="row calendar-header">
+                        <div class="col-md-12">
+                        <div id="calendar-header">
+                            <div class="pull-right form-inline">
+                                <div class="btn-group">
+                                        <button class="btn btn-primary btn-sm" data-calendar-nav="prev"><i class="fa fa-caret-left"></i>  ' . '' . '</button>
+                                        <button class="btn btn-sm" data-calendar-nav="today">' . $langToday . '</button>
+                                        <button class="btn btn-primary btn-sm" data-calendar-nav="next">' . '' . ' <i class="fa fa-caret-right"></i> </button>
+                                </div>
+                                <div class="btn-group">
+                                        <button class="btn btn-warning btn-sm" data-calendar-view="year">' . $langYear . '</button>
+                                        <button class="btn btn-warning btn-sm active" data-calendar-view="month">' . $langMonth . '</button>
+                                        <button class="btn btn-warning btn-sm" data-calendar-view="week">' . $langWeek . '</button>
+                                        <button class="btn btn-warning btn-sm" data-calendar-view="day">' . $langDay . '</button>
+                                        <button class="btn btn-warning btn-sm" id="listviewbtn">' . $langListAll . '</button>
+                                </div>
+                            </div>
+                            <h4></h4>
+                            </div>
+                            </div>
+                        </div>'
+                . '<div class="row"><div id="bootstrapcalendar" class="col-md-12"></div></div>'
+                . '<div class="row"><div class="col-md-12" id="raweventlist">'.$cal_content_list.'</div></div>'
+                . '</div></div>';
 
-if (count($result) > 0) {
-    $barMonth = '';
-    $nowBarShowed = false;
-    $tool_content .= "<div class='table-responsive'><table class='table-default'>
-                    <tr><th class='left'>$langEvents</th>";
-    if ($is_editor) {
-        $tool_content .= "<th class='text-center'>" . icon('fa-gears') . "</th>";
-    } else {
-        $tool_content .= "<th width='50'>&nbsp;</th>";
-    }
-    $tool_content .= "</tr>";
-
-    foreach ($result as $myrow) {
-        $content = standard_text_escape($myrow->content);
-        $d = strtotime($myrow->start);
-        if (!$nowBarShowed) {
-            // Following order
-            if ((($d > time()) and ($sens == " ASC")) or ( ($d < time()) and ( $sens == " DESC "))) {
-                if ($barMonth != date("m", time())) {
-                    $barMonth = date("m", time());
-                    $tool_content .= "<tr>";
-                    // current month
-                    $tool_content .= "<td colspan='2' class='monthLabel'>" . $langCalendar . "&nbsp;<b>" . ucfirst(claro_format_locale_date("%B %Y", time())) . "</b></td>";
-                    $tool_content .= "</tr>";
-                }
-                $nowBarShowed = TRUE;
-                $tool_content .= "<tr>";
-                $tool_content .= "<td colspan='2' class='today'>$langDateNow $dateNow</td>";
-                $tool_content .= "</tr>";
+    $tool_content .= "<script type='text/javascript'>" .
+    '$(document).ready(function(){
+        $("#raweventlist").hide();
+        var calendar = $("#bootstrapcalendar").calendar(
+            {
+                tmpl_path: "' . $urlAppend . 'js/bootstrap-calendar-master/tmpls/",
+                events_source: "' . $urlAppend . 'modules/agenda/calendar_data.php?course='.$course_code.'",
+                language: "el-GR",
+                onAfterViewLoad: function(view) {
+                            $(".calendar-header h4").text(this.getTitle());
+                            $(".btn-group button").removeClass("active");
+                            $("button[data-calendar-view=\'" + view + "\']").addClass("active");
+                            $("button[data-calendar-nav=\'today\']").text(this.getTitle());
+                            }
             }
-        }
-        if ($barMonth != date("m", $d)) {
-            $barMonth = date("m", $d);
-            // month LABEL
-            $tool_content .= "<tr>";            
-            $tool_content .= "<td colspan='2' class='monthLabel'>";            
-            $tool_content .= "<div align='center'>" . $langCalendar . "&nbsp;<b>" . ucfirst(claro_format_locale_date("%B %Y", $d)) . "</b></div></td>";
-            $tool_content .= "</tr>";
-        }
-         
-        $classvis = '';         
-        if ($is_editor) {
-            if ($myrow->visible == 0) {
-                $classvis = 'class = "not_visible"';
-            }
-        }
-        $tool_content .= "<tr $classvis>";
-        if ($is_editor) {
-            $tool_content .= "<td>";
-        } else {
-            $tool_content .= "<td colspan='2'>";
-        }
+        );
+        $(".btn-group button[data-calendar-nav]").each(function() {
+            var $this = $(this);
+            $this.click(function() {
+                calendar.navigate($this.data("calendar-nav"));
+                $("#raweventlist").hide();
+                $("#bootstrapcalendar").show();
+            });
+        });
 
-        $tool_content .= "<span class='day'>" . ucfirst(claro_format_locale_date($dateFormatLong, $d)) . "</span> ($langHour: " . ucfirst(date('H:i', $d)) . ")";
-        if ($myrow->duration != '') {
-            if ($myrow->duration == 1) {
-                $message = $langHour;
-            } else {
-                $message = $langHours;
-            }
-            $msg = "($langDuration: " . q($myrow->duration) . " $message)";
-        } else {
-            $msg = '';
-        }
-        $tool_content .= "<br><b>";
-        if ($myrow->title == '') {
-            $tool_content .= $langAgendaNoTitle;
-        } else {
-            $tool_content .= q($myrow->title);
-        }
-        $tool_content .= " $msg $content</b></td>";
+        $(".btn-group button[data-calendar-view]").each(function() {
+            var $this = $(this);
+            $this.click(function() {
+                calendar.view($this.data("calendar-view"));
+                $("#raweventlist").hide();
+                $("#bootstrapcalendar").show();
+            });
 
-        if ($is_editor) {
-            $tool_content .= "<td class='option-btn-cell'>";
-            $tool_content .= action_button(array(
-                    array('title' => $langModify,
-                          'url' => "?course=$course_code&amp;id=$myrow->id&amp;edit=true",
-                          'icon' => 'fa-edit'),
-                    array('title' => $langDelete,
-                          'url' => "?course=$course_code&amp;id=$myrow->id&amp;delete=yes",
-                          'icon' => 'fa-times',
-                          'class' => 'delete',
-                          'confirm' => $langConfirmDelete),
-                    array('title' => $langVisible,
-                          'url' => "?course=$course_code&amp;id=$myrow->id" . ($myrow->visible? "&amp;mkInvisibl=true" : "&amp;mkVisibl=true"),
-                          'icon' => $myrow->visible ? 'fa-eye' : 'fa-eye-slash')
-                ));
-           $tool_content .= "</td>";                                 
-        }
-        $tool_content .= "</tr>";
-    }
-    $tool_content .= "</table></div>";
-} else {
-    $tool_content .= "<p class='alert alert-warning text-center'>$langNoEvents</p>";
+        $("#listviewbtn").click(function() {
+            $("#listviewbtn").addClass("active");
+            $(".btn-group button").removeClass("active");
+            $("#bootstrapcalendar").hide();
+            $("#raweventlist").show();
+        });
+    });    
+    });
+
+    </script>';
+    
 }
 add_units_navigation(TRUE);
 

@@ -112,7 +112,7 @@ function show_day(day,month,year){
 //$action = new action();
 //$action->record(MODULE_ID_ANNOUNCE);
 
-$nameTools = $langMyAgenda;
+$toolName = $langMyAgenda;
 
 ModalBoxHelper::loadModalBox();
 load_js('tools.js');
@@ -134,8 +134,7 @@ if (isset($_POST['submitEvent'])) {
         $refobjid = ($_POST['refobjid'] == "0") ? $_POST['refcourse'] : $_POST['refobjid'];
         $visibility = null;
     }
-    $eventDate_obj = DateTime::createFromFormat('d-m-Y H:i', $_POST['startdate']);
-    $start = $eventDate_obj->format('Y-m-d H:i:s');
+    $start = $_POST['startdate'];
     $duration = $_POST['duration'];
     if (!empty($_POST['id'])) { //existing event
         $id = intval($_POST['id']);
@@ -152,9 +151,7 @@ if (isset($_POST['submitEvent'])) {
     } else { // new event 
         $recursion = null;
         if (!empty($_POST['frequencyperiod']) && intval($_POST['frequencynumber']) > 0 && !empty($_POST['enddate'])) {
-            $endDate_obj = DateTime::createFromFormat('d-m-Y', $_POST['enddate']);
-            $end = $endDate_obj->format('Y-m-d H:i:s');
-            $recursion = array('unit' => $_POST['frequencyperiod'], 'repeat' => $_POST['frequencynumber'], 'end' => $end);
+            $recursion = array('unit' => $_POST['frequencyperiod'], 'repeat' => $_POST['frequencynumber'], 'end' => $_POST['enddate']);
         }
         $resp = Calendar_Events::add_event($newTitle, $newContent, $start, $duration, $recursion, $refobjid, $visibility);
         if ($resp['success']) {
@@ -218,17 +215,20 @@ if (isset($message) && $message) {
 }
 
 /* display form */
-if ($displayForm and ( isset($_GET['addEvent']) or ( $is_admin && isset($_GET['addAdminEvent'])) or isset($_GET['modify']))) {
-    $tool_content .= "       
-    <form method='post' action='$_SERVER[SCRIPT_NAME]' onsubmit=\"return checkrequired(this, 'antitle');\" style='display:inline'>
-    <legend>$langEvent</legend>
-    <table class='tbl' width='100%'>";
+if ($displayForm and ( isset($_GET['addEvent']) or ( $is_admin && isset($_GET['addAdminEvent'])) or isset($_GET['modify']))) { 
     if (isset($_GET['modify'])) {
-        $langAdd = $nameTools = $langModifEvent;
+        $pageName = $langModifEvent;
     } else {
-        $nameTools = $langAddEvent;
+        $pageName = $langAddEvent;
     }
-    $navigation[] = array('url' => "index.php", 'name' => $langEvents);
+    $tool_content .= action_bar(array(
+                array('title' => $langBack,
+                      'url' => $urlServer,
+                      'icon' => 'fa-reply',
+                      'level' => 'primary-label')));
+    
+    $navigation[] = array('url' => "index.php", 'name' => $langMyAgenda);
+    
     if (!isset($eventToModify))
         $eventToModify = "";
     if (!isset($contentToModify))
@@ -246,99 +246,122 @@ if ($displayForm and ( isset($_GET['addEvent']) or ( $is_admin && isset($_GET['a
     if (!isset($type_selected))
         $type_selected = null;
     if (!isset($object_selected))
-        $object_selected = null;
-
+        $object_selected = null;    
     $tool_content .= "
-    <input type='hidden' name='id' value='$eventToModify' />
-    <tr><th>$langEventTitle:</th></tr>
-    <tr>
-      <td><input type='text' name='newTitle' value='$titleToModify' size='50' /></td>
-    </tr>
-    <tr><th>$langEventBody:</th></tr>
-    <tr>
-      <td>" . rich_text_editor('newContent', 4, 20, $contentToModify) . "</td>
-    </tr>
-    <tr><th>$langDate:</th></tr>
-    <tr>
-        <td> <input type='text' name='startdate' id='startdate' value='$datetimeToModify'></td>
-    </tr>
-    <tr><th>$langDuration:</th></tr>
-    <tr>
-        <td><input type=\"text\" name=\"duration\" id='duration' value='$durationToModify'></td>
-    </tr>";
-    if (!isset($_GET['modify'])) {
+    <div class='form-wrapper'>
+        <form class='form-horizontal' role='form' method='post' action='$_SERVER[SCRIPT_NAME]' onsubmit=\"return checkrequired(this, 'antitle');\" style='display:inline'>
+        <input type='hidden' name='id' value='$eventToModify'>
+        <div class='form-group'>
+          <label for='newTitle' class='col-sm-2 control-label'>$langEventTitle:</label>
+          <div class='col-sm-10'>
+               <input class='form-control' type='text' name='newTitle' id='newTitle' value='$titleToModify' placeholder='$langEventTitle'>
+          </div>
+        </div>
+        <div class='form-group'>
+          <label for='newContent' class='col-sm-2 control-label'>$langEventBody:</label>
+          <div class='col-sm-10'>
+               " . rich_text_editor('newContent', 4, 20, $contentToModify) . "
+          </div>
+        </div>
+        <div class='form-group'>
+          <label for='startdate' class='col-sm-2 control-label'>$langDate:</label>
+          <div class='col-sm-10'>
+               <input class='form-control' type='text' name='startdate' id='startdate' value='$datetimeToModify'>
+          </div>
+        </div>
+        <div class='form-group'>
+          <label for='duration' class='col-sm-2 control-label'>$langDuration:</label>
+          <div class='col-sm-10'>
+               <input class='form-control' type='text' name='duration' id='duration' value='$durationToModify'>
+          </div>
+        </div>";
+        if (!isset($_GET['modify'])) {
         $tool_content .= "
-        <tr><th>$langRepeat:</th></tr>
-        <tr>
-            <td> $langEvery: "
-                . "<select name='frequencynumber'>"
-                . "<option value=\"0\">$langSelectFromMenu</option>";
-        for ($i = 1; $i < 10; $i++) {
-            $tool_content .= "<option value=\"$i\">$i</option>";
+        <div class='form-group'>
+          <label for='frequencynumber' class='col-sm-2 control-label'>$langRepeat $langEvery:</label>
+          <div class='col-sm-2'>
+                <select class='form-control' name='frequencynumber' id='frequencynumber'>
+                    <option value='0'>$langSelectFromMenu</option>";
+            for ($i = 1; $i < 10; $i++) {
+                $tool_content .= "<option value=\"$i\">$i</option>";
+            }
+            $tool_content .= "</select>
+          </div>
+          <div class='col-sm-2'>
+                <select class='form-control' name='frequencyperiod'>
+                    <option value=''>$langSelectFromMenu...</option>
+                    <option value='D'>$langDays</option>
+                    <option value='W'>$langWeeks</option>
+                    <option value='M'>$langMonthsAbstract</option>
+                </select>
+          </div>
+          <label for='enddate' class='col-sm-2 control-label'>$langUntil:</label>
+          <div class='col-sm-2'>
+               <input class='form-control' type='text' name='enddate' id='enddate' value=''>
+          </div>          
+        </div>";
         }
-        $tool_content .= "</select>"
-                . "<select name='frequencyperiod'> "
-                . "<option value=\"\">$langSelectFromMenu...</option>"
-                . "<option value=\"D\">$langDays</option>"
-                . "<option value=\"W\">$langWeeks</option>"
-                . "<option value=\"M\">$langMonthsAbstract</option>"
-                . "</select>"
-                . " $langUntil: <input type='text' name='enddate' id='enddate' value=''></td>
-        </tr>";
-    }
-    if (!isset($_GET['addAdminEvent']) && !isset($_GET['admin'])) {
-        $eventtype = 'personal';
+        if (!isset($_GET['addAdminEvent']) && !isset($_GET['admin'])) {
+            $eventtype = 'personal';
+            $tool_content .= "
+            <div class='form-group'>
+              <label for='startdate' class='col-sm-2 control-label'>$langReferencedObject:</label>
+              <div class='col-sm-10'>
+                   " . References::build_object_referennce_fields($gen_type_selected, $course_selected, $type_selected, $object_selected) . "
+              </div>
+            </div>";
+        } else {
+            $eventtype = 'admin';
+            $selectedvis = array(0 => "", USER_TEACHER => "", USER_STUDENT => "", USER_GUEST => "");
+            if (isset($visibility_level)) {
+                $selectedvis[$visibility_level] = "selected";
+            }            
+            $tool_content .= "
+            <div class='form-group'>
+              <label for='startdate' class='col-sm-2 control-label'>$langShowTo:</label>
+              <div class='col-sm-10'>
+                <select class='form-control' name='visibility_level'>
+                    <option value='0' $selectedvis[0]>$langShowToAdminsOnly</option>
+                    <option value=\"" . USER_TEACHER . "\" " . $selectedvis[USER_TEACHER] . ">$langShowToAdminsandProfs</option>
+                    <option value=\"" . USER_STUDENT . "\" " . $selectedvis[USER_STUDENT] . ">$langShowToAllregistered</option>
+                    <option value=\"" . USER_GUEST . "\" " . $selectedvis[USER_GUEST] . ">$langShowToAll</option>
+                </select>
+              </div>
+            </div>";            
+        }
         $tool_content .= "
-        <tr><th>$langReferencedObject:</th></tr>
-        <tr>
-          <td>" .
-                References::build_object_referennce_fields($gen_type_selected, $course_selected, $type_selected, $object_selected)
-                . "</td>";
-    } else {
-        $eventtype = 'admin';
-        $selectedvis = array(0 => "", USER_TEACHER => "", USER_STUDENT => "", USER_GUEST => "");
-        if (isset($visibility_level)) {
-            $selectedvis[$visibility_level] = "selected";
-        }
-        $tool_content .= "<tr><th>$langShowTo:</th></tr>"
-                . "<tr><td><select name='visibility_level'> "
-                . "<option value=\"0\" " . $selectedvis[0] . ">$langShowToAdminsOnly</option>"
-                . "<option value=\"" . USER_TEACHER . "\" " . $selectedvis[USER_TEACHER] . ">$langShowToAdminsandProfs</option>"
-                . "<option value=\"" . USER_STUDENT . "\" " . $selectedvis[USER_STUDENT] . ">$langShowToAllregistered</option>"
-                . "<option value=\"" . USER_GUEST . "\" " . $selectedvis[USER_GUEST] . ">$langShowToAll</option>"
-                . "</select></td></tr>";
-    }
-    $tool_content .= "
-        </tr>";
-    $tool_content .= "</table>
-            <input class='btn btn-primary' type='submit' name='submitEvent' value='$langAdd' />
-            </form> 
-            <form method='POST' action='$_SERVER[SCRIPT_NAME]?delete=$eventToModify&et=$eventtype' accept-charset='UTF-8' style='display:inline'>
-                <a class='btn btn-danger' data-toggle='modal' data-target='#confirmAction' data-title='$langConfirmDelete' data-message='$langDelEventConfirm' data-cancel-txt='$langCancel' data-action-txt='$langDelete' data-action-class='btn-danger'>$langDelete</a>
-            </form>        
+        <div class='form-group'>
+          <div class='col-sm-10 col-sm-offset-2'>
+               <input class='btn btn-primary' type='submit' name='submitEvent' value='$langAdd'>
+               <a class='btn btn-default' href='index.php'>$langCancel</a>
+          </div>
+        </div>            
+    </form>
+</div>
+    <form method='POST' action='$_SERVER[SCRIPT_NAME]?delete=$eventToModify&et=$eventtype' accept-charset='UTF-8' style='display:inline'>
+        <a class='btn btn-danger' data-toggle='modal' data-target='#confirmAction' data-title='$langConfirmDelete' data-message='$langDelEventConfirm' data-cancel-txt='$langCancel' data-action-txt='$langDelete' data-action-class='btn-danger'>$langDelete</a>
+    </form>        
    ";
-} else {
+} else {    
     /* display actions toolbar */
-    $tool_content .= "
-    <div id='operations_container'>" .
-            action_bar(array(
-                array('title' => $langAddEvent,
-                    'url' => "$_SERVER[SCRIPT_NAME]?addEvent=1",
-                    'icon' => 'fa-plus-circle',
-                    'level' => 'primary-label',
-                    'button-class' => 'btn-success'),
-                array('title' => $langAddAdminEvent,
-                    'url' => "$_SERVER[SCRIPT_NAME]?addAdminEvent=1",
-                    'icon' => 'fa-plus-circle',
-                    'show' => $is_admin,
-                    'button-class' => 'btn-success',
-                    'level' => 'primary-label'),
-                array('title' => $langiCalExport,
-                    'url' => "icalendar.php",
-                    'icon' => 'fa-calendar',
-                    'level' => 'primary'),
-            )) .
-            "</div>";
+    $tool_content .= 
+                action_bar(array(
+                    array('title' => $langAddEvent,
+                        'url' => "$_SERVER[SCRIPT_NAME]?addEvent=1",
+                        'icon' => 'fa-plus-circle',
+                        'level' => 'primary-label',
+                        'button-class' => 'btn-success'),
+                    array('title' => $langAddAdminEvent,
+                        'url' => "$_SERVER[SCRIPT_NAME]?addAdminEvent=1",
+                        'icon' => 'fa-plus-circle',
+                        'show' => $is_admin,
+                        'button-class' => 'btn-success',
+                        'level' => 'primary-label'),
+                    array('title' => $langiCalExport,
+                        'url' => "icalendar.php",
+                        'icon' => 'fa-calendar',
+                        'level' => 'primary'),
+                ));
 }
 
 
@@ -346,29 +369,30 @@ if ($displayForm and ( isset($_GET['addEvent']) or ( $is_admin && isset($_GET['a
 $day = (isset($_GET['day'])) ? intval($_GET['day']) : null;
 $month = (isset($_GET['month'])) ? intval($_GET['month']) : null;
 $year = (isset($_GET['year'])) ? intval($_GET['year']) : null;
-if ($_SESSION['theme'] != 'bootstrap') {
-    $tool_content .= '<div id="monthcalendar" style="width:100%">';
-    $tool_content .= Calendar_Events::calendar_view($day, $month, $year);
-    $tool_content .= '</div>';
-} else {
-    $tool_content .= ''
-            . '<div class="row page-header">
-                    <div class="pull-right form-inline">
+$tool_content .= '<div id="calendar_wrapper" class="row">
+                <div class="col-md-12">
+                    <div class="row calendar-header">
+                    <div class="col-md-12">
+                    <div id="calendar-header">
+                        <div class="pull-right form-inline">
                             <div class="btn-group">
-                                    <button class="btn btn-primary" data-calendar-nav="prev">&larr; ' . $langPrevious . '</button>
-                                    <button class="btn" data-calendar-nav="today">' . $langToday . '</button>
-                                    <button class="btn btn-primary" data-calendar-nav="next">' . $langNext . ' &rarr;</button>
+                                    <button class="btn btn-primary btn-sm" data-calendar-nav="prev"><i class="fa fa-caret-left"></i>  ' . '' . '</button>
+                                    <button class="btn btn-sm" data-calendar-nav="today">' . $langToday . '</button>
+                                    <button class="btn btn-primary btn-sm" data-calendar-nav="next">' . '' . ' <i class="fa fa-caret-right"></i> </button>
                             </div>
                             <div class="btn-group">
-                                    <button class="btn btn-warning" data-calendar-view="year">' . $langYear . '</button>
-                                    <button class="btn btn-warning active" data-calendar-view="month">' . $langMonth . '</button>
-                                    <button class="btn btn-warning" data-calendar-view="week">' . $langWeek . '</button>
-                                    <button class="btn btn-warning" data-calendar-view="day">' . $langDay . '</button>
+                                    <button class="btn btn-default btn-sm" data-calendar-view="year">' . $langYear . '</button>
+                                    <button class="btn btn-default btn-sm active" data-calendar-view="month">' . $langMonth . '</button>
+                                    <button class="btn btn-default btn-sm" data-calendar-view="week">' . $langWeek . '</button>
+                                    <button class="btn btn-default btn-sm" data-calendar-view="day">' . $langDay . '</button>
                             </div>
-                    </div>
-                    <h3></h3>
-            </div>'
-            . '<div class="row"><div id="bootstrapcalendar" class="col-xs-6 col-sm-7 col-md-6 add-gutter"></div></div>' .
+                        </div>
+                        <h4></h4>
+                        </div>
+                        </div>
+                    </div>'
+            . '<div class="row"><div id="bootstrapcalendar" class="col-md-12"></div></div>'
+            . '</div></div>' .
             "<script type='text/javascript'>" .
             '$(document).ready(function(){
 
@@ -378,9 +402,10 @@ if ($_SESSION['theme'] != 'bootstrap') {
                 events_source: "' . $urlAppend . 'main/calendar_data.php",
                 language: "el-GR",
                 onAfterViewLoad: function(view) {
-                            $(".page-header h3").text(this.getTitle());
+                            $(".calendar-header h4").text(this.getTitle());
                             $(".btn-group button").removeClass("active");
                             $("button[data-calendar-view=\'" + view + "\']").addClass("active");
+                            $("button[data-calendar-nav=\'today\']").text(this.getTitle());
                             }
             }
         );
@@ -401,7 +426,6 @@ if ($_SESSION['theme'] != 'bootstrap') {
     });
 
     </script>';
-}
 
 add_units_navigation(TRUE);
 

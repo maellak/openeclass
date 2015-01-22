@@ -395,7 +395,7 @@ class Log {
 
         $details = unserialize($details);
 
-        $content = "$lang_username&nbsp;&laquo;" . q($details[uname]) . "&raquo;&nbsp;$langPassword&nbsp;&laquo;" . q($details[pass]) . "&raquo;";
+        $content = "$lang_username&nbsp;&laquo;" . q($details['uname']) . "&raquo;&nbsp;$langPassword&nbsp;&laquo;" . q($details['pass']) . "&raquo;";
 
         return $content;
     }
@@ -405,7 +405,7 @@ class Log {
 
         $details = unserialize($details);
 
-        $content = "$lang_username&nbsp;&laquo;" . q($details[username]) . "&raquo;&nbsp;$langName&nbsp;&laquo;" . q($details[name]) . "&raquo;";
+        $content = "$lang_username&nbsp;&laquo;" . q($details['username']) . "&raquo;&nbsp;$langName&nbsp;&laquo;" . q($details['name']) . "&raquo;";
 
         return $content;
     }
@@ -493,12 +493,9 @@ class Log {
         global $langTitle, $langContent, $langDuration, $langhours, $langDate;
 
         $details = unserialize($details);
-        $date = $details['date'];
-
+        
         $content = "$langTitle &laquo" . q($details['title']) .
-                "&raquo&nbsp;&mdash;&nbsp; $langContent &laquo" . $details['content'] . "&raquo
-                             &nbsp;&mdash;&nbsp;$langDate: " . q(nice_format($date, true)) . "
-                             &nbsp;&mdash;&nbsp;$langDuration: " . q($details['duration']) . " $langhours";
+                "&raquo&nbsp;&mdash;&nbsp; $langContent &laquo" . $details['content'] . "";
         return $content;
     }
 

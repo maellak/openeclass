@@ -20,9 +20,12 @@
  * ======================================================================== */
 
 function statistics_tools($course_code, $self_link = "", $relative_path = "") {
-    global $tool_content, $langStat, $langUsersLog, $langFavourite, $langUserLogins, $langUserDuration, $langLearningPaths, $langGroupUsage, $langOldStats, $langAccept, $langOldStatsExpireConfirm;
-    $tool_content .= "<div id='operations_container'>" .
-            action_bar(array(
+    
+    global $tool_content, $langStat, $langUsersLog, $langFavourite, $langUserLogins, 
+            $langUserDuration, $langLearningPaths, $langGroupUsage, $langOldStats, 
+            $langAccept, $langOldStatsExpireConfirm;
+    
+    return $tool_content .= action_bar(array(
                 array('title' => $langStat,
                     'url' => $relative_path . "index.php?course=$course_code",
                     'icon' => 'fa-bar-chart',
@@ -35,7 +38,7 @@ function statistics_tools($course_code, $self_link = "", $relative_path = "") {
                     'level' => 'primary'),
                 array('title' => $langFavourite,
                     'url' => $relative_path . "favourite.php?course=$course_code&amp;first=",
-                    'icon' => 'fa-gears',
+                    'icon' => 'fa-gear',
                     'show' => $self_link != "favourite",
                     'level' => 'primary'),
                 array('title' => $langUserLogins,
@@ -51,21 +54,17 @@ function statistics_tools($course_code, $self_link = "", $relative_path = "") {
                 array('title' => $langLearningPaths,
                     'url' => $relative_path . "../learnPath/detailsAll.php?course=$course_code&amp;from_stats=1",
                     'icon' => 'fa-ellipsis-h',
-                    'show' => $self_link != "detailsAll",
-                    'level' => 'primary'),
+                    'show' => $self_link != "detailsAll"),
                 array('title' => $langGroupUsage,
                     'url' => $relative_path . "group.php?course=$course_code",
                     'icon' => 'fa-users',
-                    'show' => $self_link != "group",
-                    'level' => 'primary'),
+                    'show' => $self_link != "group"),
                 array('title' => $langOldStats,
                     'url' => $relative_path . 'oldStats.php?course=' . $course_code,
                     'icon' => 'fa-calendar',
                     'confirm_title' => $langOldStats,
                     'confirm_button' => $langAccept,
                     'confirm' => $langOldStatsExpireConfirm,
-                    'show' => $self_link != "oldStats",
-                    'level' => 'primary'),
-            )) .
-            "</div>";
+                    'show' => $self_link != "oldStats"),
+            ));
 }

@@ -35,14 +35,14 @@ $guest_allowed = true;
 include '../../include/baseTheme.php';
 require_once 'include/lib/modalboxhelper.class.php';
 require_once 'include/lib/multimediahelper.class.php';
-require_once 'modules/search/exerciseindexer.class.php';
+require_once 'modules/search/indexer.class.php';
 ModalBoxHelper::loadModalBox();
 /* * ** The following is added for statistics purposes ** */
 require_once 'include/action.php';
 $action = new action();
 $action->record(MODULE_ID_EXERCISE);
 
-$nameTools = $langExercices;
+$pageName = $langExercices;
 
 /* * **************************** */
 /* Clears the exercise session */
@@ -89,11 +89,10 @@ if ($is_editor) {
         // construction of Exercise
         $objExerciseTmp = new Exercise();
         if ($objExerciseTmp->read($exerciseId)) {
-            $eidx = new ExerciseIndexer();
             switch ($_GET['choice']) {
                 case 'delete': // deletes an exercise
                     $objExerciseTmp->delete();
-                    $eidx->remove($exerciseId);
+                    Indexer::queueAsync(Indexer::REQUEST_REMOVE, Indexer::RESOURCE_EXERCISE, $exerciseId);
                     Session::Messages($langPurgeExerciseSuccess, 'alert-success');
                     redirect_to_home_page('modules/exercise/index.php?course='.$course_code);
                 case 'purge': // purge exercise results
@@ -103,23 +102,27 @@ if ($is_editor) {
                 case 'enable':  // enables an exercise
                     $objExerciseTmp->enable();
                     $objExerciseTmp->save();
-                    $eidx->store($exerciseId);
+                    Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_EXERCISE, $exerciseId);
                     redirect_to_home_page('modules/exercise/index.php?course='.$course_code);
                 case 'disable': // disables an exercise
                     $objExerciseTmp->disable();
                     $objExerciseTmp->save();
-                    $eidx->store($exerciseId);
+                    Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_EXERCISE, $exerciseId);
                     redirect_to_home_page('modules/exercise/index.php?course='.$course_code);
                 case 'public':  // make exercise public
                     $objExerciseTmp->makepublic();
                     $objExerciseTmp->save();
-                    $eidx->store($exerciseId);
+                    Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_EXERCISE, $exerciseId);
                     break;
                 case 'limited':  // make exercise limited
                     $objExerciseTmp->makelimited();
                     $objExerciseTmp->save();
-                    $eidx->store($exerciseId);
+                    Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_EXERCISE, $exerciseId);
                     break;
+                case 'clone':  // make exercise limited
+                    $objExerciseTmp->duplicate();
+                    redirect_to_home_page('modules/exercise/index.php?course='.$course_code);
+                    break;                
             }
         }
         // destruction of Exercise
@@ -158,6 +161,11 @@ if ($is_editor) {
             'level' => 'primary-label',
             'button-class' => 'btn-success'
         ),
+        array('title' => $langQuestionCats,
+            'url' => "question_categories.php?course=$course_code",
+            'icon' => 'fa-cubes',
+            'level' => 'primary'
+            ),        
         array('title' => $langQuestionPool,
             'url' => "question_pool.php?course=$course_code",
             'icon' => 'fa-university',
@@ -249,8 +257,14 @@ if (!$nbrExercises) {
                     array('title' => $langResourceAccess,
                           'url' => "$_SERVER[SCRIPT_NAME]?course=$course_code&amp;".($row->public ? "choice=limited" : "choice=public")."&amp;exerciseId=$row->id",
                           'icon' => $row->public ? 'fa-unlock' : 'fa-lock',
-                          'show' => course_status($course_id) == COURSE_OPEN)
-                           ))."</td></tr>";
+                          'show' => course_status($course_id) == COURSE_OPEN),
+                    array('title' => $langExerciseStats,
+                          'url' => "exercise_stats.php?course=$course_code&amp;exerciseId=$row->id",
+                          'icon' => 'fa-pie-chart'),
+                    array('title' => $langCreateDuplicate,
+                          'url' => "index.php?course=$course_code&amp;choice=clone&amp;exerciseId=$row->id",
+                          'icon' => 'fa-copy')                
+                    ))."</td></tr>";
             
         // student only
     } else {

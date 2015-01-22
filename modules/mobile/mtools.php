@@ -40,7 +40,7 @@ $groupsArr[] = $group;
 $tool = new stdClass();
 $tool->id = 0;
 $tool->name = $langCourseProgram;
-$tool->link = $urlMobile . 'courses/' . $currentCourse;
+$tool->link = $urlAppend . 'courses/' . $currentCourse;
 $tool->img = 'coursedescription';
 $tool->type = 'coursedescription';
 $tool->active = true;
@@ -57,7 +57,7 @@ if ($first_unit) {
 $tool = new stdClass();
 $tool->id = 1;
 $tool->name = $langCourseUnits;
-$tool->link = $urlMobile . 'modules/units/index.php?course=' . $currentCourse . '&id=' . $first_unit_id;
+$tool->link = $urlAppend . 'modules/units/index.php?course=' . $currentCourse . '&id=' . $first_unit_id;
 $tool->img = 'courseunits';
 $tool->type = 'courseunits';
 $tool->active = true;
@@ -128,17 +128,15 @@ function createDom($groupsArr, $toolsArr) {
 
 function correctLink($value) {
     global $urlMobile, $urlAppend;
-    $ret = str_replace($urlAppend, '', $urlMobile) . $value;
+    $link = $urlMobile . substr($value, strlen($urlAppend));
     $profile = (isset($_SESSION['profile'])) ? '?profile=' . $_SESSION['profile'] . '&' : '?';
-    $redirect = 'redirect=' . urlencode($ret);
-    $ret = $urlMobile . 'modules/mobile/mlogin.php' . $profile . $redirect;
-    return $ret;
+    $redirect = 'redirect=' . urlencode($link);
+    return $urlMobile . 'modules/mobile/mlogin.php' . $profile . $redirect;
 }
 
 function correctRedirect($value) {
     global $urlServer, $urlAppend;
-    $ret = str_replace($urlAppend, '', $urlServer) . $value;
-    return $ret;
+    return $urlServer . substr($value, strlen($urlAppend));
 }
 
 function getTypeFromImage($value) {

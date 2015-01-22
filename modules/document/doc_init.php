@@ -37,7 +37,7 @@ if (defined('GROUP_DOCUMENTS')) {
     $group_hidden_input = "<input type='hidden' name='group_id' value='$group_id' />";
     $basedir = $webDir . '/courses/' . $course_code . '/group/' . $secret_directory;
     $can_upload = $can_upload || $is_member;
-    $nameTools = $langGroupDocumentsLink;
+    $pageName = $langGroupDocumentsLink;
     $navigation[] = array('url' => $urlAppend . 'modules/group/group.php?course=' . $course_code, 'name' => $langGroups);
     $navigation[] = array('url' => $urlAppend . 'modules/group/group_space.php?course=' . $course_code . '&amp;group_id=' . $group_id, 'name' => q($group_name));
 } elseif (defined('EBOOK_DOCUMENTS')) {
@@ -53,9 +53,8 @@ if (defined('GROUP_DOCUMENTS')) {
     $group_sql = "course_id = $course_id AND subsystem = $subsystem AND subsystem_id = $subsystem_id";
     $group_hidden_input = "<input type='hidden' name='ebook_id' value='$ebook_id' />";
     $basedir = $webDir . '/courses/' . $course_code . '/ebook/' . $ebook_id;
-    $nameTools = $langFileAdmin;
-    $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langEBook);
-    $navigation[] = array('url' => 'edit.php?course=' . $course_code.'&amp;id=' . $ebook_id, 'name' => $langEBookEdit);
+    $pageName = $langFileAdmin;
+    $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langEBook);    
 } elseif (defined('COMMON_DOCUMENTS')) {
     $subsystem = COMMON;
     $subsystem_id = 'NULL';
@@ -69,7 +68,7 @@ if (defined('GROUP_DOCUMENTS')) {
     if (!is_dir($basedir)) {
         mkdir($basedir, 0775);
     }
-    $nameTools = $langCommonDocs;
+    $pageName = $langCommonDocs;
     $navigation[] = array('url' => $urlAppend . 'modules/admin/index.php', 'name' => $langAdmin);
     // Saved course code so that file picker menu doesn't lose
     // the current course if we're in a course
@@ -90,6 +89,6 @@ if (defined('GROUP_DOCUMENTS')) {
     $group_sql = "course_id = $course_id AND subsystem = $subsystem";
     $group_hidden_input = '';
     $basedir = $webDir . '/courses/' . $course_code . '/document';
-    $nameTools = $langDoc;
+    $pageName = $langDoc;
 }
 $redirect_base_url = preg_replace('/&$/', '', str_replace('&amp;', '&', $base_url));

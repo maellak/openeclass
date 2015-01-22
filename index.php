@@ -37,9 +37,6 @@ require_once 'modules/auth/auth.inc.php';
 require_once 'include/lib/textLib.inc.php';
 require_once 'include/phpass/PasswordHash.php';
 
-// $homePage is used by baseTheme.php to parse correctly the breadcrumb
-$homePage = true;
-
 // unset system that records visitor only once by course for statistics
 require_once 'include/action.php';
 if (isset($dbname)) {
@@ -142,6 +139,19 @@ if ($uid AND !isset($_GET['logout'])) {
     }
    
     if (!get_config('dont_display_login_form')) {
+        $head_content .= "
+            <script>
+            $(function() {
+                $('#revealPass')
+                    .mousedown(function() {
+                        $('#pass').attr('type', 'text');
+                    })
+                    .mouseup(function() {
+                        $('#pass').attr('type', 'password');
+                    })
+            });            
+            </script>
+        ";
         $tool_content .= "
 
 
@@ -149,35 +159,34 @@ if ($uid AND !isset($_GET['logout'])) {
             <div class='col-md-12 remove-gutter'>
                 <div class='jumbotron jumbotron-login'>
                     <div class='row'>
-                        <div class='hidden-xs col-sm-7 col-md-7' style='position: static;'>
-                            <img class='graphic' src='$themeimg/indexlogo.png'/>
+                        <div class='hidden-xs col-sm-6 col-md-7 graphic'>
                         </div>                        
-                        <form class='login-form col-xs-12 col-sm-7 col-md-5 col-lg-4 pull-right' action='$urlSecure' method='post'>
+                        <div class='login-form col-xs-12 col-sm-6 col-md-5 col-lg-4 pull-right'>
                             <h2>$langUserLogin</h2>
-                            <div class='form-group'>
-                                <input autofocus type='text' name='uname' placeholder='$langUsername'><label class='col-xs-2 col-sm-2 col-md-2'><i class='fa fa-user'></i></label>
-                            </div>
-                            <div class='form-group'>
-                                <input type='password' name='pass' placeholder='$langPass'><label class='col-xs-2 col-sm-2 col-md-2'><i class='fa fa-lock'></i></label>
-                            </div>
-                            <div class='login-settings row'>";
-                                /*<div class='checkbox pull-left'>
-                                  <label><input type='checkbox'><span>Θυμήσου με</span></label>
-                                </div>";*/
-        if (!empty($shibboleth_link) or !empty($cas_link)) {
-            $tool_content .= "<div class='link-pull-right'>                
-                    <label>$langAlternateLogin</label>
-                    <label>$shibboleth_link</label>
-                    <label>$cas_link</label>
-                 </div";
-        }
-        $tool_content .= "<div class='link pull-left'>
-                                  <label><a href='modules/auth/lostpass.php'>$lang_forgot_pass</a></label>
-                                </div>                          
-                            </div>
-                            <button type='submit' name='submit' class='btn btn-login'>$langEnter</button>
-                                <p>$warning</p>
-                        </form>
+                                <form  action='$urlSecure' method='post'>
+                                    <div class='form-group'>
+                                        <input autofocus type='text' name='uname' placeholder='$langUsername'><label class='col-xs-2 col-sm-2 col-md-2'><i class='fa fa-user'></i></label>
+                                    </div>
+                                    <div class='form-group'>
+                                        <input type='password' id='pass' name='pass' placeholder='$langPass'><i id='revealPass' class='fa fa-eye' style='margin-left:-20px;color:black;'></i>&nbsp&nbsp<label class='col-xs-2 col-sm-2 col-md-2'><i class='fa fa-lock'></i></label>
+                                    </div>
+                                    <button type='submit' name='submit' class='btn btn-login'>$langEnter</button>
+                                </form>
+                            <div class='login-settings row'>
+                                <div class='text-center'>
+                                      <a href='modules/auth/lostpass.php'>$lang_forgot_pass</a>
+                                    </div>
+                                <hr>";
+                                if (!empty($shibboleth_link) or !empty($cas_link)) {
+                                    $tool_content .= "<div class='alt_login text-center'>
+                                        <span>$langAlternateLogin :</span>";
+                                            if(!empty($cas_link)){ $tool_content.= "<span>$cas_link</span>";}
+                                            if(!empty($shibboleth_link)){ $tool_content.= "<span>$shibboleth_link</span>";}
+                                         $tool_content .= "</div>";
+                                }
+                    $tool_content .= " </div>";
+                            if(!empty($warning)){ $tool_content.= "<br><span>$warning</span>";}
+                        $tool_content .= "</div>
                     </div>
                 </div>
             </div>
@@ -193,15 +202,17 @@ if ($uid AND !isset($_GET['logout'])) {
                                                 ORDER BY `order` DESC", $language);
     $ann_content = '';
     if ($announceArr && sizeof($announceArr) > 0) {
-        $ann_content .= "<h4>$langAnnouncements</h4> <a href='${urlServer}rss.php'>
-                    <img src='$themeimg/feed.png' alt='RSS Feed' title='RSS Feed' />
-                    </a>";
+        $ann_content .= "<h4>$langAnnouncements <a href='${urlServer}rss.php' style='padding-left:5px;'>
+                    <i class='fa fa-rss-square'></i>
+                    </a></h4><ul class='front-announcements'>";
         $numOfAnnouncements = sizeof($announceArr);
         for ($i = 0; $i < $numOfAnnouncements; $i++) {
             $aid = $announceArr[$i]->id;
-            $ann_content .= "<b><a href='modules/announcements/main_ann.php?aid=$aid'>" . q($announceArr[$i]->title) . "</a></b>
-                    &nbsp;<span class='smaller'>(" . claro_format_locale_date($dateFormatLong, strtotime($announceArr[$i]->date)) . ")</span>
-            " . standard_text_escape(ellipsize_html($announceArr[$i]->body, 500, "<strong>&nbsp;<a href='modules/announcements/main_ann.php?aid=$aid'>... <span class='smaller'>[$langMore]</span></a></strong>")) . "<br>";
+            $ann_content .= "
+                    <li>
+                    <div><a class='announcement-title' href='modules/announcements/main_ann.php?aid=$aid'>" . q($announceArr[$i]->title) . "</a></div>
+                    <span class='announcement-date'>- " . claro_format_locale_date($dateFormatLong, strtotime($announceArr[$i]->date)) . " -</span>
+            " . standard_text_escape(ellipsize_html($announceArr[$i]->body, 500, "<div class='announcements-more'><a href='modules/announcements/main_ann.php?aid=$aid'>$langMore &hellip;</a></div>"))."</li>";
         }        
     }
 
@@ -210,11 +221,19 @@ if ($uid AND !isset($_GET['logout'])) {
         <div class='row'>
 
             <div class='col-md-8'>
-                <div class='panel padding'>
-                    $langInfoAbout
+                <div class='panel'>
+                    <div class='panel-body'>
+                        $langInfoAbout
+                    </div>
                 </div>
-                <div class='panel padding'>
-                    $ann_content
+                <div class='panel'>
+                    <div class='panel-body'>";
+                    if(!empty($ann_content)){
+                            $tool_content .= $ann_content;
+                        }else{
+                            $tool_content .= "<li>$langNoRecentAnnounce</li>";
+                        }
+                    $tool_content.="</ul></div>
                 </div>
             </div>
             
@@ -226,27 +245,46 @@ if ($uid AND !isset($_GET['logout'])) {
         $online_users = getOnlineUsers();
         $tool_content .= "
 
-                <div class='panel padding'>
-                    <i class='fa fa-group space-after-icon'></i>$langOnlineUsers: $online_users
-                </div>
-
-                <div class='panel padding'>
+                <div class='panel'>
+                    <div class='panel-body'>
+                        <i class='fa fa-group space-after-icon'></i>$langOnlineUsers: $online_users
+                    </div>
+                </div>";
+if (get_config('opencourses_enable')) {
+        $tool_content .= "<div class='panel'>
+                <div class='panel-body'>
                     <a href='http://opencourses.gr'>
-                        <img src='$themeimg/open_courses_bnr.png'>
+                        <img class='img-responsive' src='$themeimg/open_courses_bnr.png'>
                     </a>
                 </div>
-                <div class='panel padding'>
-                    <a href='http://www.openeclass.org/'>
-                        <img src='$themeimg/open_eclass_bnr.png'>
-                    </a>
+            </div>";
+    }
+    if (get_config('enable_mobileapi')) {
+        $tool_content .= "<div class='panel mobile-apps'>
+                <div class='panel-body'>
+                <div class='row'>
+                <div class='col-xs-6'>
+                <a href='https://itunes.apple.com/us/app/open-eclass-mobile/id796936702' target=_blank><img src='appstore.png' class='img-responsive center-block' alt='Available on the App Store'></a>
                 </div>
+                <div class='col-xs-6'>
+                <a href='https://play.google.com/store/apps/details?id=gr.gunet.eclass' target=_blank><img src='playstore.png' class='img-responsive center-block' alt='Available on the Play Store'></a>                    
+                </div>
+                </div></div>
+            </div>";
+    }
 
-
+            $tool_content .= "              
+                <div class='panel'>
+                    <div class='panel-body'>
+                        <a href='http://www.openeclass.org/'>
+                            <img class='img-responsive center-block' src='$themeimg/open_eclass_bnr.png'>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>";
 
     }
 
-
-    draw($tool_content, 0, null, $rss_link);
+    draw($tool_content, 0, null, $rss_link.$head_content);
 }

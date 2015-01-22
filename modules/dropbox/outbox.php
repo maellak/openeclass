@@ -46,9 +46,9 @@ if (isset($_GET['mid'])) {
             $urlstr = "?course=".$course_code;
         }
         $out = "<div style=\"float:right;\"><a href=\"outbox.php".$urlstr."\">$langBack</a></div>";
-        $out .= "<div id='out_del_msg'></div><div id='out_msg_area'><table>";
+        $out .= "<div id='out_del_msg'></div><div id='out_msg_area'><table class='table-default'>";
         $out .= "<tr><td>$langSubject:</td><td>".q($msg->subject)."</td></tr>";
-        $out .= "<tr id='$msg->id'><td>$langDelete:</td><td><img src=\"".$themeimg.'/delete.png'."\" class=\"delete\"/></td></tr>";
+        $out .= "<tr id='$msg->id'><td>$langDelete:</td><td class='delete'><i class='class='fa fa-times'></i></td></tr>";
         if ($msg->course_id != 0 && $course_id == 0) {
             $out .= "<tr><td>$langCourse:</td><td><a class=\"outtabs\" href=\"index.php?course=".course_id_to_code($msg->course_id)."\">".course_id_to_title($msg->course_id)."</a></td></tr>";
         }
@@ -63,7 +63,7 @@ if (isset($_GET['mid'])) {
         }
         
         $out .= "<tr><td>$langRecipients:</td><td>".$recipients."</td></tr>";
-        $out .= "<tr><td>$langMessage:</td><td>".standard_text_escape($msg->body)."</td></tr>";
+        $out .= "<tr><td>$langMessage:</td><td id='out_msg_body'>".standard_text_escape($msg->body)."</td></tr>";
 
         if ($msg->filename != '') {
             $out .= "<tr><td>$langAttachedFile</td><td><a href=\"dropbox_download.php?course=".course_id_to_code($msg->course_id)."&amp;id=$msg->id\" class=\"outtabs\" target=\"_blank\">$msg->real_filename
@@ -74,6 +74,8 @@ if (isset($_GET['mid'])) {
 
         $out .= '<script>
         $(function() {
+        $("#out_msg_body").find("a").addClass("outtabs");          
+                      
         $(".delete").click(function() {
             if (confirm("' . $langConfirmDelete . '")) {
             var rowContainer = $(this).parent().parent();
@@ -101,8 +103,7 @@ if (isset($_GET['mid'])) {
 } else {
     
     $out = "<div id='out_del_msg'></div><div id='outbox'>";
-    $out .= "<p>$langDeleteAllMsgs: <img src=\"".$themeimg.'/delete.png'."\" class=\"delete_all_out\"/></p><br/>";
-    $out .= "<table id=\"outbox_table\">
+    $out .= "<table id='outbox_table' class='table table-bordered'>
                <thead>
                  <tr>
                     <th>$langSubject</th>";
@@ -111,7 +112,7 @@ if (isset($_GET['mid'])) {
     }
     $out .= "      <th>$langRecipients</th>
                    <th>$langDate</th>
-                   <th>$langDelete</th>
+                   <th class='option-btn-cell text-center'><i class='fa fa-cogs'></i></th>
                  </tr>
                </thead>
                <tbody>
@@ -121,9 +122,10 @@ if (isset($_GET['mid'])) {
     $out .= "<script type='text/javascript'>
                $(document).ready(function() {
                  var oTable2 = $('#outbox_table').dataTable({
+                    'aoColumnDefs':[{'sClass':'option-btn-cell text-center', 'aTargets':[-1]}],
                     'bStateSave' : true,
                     'bProcessing': true,
-                    'sDom': '<\"top\"pfl<\"clear\">>rt<\"bottom\"ip<\"clear\">>',
+                    'sDom': '<\"top\"fl<\"clear\">>rt<\"bottom\"ip<\"clear\">>',
                     'bServerSide': true,
                     'sAjaxSource': 'ajax_handler.php?mbox_type=outbox&course_id=$course_id',
                     'aLengthMenu': [
@@ -133,6 +135,12 @@ if (isset($_GET['mid'])) {
                     'sPaginationType': 'full_numbers',
                     'bSort': false,
                     'bAutoWidth' : false,
+                    'fnDrawCallback': function( oSettings ) {
+                        $('#outbox_table_filter label input').attr({
+                          class : 'form-control input-sm',
+                          placeholder : '$langSearch...'
+                        });
+                    },
                     'oLanguage': {
                             'sLengthMenu':   '$langDisplay _MENU_ $langResults2',
                             'sZeroRecords':  '".$langNoResult."',
@@ -140,7 +148,7 @@ if (isset($_GET['mid'])) {
                             'sInfoEmpty':    '$langDisplayed 0 $langTill 0 $langFrom2 0 $langResults2',
                             'sInfoFiltered': '',
                             'sInfoPostFix':  '',
-                            'sSearch':       '".$langSearch."',
+                            'sSearch':       '',
                             'sUrl':          '',
                             'oPaginate': {
                                  'sFirst':    '&laquo;',
@@ -153,50 +161,59 @@ if (isset($_GET['mid'])) {
                     
                     $(document).on( 'click','.delete_out', function (e) {
                         e.preventDefault();
-                        if (confirm('$langConfirmDelete')) {
-                            var rowContainer = $(this).parent().parent();
-                            var id = rowContainer.attr('id');
-                            var string = 'mid='+ id ;
-                            $.post('ajax_handler.php', string, function() {
+                        var rowContainer = $(this).parent().parent();
+                        var id = rowContainer.attr('id');
+                        var string = 'mid='+ id ;
+                        bootbox.confirm('$langConfirmDelete', function(result) {
+                            if (result) {
+                                $.ajax({
+                                  type: 'POST',
+                                  url: 'ajax_handler.php?course_id=$course_id',
+                                  data: string,
+                                  cache: false,
+                                  success: function(){
+                                    var num_page_records = oTable2.fnGetData().length;
+                                    var per_page = oTable2.fnPagingInfo().iLength;
+                                    var page_number = oTable2.fnPagingInfo().iPage;
+                                    if(num_page_records==1){
+                                        if(page_number!=0) {
+                                            page_number--;
+                                        }
+                                    }
+                                    $('#out_del_msg').html('<p class=\'alert alert-success\'>$langMessageDeleteSuccess</p>');
+                                    $('.alert-success').delay(3000).fadeOut(1500);
+                                    oTable2.fnPageChange(page_number);
+                                  }
+                               });
+                             }                            
+                         })
+                     });
+                     
+                    $('.delete_all_out').click(function() {
+                      bootbox.confirm('$langConfirmDeleteAllMsgs', function(result) {
+                          if(result) {
+                            var string = 'all_outbox=1';
+                            $.ajax({
+                              type: 'POST',
+                              url: 'ajax_handler.php?course_id=$course_id',
+                              data: string,
+                              cache: false,
+                              success: function(){
                                 var num_page_records = oTable2.fnGetData().length;
                                 var per_page = oTable2.fnPagingInfo().iLength;
                                 var page_number = oTable2.fnPagingInfo().iPage;
                                 if(num_page_records==1){
-                                    if(page_number!=0) {
-                                        page_number--;
-                                    }
-                                }
-                                $('#out_del_msg').html('<p class=\'success\'>$langMessageDeleteSuccess</p>');
-                                $('.success').delay(3000).fadeOut(1500);
+                                  if(page_number!=0) {
+                                    page_number--;
+                                  }
+                                }     
+                                $('#out_del_msg').html('<p class=\'alert alert-success\'>$langMessageDeleteAllSuccess</p>');
+                                $('.alert-success').delay(3000).fadeOut(1500);
                                 oTable2.fnPageChange(page_number);
-                            }, 'json');
-                         }
-                     });
-                     
-                    $('.delete_all_out').click(function() {
-                      if (confirm('$langConfirmDeleteAllMsgs')) {
-                        var string = 'all_outbox=1';
-                        $.ajax({
-                          type: 'POST',
-                          url: 'ajax_handler.php?course_id=$course_id',
-                          data: string,
-                          cache: false,
-                          success: function(){
-                            var num_page_records = oTable2.fnGetData().length;
-                            var per_page = oTable2.fnPagingInfo().iLength;
-                            var page_number = oTable2.fnPagingInfo().iPage;
-                            if(num_page_records==1){
-                              if(page_number!=0) {
-                                page_number--;
                               }
-                            }     
-                            $('#out_del_msg').html('<p class=\'success\'>$langMessageDeleteAllSuccess</p>');
-                            $('.success').delay(3000).fadeOut(1500);
-                            oTable2.fnPageChange(page_number);
-                          }
-                       });
-                       return false;
-                     }
+                           });
+                         }
+                     })
                    });
                
                });

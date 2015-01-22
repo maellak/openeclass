@@ -29,7 +29,7 @@ $guest_allowed = true;
 include '../../include/baseTheme.php';
 require_once 'include/lib/textLib.inc.php';
 
-$nameTools = $langExercicesResult;
+$pageName = $langExercicesResult;
 $navigation[] = array("url" => "index.php?course=$course_code", "name" => $langExercices);
 
 // picture path
@@ -295,6 +295,7 @@ if (count($exercise_question_ids)>0){
                             }
                             $choice[$j] = trim(stripslashes($choice[$j]));
                             // if the word entered is the same as the one defined by the professor
+                                                       
                             if (strtolower(substr($temp, 0, $pos)) == strtolower($choice[$j])) {
                                 // gives the related weighting to the student
                                 $questionScore+=$answerWeighting[$j-1];
@@ -324,9 +325,9 @@ if (count($exercise_question_ids)>0){
                             } elseif (!$choice[$answerId]) {
                                 $choice[$answerId] = '&nbsp;&nbsp;&nbsp;';
                             } else {
-                                $choice[$answerId] = '<font color="red">
-                                                                <s>' . q($matching[$choice[$answerId]]) . '</s>
-                                                                </font>';
+                                $choice[$answerId] = "<span style='color:red;'>
+                                                                <del>" . $matching[$choice[$answerId]] . "</del>
+                                                                </span>";
                             }
                         } else {
                             $matching[$answerId] = $answer;
@@ -381,7 +382,7 @@ if (count($exercise_question_ids)>0){
                             $tool_content .= "
                                                 <tr class='even'>
                                                   <td>" . standard_text_escape($answer) . "</td>
-                                                  <td>" .q($choice[$answerId]) ." / <font color='green'><b>" . q($matching[$answerCorrect]) . "</b></font></td>
+                                                  <td>" .$choice[$answerId] ." / <font color='green'><b>" . q($matching[$answerCorrect]) . "</b></font></td>
                                                 </tr>";
                         }
                     }
