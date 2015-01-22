@@ -32,12 +32,11 @@
  * @global type $langWikiNoWiki
  * @global type $langWikiDescriptionForm
  * @global type $course_code
- * @global type $themeimg
  */
 function list_wikis() {
     global $id, $course_id, $tool_content, $urlServer,
     $langWikis, $langAddModulesButton, $langChoice, $langWikiNoWiki,
-    $langWikiDescriptionForm, $course_code, $themeimg;
+    $langWikiDescriptionForm, $course_code;
 
 
     $result = Database::get()->queryArray("SELECT * FROM wiki_properties WHERE group_id = 0 AND course_id = ?d", $course_id);
@@ -51,30 +50,28 @@ function list_wikis() {
     if (count($wikiinfo) == 0) {
         $tool_content .= "<div class='alert alert-warning'>$langWikiNoWiki</div>";
     } else {
-        $tool_content .= "<form action='insert.php?course=$course_code' method='post'>" .
-                "<input type='hidden' name='id' value='$id'>" .
-                "<table class='tbl_alt' width='99%'>" .
-                "<tr>" .
-                "<th><div align='left'>&nbsp;$langWikis</div></th>" .
-                "<th>$langWikiDescriptionForm</th>" .
-                "<th>$langChoice</th>" .
-                "</tr>";
-        $i = 0;
+        $tool_content .= "<form action='insert.php?course=$course_code' method='post'>
+                <input type='hidden' name='id' value='$id'>
+                <table class='table-default'>
+                    <tr>
+                        <th class='text-leftt'>$langWikis</th>
+                        <th>$langWikiDescriptionForm</th>
+                        <th>$langChoice</th>
+                    </tr>";        
         foreach ($wikiinfo as $entry) {
-            if ($i % 2) {
-                $rowClass = "class='odd'";
-            } else {
-                $rowClass = "class='even'";
-            }
-            $tool_content .= "<tr $rowClass>";
-            $tool_content .= "<td>&nbsp;<img src='$themeimg/wiki_on.png' />&nbsp;&nbsp;<a href='${urlServer}modules/wiki/page.php?course=$course_code&amp;wikiId=$entry[id]&amp;action=show'>$entry[title]</a></td>";
-            $tool_content .= "<td>$entry[description]</td>";
-            $tool_content .= "<td align='center'><input type='checkbox' name='wiki[]' value='$entry[id]'></td>";
-            $tool_content .= "</tr>";
-            $i++;
+            $tool_content .= "<tr><td>&nbsp;".icon('fa-wikipedia')."&nbsp;&nbsp;<a href='${urlServer}modules/wiki/page.php?course=$course_code&amp;wikiId=$entry[id]&amp;action=show'>$entry[title]</a></td>
+                                <td>$entry[description]</td>
+                                <td align='center'><input type='checkbox' name='wiki[]' value='$entry[id]'></td>
+                            </tr>";            
         }
-        $tool_content .= "<tr><th colspan='3'><div align='right'>";
-        $tool_content .= "<input class='btn btn-primary' type='submit' name='submit_wiki' value='$langAddModulesButton'></div></th>";
-        $tool_content .= "</tr></table></form>";
+        $tool_content .= "<tr>
+                            <th colspan='3'>
+                                <div align='right'>
+                                    <input class='btn btn-primary' type='submit' name='submit_wiki' value='$langAddModulesButton'>
+                                </div>
+                            </th>
+                        </tr>
+                    </table>
+                </form>";
     }
 }

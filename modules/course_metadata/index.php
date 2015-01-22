@@ -23,7 +23,7 @@ $require_current_course = true;
 $require_course_admin = true;
 define('STATIC_MODULE', 1);
 require_once '../../include/baseTheme.php';
-$nameTools = $langCourseMetadata;
+$pageName = $langCourseMetadata;
 require_once 'modules/course_metadata/CourseXML.php';
 
 // exit if feature disabled
@@ -42,16 +42,18 @@ $tool_content .= $displayHtml;
 
 $naturalKeys = array('othernatural', 'maths', 'cis', 'phys', 'chem', 'environ', 'biology');
 $naturalJSON = generateJSON($naturalKeys);
-$agriKeys = array('otheragri', 'agrifor', 'animal', 'veterin', 'agribio');
+$agriKeys = array('otheragri', 'agrifor', 'animal', 'agribio', 'rural');
 $agriJSON = generateJSON($agriKeys);
-$engKeys = array('othereng', 'architects', 'civil', 'eeeeie', 'mechan', 'chemic', 'mateng', 'medeng', 'enveng');
+$engKeys = array('othereng', 'civil', 'eeeeie', 'mcec', 'mechan', 'chemic', 'mateng', 'medeng', 'enveng', 'architects', 'engecon');
 $engJSON = generateJSON($engKeys);
-$socKeys = array('othersoc', 'psych', 'ecobi', 'edusoc', 'sociology', 'law', 'political', 'ecogeosoc', 'mediacomm');
+$socKeys = array('othersoc', 'psych', 'edusoc', 'sociology', 'law', 'political', 'ecobi', 'ecogeosoc', 'mediacomm', 'infoscie', 'anthro');
 $socJSON = generateJSON($socKeys);
-$medKeys = array('othermed', 'basicmed', 'clinicalmed', 'healthsci', 'medbio', 'physedu');
+$medKeys = array('othermed', 'basicmed', 'clinicalmed', 'healthsci', 'veterin', 'hcare', 'medbio', 'physedu', 'fnscie');
 $medJSON = generateJSON($medKeys);
 $humKeys = array('otherhum', 'hisarch', 'langlit', 'philosophy', 'arts', 'pedagogy');
 $humJSON = generateJSON($humKeys);
+$indepKeys = array('otherinddep', 'milit');
+$indepJSON = generateJSON($indepKeys);
 
 $instrFirst = $langCMeta['course_instructor_firstName'];
 $instrLast = $langCMeta['course_instructor_lastName'];
@@ -61,6 +63,7 @@ $instrPhoto = $langCMeta['course_instructor_photo'];
 
 load_js('select2');
 $head_content .= <<<EOF
+<link rel="stylesheet" type="text/css" href="course_metadata.css">
 <script type='text/javascript'>
 /* <![CDATA[ */
         
@@ -72,6 +75,7 @@ $head_content .= <<<EOF
         "social" : {$socJSON},
         "medical" : {$medJSON},
         "humanities" : {$humJSON},
+        "independents" : {$indepJSON}
     };
         
     var populateSubThematic = function(key) {
@@ -152,88 +156,6 @@ $head_content .= <<<EOF
 
 /* ]]> */
 </script>
-<style type="text/css">
-
-.ui-widget {
-    font-family: "Trebuchet MS",Tahoma,Arial,Helvetica,sans-serif;
-    font-size: 13px;
-}
-
-.ui-widget-content {
-    color: rgb(119, 119, 119);
-}
-
-p.right {
-    margin-top: 60px;
-}
-
-div.right {
-    margin-top: 10px;
-}
-
-.form-control, input[type="text"], select, textarea {
-    width: auto;
-}
-
-.panel-group {
-    margin-top: 60px;
-}
-
-/* -- OpenCourses Metadata Form -- */
-
-.cmetarow {
-    clear: both;
-    padding: 4px;
-}
-
-.cmetalabel {
-    font-weight: bold;
-    float: left;
-    width: 232px;
-    border-right: 1px dashed #dfdfdf;
-    padding-bottom: 4px;
-    margin-top: 6px;
-    margin-right: 10px;
-}
-
-.cmetalabelinaccordion {
-    font-weight: bold;
-    float: left;
-    width: 232px;
-    border-right: 1px dashed #dfdfdf;
-    padding-bottom: 4px;
-    margin-top: 6px;
-    margin-right: 10px;
-}
-
-.cmetafield {
-    float: left;
-    margin-bottom: 20px;
-    //padding-left: 4px;
-}
-
-.cmetamandatory {
-    font-size: 11px;
-    color: red;
-    padding: 4px;
-    float: right;
-    margin-top: 6px;
-}
-
-.cmetaaccordion {
-    clear: both;
-}
-
-.cmetalabel a, .cmetalabelinaccordion a {
-    color: rgb(119, 119, 119) !important;
-    border-bottom: 1px dashed;
-}
-
-.cmetalabel a:hover, .cmetalabelinaccordion a:hover {
-    border-bottom: none;
-}
-
-</style>
 EOF;
 draw($tool_content, 2, null, $head_content);
 

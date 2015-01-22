@@ -30,21 +30,19 @@ if (!defined('COMMON_DOCUMENTS')) {
 require_once '../../include/baseTheme.php';
 require_once 'modules/document/doc_init.php';
 
+$toolName = $langDoc;
+
 if (isset($_GET['uploadPath'])) {
     $uploadPath = q($_GET['uploadPath']);
 } else {
     $uploadPath = '';
 }
 
-if ($can_upload) {
-    $tool_content .= action_bar(array(
-                    array('title' => $langBack,
-                          'url' => "index.php?course=$course_code",
-                          'icon' => 'fa-reply',
-                          'level' => 'primary-label')));
+if ($can_upload) {    
     if (isset($_GET['ext'])) {
         $group_hidden_input .= "<input type='hidden' name='ext' value='true'>";
-        $nameTools = $langExternalFile;
+        $pageName = $langExternalFile;
+        $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langDoc);
         $fileinput = "
         <div class='form-group'>
           <label for='fileURL' class='col-sm-2 control-label'>$langExternalFileInfo</label>
@@ -53,7 +51,8 @@ if ($can_upload) {
           </div>
         </div>";
     } else {
-        $nameTools = $langDownloadFile;
+        $pageName = $langDownloadFile;
+        $navigation[] = array('url' => 'index.php?course=' . $course_code, 'name' => $langDoc);
         $fileinput = "
         <div class='form-group'>
           <label for='userFile' class='col-md-6 control-label'>$langPathUploadFile</label>
@@ -62,10 +61,15 @@ if ($can_upload) {
           </div>
         </div>";
     }
+    $tool_content .= action_bar(array(
+                    array('title' => $langBack,
+                          'url' => "index.php?course=$course_code",
+                          'icon' => 'fa-reply',
+                          'level' => 'primary-label')));
     $tool_content .= "
         <div class='row margin-top-fat'>
-          <div class='col-md-12'>
-        <div class='panel padding-fat focused'>
+            <div class='col-md-12'>
+                <div class='form-wrapper'>
 
         <form class='form-horizontal' role='form' action='$upload_target_url' method='post' enctype='multipart/form-data'>      
           <input type='hidden' name='uploadPath' value='$uploadPath' />
@@ -90,7 +94,7 @@ if ($can_upload) {
       <div class='form-group'>
         <label for='inputFileCategory' class='col-sm-2 control-label'>$langCategory</label>
         <div class='col-sm-10'>
-          <select name='file_category'>
+          <select class='form-control' name='file_category'>
             <option selected='selected' value='0'>$langCategoryOther</option>
             <option value='1'>$langCategoryExcercise</option>
             <option value='2'>$langCategoryLecture</option>
@@ -132,7 +136,7 @@ if ($can_upload) {
 
         <label for='inputFileLanguage' class='col-sm-2 control-label'>$langLanguage</label>
         <div class='col-sm-10'>
-          <select name='file_language'>
+          <select class='form-control' name='file_language'>
                 <option value='en'>$langEnglish</option>
                 <option value='fr'>$langFrench</option>
                 <option value='de'>$langGerman</option>
@@ -155,7 +159,7 @@ if ($can_upload) {
                 '5' => $langCreativeCommonsCCBYND,
                 '6' => $langCreativeCommonsCCBYNC,
                 '7' => $langCreativeCommonsCCBYNCSA,
-                '8' => $langCreativeCommonsCCBYNCND), 'file_copyrighted') . "
+                '8' => $langCreativeCommonsCCBYNCND), 'file_copyrighted', '', 'class="form-control"') . "
         </div>
       </div>";
 
@@ -186,15 +190,16 @@ if ($can_upload) {
   $tool_content .= "
       <div class='form-group'>
         <div class='col-sm-offset-5 col-sm-12'>
-          <button type='submit' class='btn-default-eclass color-green size-l'>
+          <button type='submit' class='btn btn-primary'>
             <i class='fa fa-arrow-up space-after-icon'></i>
             $langUpload
           </button>
+          <a class='btn btn-default' href='index.php?course=$course_code'>$langCancel</a>
         </div>
       </div>
     </form>
 
-    </div>";
+    </div></div></div>";
 } else {
     $tool_content .= "<div class='alert alert-warning'>$langNotAllowed</div>";
 }

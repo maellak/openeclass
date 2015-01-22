@@ -1,0 +1,222 @@
+// customize bootstrap variables here:
+@import "variables";
+@import "bootstrap";
+@font-face {
+    font-family: 'Open Sans';
+    src: url('fonts/OpenSans-Regular.ttf');
+    font-weight: normal;
+    font-style: normal;
+}
+//Quick Fixes for Open eClass 2.x classes... (to be removed in the future)
+.tbl, .tbl_1, .tbl_alt, #t1, .tbl_courseid, #t3, .tbl_lesson, div.panel_content table, #t1pre, #t1post, #t1other{  
+    @extend .table, .table-striped;  
+}
+#btn-search{
+    @include button-variant(white, #232C3A, #111111);
+}
+//Input file global fix
+input[type="file"] {
+    padding-top: 7px;
+}
+//New alert style (probably more styling needed)
+.alert-default {
+    background-image: linear-gradient(to bottom,#fff 0,#e0e0e0 100%);
+    border-color: #ccc;
+}
+// Action Button fix
+.popover-content {
+    padding: 9px 9px;
+    .list-group {
+        margin-bottom: 0px;
+    }
+}
+.popover-content
+// Affix styles
+.affix {
+    top: 40px;
+}
+.option-btn-cell .btn-group {
+  display: flex;
+  display: -webkit-flex;
+  display: -moz-flex;
+  display: -ms-flex;    
+}
+a.list-group-item.delete{
+    color: #CE6B6B;
+}
+a.list-group-item.delete:hover{
+    background-color: #CE6B6B;
+    color: white;
+}
+.dropdown-menu > li > form > a {
+display: block;
+padding: 3px 20px;
+clear: both;
+text-decoration: none;
+font-weight: normal;
+line-height: 1.428571429;
+color: #333333;
+white-space: nowrap;
+}
+.dropdown-menu>li>form>a:hover, .dropdown-menu>li>form>a:focus {
+background-color: #e8e8e8;
+background-image: -webkit-linear-gradient(top,#f5f5f5 0,#e8e8e8 100%);
+background-image: -o-linear-gradient(top,#f5f5f5 0,#e8e8e8 100%);
+background-image: -webkit-gradient(linear,left top,left bottom,from(#f5f5f5),to(#e8e8e8));
+background-image: linear-gradient(to bottom,#f5f5f5 0,#e8e8e8 100%);
+filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fff5f5f5', endColorstr='#ffe8e8e8', GradientType=0);
+background-repeat: repeat-x;
+}
+.dropdown-menu > li > form > a:hover, .dropdown-menu > li > form > a:focus {
+text-decoration: none;
+color: #262626;
+background-color: whitesmoke;
+cursor: pointer; 
+}
+@media(min-width: $screen-tablet){
+  .affix {
+    width: 20%;
+  }
+}
+
+  @media(max-width: $screen-tablet){
+  .login-form{
+      margin-right: 5%;
+      margin-left: 5%;
+      width: 90%;
+  }
+}
+@media(max-width: $screen-desktop){
+   .float-menu {
+       position: absolute;
+       width: 225px;
+       left: -225px;
+       top: 0px !important;
+       height: 100%;
+       background-color: #232C3A;
+  }
+  #leftnav{
+      overflow: scroll;
+      z-index: 8888;
+  }
+  .navbar-toggle{
+      display: block;
+  }
+}
+@media(min-width: $screen-desktop){
+   .affix {
+    width: 18%;
+  }
+  .navbar-custom{
+    margin: 15px 15px 0px;
+}
+}
+@media(min-width: $screen-lg-desktop){
+   .affix {
+    width: 17%;
+  }   
+}
+@media(min-width: 1450px){
+   .affix {
+    width: 12.4%;
+  }   
+}
+//Speech bubble styles
+.bubble 
+{
+position: relative;
+width: 100%;
+padding: 5px 20px 5px 20px;
+background: #FFFFFF;
+-webkit-border-radius: 7px;
+-moz-border-radius: 7px;
+border-radius: 7px;
+border: #dddddd solid 2px;
+}
+
+.bubble:after 
+{
+content: '';
+position: absolute;
+border-style: solid;
+border-width: 10px 14px 10px 0;
+border-color: transparent #FFFFFF;
+display: block;
+width: 0;
+z-index: 1;
+left: -14px;
+top: 9px;
+}
+
+.bubble:before 
+{
+content: '';
+position: absolute;
+border-style: solid;
+border-width: 11px 15px 11px 0;
+border-color: transparent #dddddd;
+display: block;
+width: 0;
+z-index: 0;
+left: -17px;
+top: 8px;
+}
+
+//Custom Form Wrapper class
+.form-wrapper {
+    @extend .well, .well-lg;
+}
+//Custtom default table class
+.table-default {
+    @extend .table, .table-striped, .table-bordered, .table-hover;
+}
+// Custtom Panel Classes to support action_button() in panel heading
+.panel-action-btn-default {
+    @extend .panel-default;   
+    & > .panel-heading {
+        @extend .clearfix;
+        padding: 0 0 0 20px;
+        h3 { 
+            line-height: 45px 
+        }
+        .opt-btn {
+            background-color: whitesmoke;
+        }
+    }
+}
+.panel-action-btn-primary {
+    @extend .panel-primary;   
+    & > .panel-heading {
+        @extend .clearfix;
+        padding: 0 0 0 20px;
+        h3 { 
+            line-height: 45px 
+        }
+        .opt-btn {
+            background-color: whitesmoke;
+        }
+    }
+}
+
+.navbar-nav .open .dropdown-menu {
+        position: absolute;
+        float: none;
+        width: auto;
+        margin-top: 0;
+        background-color:#ffffff;
+        border-left-color: rgba(0, 0, 0, 0.14902);
+        color: #000;
+border-left-style: solid;
+border-left-width: 1px;
+border-right-color: rgba(0, 0, 0, 0.14902);
+border-right-style: solid;
+border-right-width: 1px;
+border-top-color: rgba(0, 0, 0, 0.14902);
+border-top-left-radius: 0px;
+border-top-right-radius: 0px;
+border-top-style: solid;
+border-top-width: 1px;
+bottom: auto;
+box-shadow: rgba(0, 0, 0, 0.172549) 0px 6px 12px 0px;
+box-sizing: border-box;
+    }

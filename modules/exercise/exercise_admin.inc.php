@@ -23,13 +23,13 @@
  * @file exercise_admin.inc.php
  * @brief Create new exercise or modify an existing one
  */
-require_once 'modules/search/exerciseindexer.class.php';
+require_once 'modules/search/indexer.class.php';
 
 // the exercise form has been submitted
 if (isset($_POST['submitExercise'])) {
     $v = new Valitron\Validator($_POST);
-    $v->rule('required', ['exerciseTitle']);
-    $v->rule('numeric', ['exerciseTimeConstraint', 'exerciseAttemptsAllowed']);
+    $v->rule('required', array('exerciseTitle'));
+    $v->rule('numeric', array('exerciseTimeConstraint', 'exerciseAttemptsAllowed'));
     $v->labels(array(
         'exerciseTitle' => "$langTheField $langExerciseName",
         'exerciseTimeConstraint' => "$langTheField $langExerciseConstrain",
@@ -55,8 +55,7 @@ if (isset($_POST['submitExercise'])) {
         $objExercise->save();
         // reads the exercise ID (only useful for a new exercise)
         $exerciseId = $objExercise->selectId();
-        $eidx = new ExerciseIndexer();
-        $eidx->store($exerciseId);
+        Indexer::queueAsync(Indexer::REQUEST_STORE, Indexer::RESOURCE_EXERCISE, $exerciseId);
         redirect_to_home_page('modules/exercise/admin.php?course='.$course_code.'&exerciseId='.$exerciseId);        
     } else {
         $new_or_modify = isset($_GET['NewExercise']) ? "&NewExercise=Yes" : "&exerciseId=$_GET[exerciseId]&modifyExercise=yes";
@@ -97,6 +96,25 @@ if (isset($_GET['modifyExercise']) or isset($_GET['NewExercise'])) {
                 pickerPosition: 'bottom-left', 
                 language: '".$language."',
                 autoclose: true    
+            });
+            $('.questionDrawnRadio').change(function() {
+                if($(this).val()==0){
+                    $('#questionDrawnInput').val(''); 
+                    $('#questionDrawnInput').prop('disabled', true);
+                    $('#questionDrawnInput').closest('div.form-group').addClass('hidden');
+                } else {
+                    $('#questionDrawnInput').prop('disabled', true);
+                    $('#questionDrawnInput').closest('div.form-group').removeClass('hidden');
+                }
+            });            
+            $('#randomDrawnSubset').change(function() {
+                if($(this).prop('checked')){                   
+                    $('#questionDrawnInput').prop('disabled', false);   
+                    $('.questionDrawnRadio').prop('disabled', true); 
+                } else {
+                    $('#questionDrawnInput').prop('disabled', true);
+                    $('.questionDrawnRadio').prop('disabled', false); 
+                }
             });
         });
     </script>";
@@ -140,11 +158,11 @@ if (isset($_GET['modifyExercise']) or isset($_GET['NewExercise'])) {
                            </label>
                          </div>
                      </div>
-                 </div>    
+                 </div>              
                  <div class='input-append date form-group' id='startdatepicker' data-date='$exerciseStartDate' data-date-format='dd-mm-yyyy'>
                      <label for='exerciseStartDate' class='col-sm-2 control-label'>$langExerciseStart :</label>
                      <div class='col-xs-10 col-sm-9'>        
-                         <input name='exerciseStartDate' id='exerciseStartDate' type='text' value='$exerciseStartDate'>
+                         <input class='form-control' name='exerciseStartDate' id='exerciseStartDate' type='text' value='$exerciseStartDate'>
                      </div>
                      <div class='col-xs-2 col-sm-1'>  
                          <span class='add-on'><i class='fa fa-times'></i></span>
@@ -154,7 +172,7 @@ if (isset($_GET['modifyExercise']) or isset($_GET['NewExercise'])) {
                  <div class='input-append date form-group' id='enddatepicker' data-date='$exerciseEndDate' data-date-format='dd-mm-yyyy'>
                      <label for='exerciseEndDate' class='col-sm-2 control-label'>$langExerciseEnd :</label>
                      <div class='col-xs-10 col-sm-9'>        
-                         <input name='exerciseEndDate' id='exerciseEndDate' type='text' value='$exerciseEndDate'>
+                         <input class='form-control' name='exerciseEndDate' id='exerciseEndDate' type='text' value='$exerciseEndDate'>
                      </div>
                      <div class='col-xs-2 col-sm-1'>  
                          <span class='add-on'><i class='fa fa-times'></i></span>
@@ -191,14 +209,37 @@ if (isset($_GET['modifyExercise']) or isset($_GET['NewExercise'])) {
                      <input type='text' class='form-control' name='exerciseAttemptsAllowed' id='exerciseAttemptsAllowed' value='$exerciseAttemptsAllowed' placeholder='$langExerciseConstrain'>
                      <span class='help-block'>".(Session::getError('exerciseAttemptsAllowed') ? Session::getError('exerciseAttemptsAllowed') : "$langExerciseAttemptsAllowedUnit ($langExerciseAttemptsAllowedExplanation)")."</span>
                    </div>
-                 </div>            
-                 <div class='form-group'>
-                   <label for='questionDrawn' class='col-sm-2 control-label'>$langRandomQuestions:</label>
-                   <div class='col-sm-10'>
-                     <input type='text' class='form-control' name='questionDrawn' id='questionDrawn' value='$randomQuestions' placeholder='$langRandomQuestions'>
-                     <span class='help-block'>$langFromRandomQuestions</span>
-                   </div>
                  </div>
+                 <div class='form-group'>
+                     <label for='exerciseDescription' class='col-sm-2 control-label'>$langRandomQuestions:</label>
+                     <div class='col-sm-10'>            
+                         <div class='radio'>
+                           <label>
+                             <input type='radio' name='questionDrawn' class='questionDrawnRadio' value='0' ".(($randomQuestions == 0)? 'checked' : '').(($randomQuestions > 0 && $randomQuestions < 32767)? ' disabled' : '').">
+                             $langDeactivate
+                           </label>
+                         </div>
+                         <div class='radio'>
+                           <label>
+                             <input type='radio' name='questionDrawn' class='questionDrawnRadio' value='32767'".(($randomQuestions > 0)? ' checked' : '').(($randomQuestions > 0 && $randomQuestions < 32767)? ' disabled' : '').">
+                             $langActivate
+                           </label>
+                         </div>
+                     </div>
+                 </div>                
+                 <div class='form-group ".(($randomQuestions > 0)? '' : 'hidden')."'>
+                    <div class='col-sm-5 col-sm-offset-2'>                 
+                        <input type='text' class='form-control' name='questionDrawn' id='questionDrawnInput' value='".(($randomQuestions < 32767) ? $randomQuestions : null)."'".(($randomQuestions > 0 && $randomQuestions < 32767)? '' : 'disabled').">
+                    </div>
+                    <div class='col-sm-5'>                 
+                        <div class='checkbox'>
+                          <label>
+                            <input id='randomDrawnSubset' value='1' type='checkbox' ".(($randomQuestions > 0 && $randomQuestions < 32767)? 'checked' : '').">
+                            $langFromRandomQuestions
+                          </label>
+                        </div> 
+                    </div>                   
+                 </div>                    
                  <div class='form-group'>
                      <label for='dispresults' class='col-sm-2 control-label'>$langAnswers:</label>
                      <div class='col-sm-10'>            
@@ -294,17 +335,9 @@ if (isset($_GET['modifyExercise']) or isset($_GET['NewExercise'])) {
                     <strong>$langExerciseStart:</strong>
                 </div>
                 <div class='col-sm-9'>
-                    $exerciseType
-                </div>                
-            </div>
-            <div class='row  margin-bottom-fat'>
-                <div class='col-sm-3'>
-                    <strong>$langExerciseType:</strong>
-                </div>
-                <div class='col-sm-9'>
                     $exerciseStartDate
                 </div>                
-            </div> 
+            </div>
             <div class='row  margin-bottom-fat'>
                 <div class='col-sm-3'>
                     <strong>$langExerciseEnd:</strong>

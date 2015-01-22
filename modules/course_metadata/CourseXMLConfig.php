@@ -102,7 +102,8 @@ class CourseXMLConfig {
                 'engineering' => $GLOBALS['langCMeta']['engineering'],
                 'social' => $GLOBALS['langCMeta']['social'],
                 'medical' => $GLOBALS['langCMeta']['medical'],
-                'humanities' => $GLOBALS['langCMeta']['humanities']),
+                'humanities' => $GLOBALS['langCMeta']['humanities'],
+                'independents' => $GLOBALS['langCMeta']['independents']),
             'course_subthematic' => array('othersubsubj' => $GLOBALS['langCMeta']['othersubsubj'])
         );
 
@@ -143,7 +144,7 @@ class CourseXMLConfig {
         $courseinfo = $urlServer . 'modules/course_info/index.php?course=' . $course_code;
         $coursedesc = $urlServer . 'modules/course_description/index.php?course=' . $course_code;
         $coursehome = $urlServer . 'courses/' . $course_code . '/index.php';
-        $clang = langname_to_code($currentCourseLanguage);
+        $clang = $currentCourseLanguage;
 
         $valArr = array(
             'course_title_' . $clang => $courseinfo,

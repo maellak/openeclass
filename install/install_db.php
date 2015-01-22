@@ -175,6 +175,9 @@ $db->query("CREATE TABLE `course` (
   `view_type` VARCHAR(255) NOT NULL DEFAULT 'units',
   `start_date` DATE NOT NULL default '0000-00-00',
   `finish_date` DATE NOT NULL default '0000-00-00',
+  `description` MEDIUMTEXT NOT NULL,
+  `home_layout` TINYINT(1) NOT NULL DEFAULT 1,
+  `course_image` VARCHAR(400) NULL,
   PRIMARY KEY  (`id`)) $charset_spec");
 
 #
@@ -190,6 +193,7 @@ $db->query("CREATE TABLE `course_weekly_view` (
   `finish_week` DATE NOT NULL default '0000-00-00',
   `visible` TINYINT(4) NOT NULL DEFAULT 1,
   `public` TINYINT(4) NOT NULL DEFAULT 1,
+  `order` INT(11) NOT NULL DEFAULT 0,
   PRIMARY KEY  (`id`)) $charset_spec");
 
 #
@@ -403,7 +407,7 @@ $db->query("CREATE TABLE monthly_summary (
         visitorsNum int(11) NOT NULL default 0,
         coursNum int(11) NOT NULL default 0,
         logins int(11) NOT NULL default 0,
-        details text,
+        details MEDIUMTEXT,
         PRIMARY KEY (id)) $charset_spec");
 
 $db->query("CREATE TABLE IF NOT EXISTS `document` (
@@ -797,11 +801,12 @@ $db->query("CREATE TABLE IF NOT EXISTS `poll_question` (
                 `pid` INT(11) NOT NULL DEFAULT 0,
                 `question_text` VARCHAR(250) NOT NULL DEFAULT '',
                 `qtype` tinyint(3) UNSIGNED NOT NULL,
-                `q_position` INT(11) DEFAULT 1 ) $charset_spec");
+                `q_position` INT(11) DEFAULT 1, 
+                `q_scale` INT(11) NULL DEFAULT NULL) $charset_spec");
 $db->query("CREATE TABLE IF NOT EXISTS `poll_question_answer` (
                 `pqaid` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 `pqid` INT(11) NOT NULL DEFAULT 0,
-                `answer_text` TEXT NOT NULL ) $charset_spec");
+                `answer_text` TEXT NOT NULL) $charset_spec");
 
 $db->query("CREATE TABLE IF NOT EXISTS `assignment` (
                 `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -818,9 +823,9 @@ $db->query("CREATE TABLE IF NOT EXISTS `assignment` (
                 `max_grade` FLOAT DEFAULT NULL,
                 `assign_to_specific` CHAR(1) DEFAULT '0' NOT NULL,
                 `file_path` VARCHAR(200) DEFAULT '' NOT NULL,
-				`auto_judge` TINYINT(1),
-				`auto_judge_scenarios` VARCHAR(2048),
-				`lang` VARCHAR(10),
+                `auto_judge` TINYINT(1),
+                `auto_judge_scenarios` VARCHAR(2048),
+                `lang` VARCHAR(10),
                 `file_name` VARCHAR(200) DEFAULT '' NOT NULL) $charset_spec");
 
 $db->query("CREATE TABLE IF NOT EXISTS `assignment_submit` (
@@ -829,6 +834,7 @@ $db->query("CREATE TABLE IF NOT EXISTS `assignment_submit` (
                 `assignment_id` INT(11) NOT NULL DEFAULT 0,
                 `submission_date` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
                 `submission_ip` VARCHAR(45) NOT NULL DEFAULT '',
+                `auto_judge_scenarios_output` VARCHAR(1024),
                 `file_path` VARCHAR(200) NOT NULL DEFAULT '',
                 `file_name` VARCHAR(200) NOT NULL DEFAULT '',
                 `comments` TEXT NOT NULL,
@@ -836,7 +842,6 @@ $db->query("CREATE TABLE IF NOT EXISTS `assignment_submit` (
                 `grade_comments` TEXT NOT NULL,
                 `grade_submission_date` DATE NOT NULL DEFAULT '1000-10-10',
                 `grade_submission_ip` VARCHAR(45) NOT NULL DEFAULT '',
-				`auto_judge_scenarios_output` VARCHAR(1024),
                 `group_id` INT( 11 ) DEFAULT NULL ) $charset_spec");
 
 
@@ -869,8 +874,8 @@ $db->query("CREATE TABLE IF NOT EXISTS `exercise_user_record` (
                 `uid` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,
                 `record_start_date` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
                 `record_end_date` DATETIME DEFAULT NULL,
-                `total_score` INT(11) NOT NULL DEFAULT 0,
-                `total_weighting` INT(11) DEFAULT 0,
+                `total_score` FLOAT(5,2) NOT NULL DEFAULT 0,
+                `total_weighting` FLOAT(5,2) DEFAULT 0,
                 `attempt` INT(11) NOT NULL DEFAULT 0,
                 `attempt_status` tinyint(4) NOT NULL DEFAULT 1,
                 `secs_remaining` INT(11) NOT NULL DEFAULT '0') $charset_spec");
@@ -890,7 +895,12 @@ $db->query("CREATE TABLE IF NOT EXISTS `exercise_question` (
                 `weight` FLOAT(11,2) DEFAULT NULL,
                 `q_position` INT(11) DEFAULT 1,
                 `type` INT(11) DEFAULT 1,
-                `difficulty` INT(1) DEFAULT 0) $charset_spec");
+                `difficulty` INT(1) DEFAULT 0,
+                `category` INT(11) DEFAULT 0) $charset_spec");
+$db->query("CREATE TABLE IF NOT EXISTS `exercise_question_cats` (
+                `question_cat_id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `question_cat_name` VARCHAR(300) NOT NULL,
+                `course_id` INT(11) NOT NULL) $charset_spec");
 $db->query("CREATE TABLE IF NOT EXISTS `exercise_answer` (
                 `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 `question_id` INT(11) NOT NULL DEFAULT 0,
@@ -1235,9 +1245,9 @@ $teacher_upload_whitelist = 'htm, html, js, css, xml, xsl, cpp, c, java, m, h, t
 $db->query("CREATE TABLE `config` (
     `key` VARCHAR(32) NOT NULL,
     `value` TEXT NOT NULL,
-	`autojudge_connector` VARCHAR(40) DEFAULT 'CodepadConnector',
     PRIMARY KEY (`key`))");
 $default_config = array(
+    'autojudge_connector', 'CodepadConnector',
     'base_url', $urlForm,
     'default_language', $lang,
     'dont_display_login_form', 0,
@@ -1281,6 +1291,8 @@ $default_config = array(
     'active_ui_languages', $active_ui_languages,
     'student_upload_whitelist', $student_upload_whitelist,
     'teacher_upload_whitelist', $teacher_upload_whitelist,
+    'theme', 'default',
+    'theme_options_id', 0,
     'login_fail_check', 1,
     'login_fail_threshold', 15,
     'login_fail_deny_interval', 5,
@@ -1519,6 +1531,19 @@ $db->query("CREATE TABLE IF NOT EXISTS `idx_queue` (
     `course_id` int(11) NOT NULL UNIQUE,
     PRIMARY KEY (`id`)) $charset_spec");
 
+$db->query("CREATE TABLE IF NOT EXISTS `idx_queue_async` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `user_id` int(11) NOT NULL,
+    `request_type` VARCHAR(255) NOT NULL,
+    `resource_type` VARCHAR(255) NOT NULL,
+    `resource_id` int(11) NOT NULL,
+    PRIMARY KEY (`id`)) $charset_spec");
+
+$db->query("CREATE TABLE IF NOT EXISTS `theme_options` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(300) NOT NULL,
+    `styles` LONGTEXT NOT NULL,
+    PRIMARY KEY (`id`)) $charset_spec");
 // create indices
 $db->query("CREATE INDEX `actions_daily_index` ON actions_daily(user_id, module_id, course_id)");
 $db->query("CREATE INDEX `actions_summary_index` ON actions_summary(module_id, course_id)");
@@ -1599,6 +1624,7 @@ $db->query('CREATE INDEX `user_events_dates` ON personal_calendar (user_id,start
 $db->query('CREATE INDEX `agenda_item_dates` ON agenda (course_id,start)');
 $db->query('CREATE INDEX `deadline_dates` ON assignment (course_id, deadline)');
 $db->query('CREATE INDEX `idx_queue_cid` ON `idx_queue` (course_id)');
+$db->query('CREATE INDEX `idx_queue_async_uid` ON `idx_queue_async` (user_id)');
 
 $db->query('CREATE INDEX `attendance_users_aid` ON `attendance_users` (attendance_id)');
 $db->query('CREATE INDEX `gradebook_users_gid` ON `gradebook_users` (gradebook_id)');
@@ -1607,7 +1633,7 @@ $db->query('CREATE INDEX `gradebook_users_gid` ON `gradebook_users` (gradebook_i
 $db->query('CREATE INDEX `actions_daily_mcd` ON `actions_daily` (module_id, course_id, day)');
 $db->query('CREATE INDEX `actions_daily_hdi` ON `actions_daily` (hits, duration, id)');
 $db->query('CREATE INDEX `loginout_ia` ON `loginout` (id_user, action)');
-$db->query('CREATE INDEX `announcement_cvo` ON `announcement` (course_id, visible, order)');
+$db->query('CREATE INDEX `announcement_cvo` ON `announcement` (course_id, visible, `order`)');
 
 // Single indices from multiple tuples
 $db->query("CREATE INDEX `actions_summary_module_id` ON actions_summary(module_id)");

@@ -28,7 +28,7 @@
 
 require_once 'template/template.inc.php';
 
-$t = new Template('template/bootstrap');
+$t = new Template('template/default');
 
 $t->set_file('fh', 'theme.html');
 $t->set_block('fh', 'mainBlock', 'main');
@@ -37,12 +37,12 @@ $t->set_block('mainBlock', 'sideBarBlock', 'delete');
 $t->set_block('mainBlock', 'LoggedInBlock', 'delete');
 $t->set_block('mainBlock', 'LoggedOutBlock', 'delete');
 $t->set_block('mainBlock', 'toolTitleBlock', 'delete');
+$t->set_block('mainBlock', 'pageTitleBlock', 'delete');
 $t->set_block('mainBlock', 'statusSwitchBlock', 'delete');
-$t->set_block('mainBlock', 'breadCrumbHomeBlock', 'delete');
-$t->set_block('mainBlock', 'breadCrumbStartBlock', 'delete');
-$t->set_block('mainBlock', 'breadCrumbEndBlock', 'delete');
+$t->set_block('mainBlock', 'breadCrumbs', 'delete');
 $t->set_block('mainBlock', 'modalWindowBlock', 'delete');
-$t->set_var('template_base', 'template/bootstrap');
+$t->set_block('mainBlock', 'normalViewOpenDiv', 'delete');
+$t->set_var('template_base', 'template/default');
 $t->set_var('PAGE_TITLE', 'Πλατφόρμα Ασύγχρονης Τηλεκπαίδευσης Open eClass');
 $t->set_var('TOOL_CONTENT', "
 <div class='row'>
@@ -52,7 +52,7 @@ $t->set_var('TOOL_CONTENT', "
             <p>Πιθανό πρόβλημα με την βάση δεδομένων ή με το αρχείο ρυθμίσεων της πλατφόρμας.</p>
             <p>Σε περίπτωση που χρησιμοποιείτε την πλατφόρμα για <b>πρώτη</b> φορά, επιλέξτε τον <a href='install'><b>Οδηγό Εγκατάστασης</b></a> για να ξεκινήσετε το πρόγραμμα εγκατάστασης.</p>
         </div>
-    <div>
+    </div>
 </div>");
 
 $t->parse('main', 'mainBlock', false);
