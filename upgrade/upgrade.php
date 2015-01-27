@@ -100,10 +100,6 @@ if (!DBHelper::fieldExists('user', 'id')) {
     Database::get()->query("UPDATE user
                         SET registered_at = FROM_UNIXTIME(ts_registered_at),
                             expires_at = FROM_UNIXTIME(ts_expires_at)");
-    Database::get()->query("ALTER TABLE assignment
-                        ADD auto_judge TINYINT(1),
-                        ADD auto_judge_scenarios VARCHAR(2048),
-                        ADD lang VARCHAR(10)");
     Database::get()->query("ALTER TABLE user
                         CHANGE user_id id INT(11) NOT NULL AUTO_INCREMENT,
                         CHANGE nom surname VARCHAR(100) NOT NULL DEFAULT '',
