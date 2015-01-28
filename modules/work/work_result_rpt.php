@@ -32,9 +32,26 @@ require_once 'modules/group/group_functions.php';
 $nameTools = $langAutoJudgeDetailedReport;
 
 if (isset($_GET['assignment']) && isset($_GET['submission'])) {
-    global $tool_content, $course_code, $m, $langAutoJudgeNotEnabledForReport;
+    global $tool_content, $course_code, $uid, $is_editor, $m, $langAutoJudgeNotEnabledForReport;
     $as_id = intval($_GET['assignment']);
     $sub_id = intval($_GET['submission']);
+    
+    // Access Control
+    if (!isset($uid) || !$uid) { redirect_to_home_page('modules/work/index.php?course='.$course_code); exit(0); } // Not logged in
+    if ($GLOBALS['status'] == 10) { redirect_to_home_page('modules/work/index.php?course='.$course_code); exit(0); } // user is guest
+    $user_group_info = user_group_info($uid, $course_id);
+    $row = Database::get()->querySingle("SELECT *, CAST(UNIX_TIMESTAMP(deadline)-UNIX_TIMESTAMP(NOW()) AS SIGNED) AS time
+                                 FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $as_id);
+    $isOwner = false;
+    foreach(find_submissions($row->group_submissions, $uid, $as_id, $user_group_info) as $curSub) {
+        if($curSub->id == $sub_id) { $isOwner = true; break; }
+    }
+    if(!$isOwner && !$is_editor) {
+        redirect_to_home_page('modules/work/index.php?course='.$course_code);
+        exit(0);
+    }
+    // End Access Control
+    
     $assign = get_assignment_details($as_id);
     $sub = get_assignment_submit_details($sub_id);
     
@@ -127,11 +144,11 @@ function get_table_content($auto_judge_scenarios, $auto_judge_scenarios_output, 
            $icon = ($auto_judge_scenarios_output[$i]['passed']==1) ? 'tick.png' : 'delete.png';
            $table_content.="
                            <tr>
-                           <td style=\"word-break:break-all;\">".str_replace(' ', '&nbsp;', $cur_senarios['input'])."</td>
-                           <td style=\"word-break:break-all;\">".$auto_judge_scenarios_output[$i]['student_output']."</td>
-                           <td style=\"word-break:break-all;\">".$langAutoJudgeAssertions[$cur_senarios['assertion']]."</td>
-                           <td style=\"word-break:break-all;\">".str_replace(' ', '&nbsp;', $cur_senarios['output'])."</td>
-                           <td align=\"center\" style=\"word-break:break-all;\">".$cur_senarios['weight']."/".$max_grade."</td>
+                           <td style=\"word-break:break-all;\">".htmlspecialchars(str_replace(' ', '&nbsp;', $cur_senarios['input']), ENT_QUOTES)."</td>
+                           <td style=\"word-break:break-all;\">".htmlspecialchars($auto_judge_scenarios_output[$i]['student_output'], ENT_QUOTES)."</td>
+                           <td style=\"word-break:break-all;\">".htmlspecialchars($langAutoJudgeAssertions[$cur_senarios['assertion']], ENT_QUOTES)."</td>
+                           <td style=\"word-break:break-all;\">".str_replace(' ', '&nbsp;', htmlspecialchars($cur_senarios['output'], ENT_QUOTES))."</td>
+                           <td align=\"center\" style=\"word-break:break-all;\">".htmlspecialchars($cur_senarios['weight']."/".$max_grade, ENT_QUOTES)."</td>
                            <td align=\"center\"><img src=\"http://".$_SERVER['HTTP_HOST'].$themeimg."/" .$icon."\"></td></tr>";
                      $i++;
                 }
@@ -244,19 +261,19 @@ function download_pdf_file($assign, $sub, $auto_judge_scenarios, $auto_judge_sce
 
         <table class="first">
             <tr>
-            <th> Μάθημα</th> <td>'.get_course_title().' </td>
+            <th> Μάθημα</th> <td>'.htmlspecialchars(get_course_title(), ENT_QUOTES).' </td>
             </tr>
              <tr>
-            <th> Εργασία</th> <td> '.$assign->title.'</td>
+            <th> Εργασία</th> <td> '.htmlspecialchars($assign->title, ENT_QUOTES).'</td>
             </tr>
              <tr>
-            <th> Εκπαιδευόμενος</th><td> '.q(uid_to_name($sub->uid)).'</td>
+            <th> Εκπαιδευόμενος</th><td> '.htmlspecialchars(q(uid_to_name($sub->uid)), ENT_QUOTES).'</td>
             </tr>
              <tr>
-            <th> Βαθμός</th> <td>'.$sub->grade.'/'.$assign->max_grade.' </td>
+            <th> Βαθμός</th> <td>'.htmlspecialchars($sub->grade, ENT_QUOTES).'/'.htmlspecialchars($assign->max_grade, ENT_QUOTES).' </td>
             </tr>
              <tr>
-            <th> Κατάταξη</th> <td>'.get_submission_rank($assign->id, $sub->grade, $sub->submission_date).'</td>
+            <th> Κατάταξη</th> <td>'.htmlspecialchars(get_submission_rank($assign->id, $sub->grade, $sub->submission_date), ENT_QUOTES).'</td>
             </tr>
     </table>';
 

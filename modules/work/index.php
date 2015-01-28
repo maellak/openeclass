@@ -2255,14 +2255,18 @@ function show_student_assignments() {
             }
             $tool_content .= "</td>
                                     <td width='30' align='center'>";
+            $rankcontent = "";
             foreach ($submission as $sub) {
                 $grade = submission_grade($sub->id);
                 if (!$grade) {
                     $grade = "<div style='padding-bottom: 5px;padding-top:5px;'> - </div>";
                 }
                 $tool_content .= "<div style='padding-bottom: 5px;padding-top:5px;'>$grade</div>";
+                if ($grade) {
+                    $rankcontent = "<div style='padding-bottom: 5px;padding-top:10px;'><a href='". $rankreportlink ."'>". icon('fa-sort-alpha-asc') ."</a></div>";
+                }
             }
-            $tool_content .= "</td><td class='option-btn-cell' align='center'><div style='padding-bottom: 5px;padding-top:10px;'><a href='". $rankreportlink ."'>". icon('fa-sort-alpha-asc') ."</a></div></td>
+            $tool_content .= "</td><td class='option-btn-cell' align='center'>$rankcontent</td>
                             </tr>";
             
             $k++;
