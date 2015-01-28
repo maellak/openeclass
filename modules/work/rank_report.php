@@ -39,14 +39,28 @@ require_once __DIR__.'/../../include/tcpdf/tcpdf_include.php';
 require_once __DIR__.'/../../include/tcpdf/tcpdf.php';
 
 require_once 'work_functions.php';
+require_once  __DIR__.'/../group/group_functions.php';
 
 
 
 
 if (isset($_GET['assignment'])) {
 	// declare variables
-    global $tool_content, $course_title, $m;
+    global $tool_content, $course_title, $course_code, $course_id, $uid, $m;
     $as_id = intval($_GET['assignment']);
+    
+    // Access Control
+    if (!isset($uid) || !$uid) { redirect_to_home_page('modules/work/index.php?course='.$course_code); exit(0); } // Not logged in
+    if ($GLOBALS['status'] == 10) { redirect_to_home_page('modules/work/index.php?course='.$course_code); exit(0); } // user is guest
+    $user_group_info = user_group_info($uid, $course_id);
+    $row = Database::get()->querySingle("SELECT *, CAST(UNIX_TIMESTAMP(deadline)-UNIX_TIMESTAMP(NOW()) AS SIGNED) AS time
+                                 FROM assignment WHERE course_id = ?d AND id = ?d", $course_id, $as_id);
+    if(count(find_submissions($row->group_submissions, $uid, $as_id, $user_group_info)) <= 0) {
+        redirect_to_home_page('modules/work/index.php?course='.$course_code);
+        exit(0);
+    }
+    // End Access Control
+    
     $assign = get_assignment_details($as_id);
     $submissions = find_submissions_by_assigment($as_id);
     $i = 1;
@@ -129,9 +143,9 @@ function get_table_content($assign,$submissions) {
                      $table_content.="
                                       <tr>
                                       <td style=\"word-break:break-all;\">".$s."</td>
-                                      <td style=\"word-break:break-all;\">".$submission->username."</td>
-                                      <td style=\"word-break:break-all;\">".$submission->grade."/". $assign->max_grade  ."</td>
-                                      <td align=\"center\">".$submission->grade_comments."</td></tr>";
+                                      <td style=\"word-break:break-all;\">".htmlspecialchars($submission->username, ENT_QUOTES)."</td>
+                                      <td style=\"word-break:break-all;\">".htmlspecialchars($submission->grade, ENT_QUOTES)."/". htmlspecialchars($assign->max_grade, ENT_QUOTES)."</td>
+                                      <td align=\"center\">".htmlspecialchars($submission->grade_comments, ENT_QUOTES)."</td></tr>";
                      $i++;
                 }
     return $table_content;
@@ -159,7 +173,7 @@ function download_pdf_file($assign,$submissions){
     $pdf->SetTitle('Rank Report');
     $pdf->SetSubject('Rank Report');
     // set default header data
-    $pdfHeaderStr ='Αναφορά κατάταξης εκπαιδευόμενων για το μάθημα '. get_course_title() . ' και την εργασία ' .  $assign->title;
+    $pdfHeaderStr = htmlspecialchars('Αναφορά κατάταξης εκπαιδευόμενων για το μάθημα '. get_course_title() . ' και την εργασία ' .  $assign->title, ENT_QUOTES);
     $pdf->SetHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, PDF_HEADER_TITLE, $pdfHeaderStr);
 
     // set header and footer fonts
